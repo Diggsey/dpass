@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 48 48"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   sodipodi:docname="icon.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="true"
+     showguides="true"
+     showborder="true"
+     inkscape:zoom="1"
+     inkscape:cx="37.5"
+     inkscape:cy="26"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       empspacing="4"
+       type="xygrid"
+       id="grid9"
+       visible="false" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#000000"
+       id="rect113"
+       width="22"
+       height="36"
+       x="4"
+       y="6"
+       ry="0" />
+    <path
+       style="color:#000000;fill:#4d4d4d;-inkscape-stroke:none"
+       d="m 16,10 v 28 h 3 11 c 4.214281,0 7.865002,-1.584518 10.314453,-4.197266 C 42.763904,31.189986 44,27.666663 44,24 44,20.333337 42.763904,16.810014 40.314453,14.197266 37.865002,11.584518 34.214281,10 30,10 Z m 6,6 h 8 c 2.785711,0 4.635002,0.915486 5.935547,2.302734 C 37.236092,19.689982 38,21.666669 38,24 38,26.333331 37.236092,28.310018 35.935547,29.697266 34.635002,31.084514 32.785712,32 30,32 h -8 z"
+       id="path216" />
+    <path
+       id="rect1996"
+       style="fill:#aa0000"
+       d="M 16 10 L 16 38 L 19 38 L 26 38 L 26 32 L 22 32 L 22 16 L 26 16 L 26 10 L 16 10 z " />
+  </g>
+</svg>
