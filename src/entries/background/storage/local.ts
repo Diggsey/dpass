@@ -1,15 +1,23 @@
+import { LocalStorageAddress } from "~/entries/shared/privileged/state"
+import { IDisposable } from "../../shared/disposable"
 import { DataAndEtag, ETagMismatchError, IStorage } from "./interface"
 
 const OBJECT_STORE_NAME = "blobs"
 
-export class LocalStorage implements IStorage {
-    db: IDBDatabase
-    constructor(db: IDBDatabase) {
-        this.db = db
+export class LocalStorage implements IStorage, IDisposable {
+    readonly address: LocalStorageAddress
+    #db: IDBDatabase
+
+    constructor(db: IDBDatabase, address: LocalStorageAddress) {
+        this.#db = db
+        this.address = address
     }
-    static open(): Promise<LocalStorage> {
+    dispose(): void {
+        this.#db.close()
+    }
+    static open(address: LocalStorageAddress): Promise<LocalStorage> {
         return new Promise((resolve, reject) => {
-            const conn = indexedDB.open("dpass_store", 1)
+            const conn = indexedDB.open(`dpass/${address.folderName}`, 1)
             conn.onupgradeneeded = (e) => {
                 if (e.newVersion === null || e.newVersion === e.oldVersion) { return }
                 const db = conn.result;
@@ -24,13 +32,13 @@ export class LocalStorage implements IStorage {
                         }
                 }
             }
-            conn.onsuccess = () => resolve(new LocalStorage(conn.result))
+            conn.onsuccess = () => resolve(new LocalStorage(conn.result, address))
             conn.onerror = reject
         })
     }
     performTransaction<T>(mode: "readonly" | "readwrite", f: (objectStore: IDBObjectStore) => Promise<T>): Promise<T> {
         return new Promise<T>((resolve, reject) => {
-            const tx = this.db.transaction(OBJECT_STORE_NAME, mode)
+            const tx = this.#db.transaction(OBJECT_STORE_NAME, mode)
             let successFn: (() => void) | null = null
             let errorValue: any = null
             tx.onabort = () => reject(errorValue)
@@ -55,7 +63,7 @@ export class LocalStorage implements IStorage {
             }
         })
     }
-    static uploadFileInner(objectStore: IDBObjectStore, fileId: string, data: ArrayBuffer): Promise<void> {
+    static uploadFileInner(objectStore: IDBObjectStore, fileId: string, data: DataAndEtag): Promise<void> {
         return new Promise((resolve, reject) => {
             const req = objectStore.put(data, fileId)
             req.onerror = reject
@@ -72,13 +80,18 @@ export class LocalStorage implements IStorage {
     downloadFile(fileId: string): Promise<DataAndEtag | undefined> {
         return this.performTransaction("readonly", objectStore => LocalStorage.downloadFileInner(objectStore, fileId))
     }
-    uploadFile(fileId: string, expectedEtag: string | null, data: ArrayBuffer): Promise<void> {
+    uploadFile(fileId: string, expectedEtag: string | null, data: Uint8Array): Promise<string> {
         return this.performTransaction("readwrite", async objectStore => {
             const fileAndEtag = await LocalStorage.downloadFileInner(objectStore, fileId)
             if (fileAndEtag?.etag != expectedEtag) {
                 throw new ETagMismatchError()
             }
-            await LocalStorage.uploadFileInner(objectStore, fileId, data)
+            const etag = Date.now().toString()
+            await LocalStorage.uploadFileInner(objectStore, fileId, {
+                etag,
+                data,
+            })
+            return etag
         })
     }
     deleteFile(fileId: string, expectedEtag: string): Promise<void> {

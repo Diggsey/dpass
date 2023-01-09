@@ -1,8 +1,5 @@
 import browser from "webextension-polyfill"
-import { ComponentChild, render, h, VNode } from "preact";
-import htm from "htm"
-
-export const html = htm.bind(h) as (strings: TemplateStringsArray, ...values: any[]) => VNode<any>
+import { ComponentChild, render } from "preact";
 
 type ResolveFn<T> = (value: T) => void
 type RenderFn<T> = (resolve: ResolveFn<T>) => ComponentChild

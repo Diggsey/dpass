@@ -11,6 +11,15 @@ export default defineConfig(({ mode }) => {
         plugins: [
             webExtension({
                 manifest: getManifest(Number(env.MANIFEST_VERSION)),
+                extraContentScripts: [
+                    {
+                        js: ["src/entries/content/main.ts"]
+                    }
+                ],
+                extraHtmlPages: [
+                    "src/entries/unlockPopup/index.html",
+                    "src/entries/noActionPopup/index.html",
+                ]
             }),
         ],
         resolve: {

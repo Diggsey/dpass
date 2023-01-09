@@ -2,7 +2,8 @@ import pkg from "../package.json";
 
 const permissions: chrome.runtime.ManifestPermissions[] = [
   "activeTab",
-  "scripting"
+  "scripting",
+  "storage",
 ]
 
 const sharedManifest = {
@@ -14,12 +15,12 @@ const sharedManifest = {
     open_in_tab: true,
   },
   permissions,
-  content_scripts: [
-    {
-      matches: ["https://none/"],
-      js: ["src/entries/content/main.ts"]
+  browser_specific_settings: {
+    gecko: {
+      id: "dpass@diggsey.com",
     }
-  ]
+  }
+
 };
 
 const browserAction = {

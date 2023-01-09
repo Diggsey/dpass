@@ -1,5 +1,5 @@
-import { html } from "../render"
 import { FunctionComponent } from "preact"
+import { html } from "~/entries/shared/render"
 import "./modal.css"
 
 type OnCloseFn = () => void

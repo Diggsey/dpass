@@ -1,6 +1,6 @@
 import { FunctionalComponent } from "preact";
+import { html } from "~/entries/shared/render";
 import { AutofillPayload } from "../../shared";
-import { html } from "../render";
 import { Modal } from "./modal"
 import "./payloadSelector.css"
 

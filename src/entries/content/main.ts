@@ -1,7 +1,8 @@
 import { Message, AutofillPayload, sendMessage } from "../shared";
 import browser from "webextension-polyfill";
-import { html, renderComponent } from "./render";
+import { renderComponent } from "./render";
 import { PayloadSelector } from "./components/payloadSelector";
+import { html } from "../shared/render";
 
 
 function handleMessage(message: Message) {
