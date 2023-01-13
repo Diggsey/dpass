@@ -5,12 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch WebExtension",
+            "name": "Launch WebExtension (Firefox)",
             "type": "firefox",
             "request": "launch",
-            "reAttach": true,
             "addonPath": "${workspaceFolder}/dist",
-            "preLaunchTask": "${defaultBuildTask}"
+            "pathMappings": [
+                {
+                    "url": "moz-extension://*/",
+                    "path": "${workspaceFolder}/dist"
+                }
+            ]
         }
     ]
 }

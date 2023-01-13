@@ -22,7 +22,7 @@ export class SyncManager extends Actor {
         this.storage = storage
         this.#integrator = integrator
         this.#priority = priority
-        this.#triggerDownload()
+        this.triggerDownload()
     }
     dispose(): void {
         super.dispose()
@@ -38,7 +38,7 @@ export class SyncManager extends Actor {
         this.#pendingData = data
         this._post(() => this.#tryUpload())
     }
-    #triggerDownload() {
+    triggerDownload() {
         if (!this.#downloadTriggered) {
             this.#downloadTriggered = true
             this._post(() => this.#tryDownload())
@@ -46,7 +46,7 @@ export class SyncManager extends Actor {
     }
     async #tryUpload() {
         if (this.#lastSeenEtag !== this.#lastIntegratedEtag) {
-            this.#triggerDownload()
+            this.triggerDownload()
             return
         }
         if (this.#pendingData === null) {
@@ -59,7 +59,7 @@ export class SyncManager extends Actor {
             this.#lastIntegratedEtag = this.#lastSeenEtag
         } catch (err) {
             if (err instanceof ETagMismatchError) {
-                this.#triggerDownload()
+                this.triggerDownload()
             } else {
                 this.#lastError = err
             }

@@ -19,7 +19,10 @@ export default defineConfig(({ mode }) => {
                 extraHtmlPages: [
                     "src/entries/unlockPopup/index.html",
                     "src/entries/noActionPopup/index.html",
-                ]
+                ],
+                webAccessibleScripts: {
+                    include: "src/entries/content/main.ts"
+                }
             }),
         ],
         resolve: {
@@ -27,5 +30,15 @@ export default defineConfig(({ mode }) => {
                 "~": path.resolve(__dirname, "./src"),
             },
         },
+        build: {
+            sourcemap: true,
+            rollupOptions: {
+                output: {
+                    sourcemapPathTransform: (relativeSourcePath, sourcemapPath) => {
+                        return path.resolve(path.dirname(sourcemapPath), relativeSourcePath);
+                    }
+                }
+            }
+        }
     };
 });

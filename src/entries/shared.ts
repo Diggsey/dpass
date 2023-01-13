@@ -18,7 +18,21 @@ type AddRootStorageAddress = {
     id: "addRootStorageAddress",
     storageAddress: StorageAddress,
 }
-export type Message = RequestAutofillMessage | PokeActiveFrameMessage | OptionsPageOpenedMessage | CreateRootMessage | AddRootStorageAddress
+type UnlockMessage = {
+    id: "unlock",
+    masterPassword: string,
+}
+type LockMessage = {
+    id: "lock"
+}
+export type Message =
+    | RequestAutofillMessage
+    | PokeActiveFrameMessage
+    | OptionsPageOpenedMessage
+    | CreateRootMessage
+    | AddRootStorageAddress
+    | UnlockMessage
+    | LockMessage
 
 export interface AutofillPayload {
     origin: string,

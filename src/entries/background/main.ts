@@ -99,6 +99,8 @@ function handleMessage(message: Message, sender: Runtime.MessageSender) {
         case "requestAutofill": return requestAutoFill(senderType)
         case "createRoot": return createRoot(senderType, message.masterPassword)
         case "addRootStorageAddress": return addRootStorageAddress(senderType, message.storageAddress)
+        case "unlock": return unlock(senderType, message.masterPassword)
+        case "lock": return lock(senderType)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -157,6 +159,20 @@ async function addRootStorageAddress(senderType: SenderType, storageAddress: Sto
     const rootAddresses: StorageAddress[] = res.rootAddresses || []
     rootAddresses.push(storageAddress)
     await browser.storage.sync.set({ rootAddresses })
+}
+
+async function unlock(senderType: SenderType, masterPassword: string) {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.unlock(masterPassword)
+}
+
+async function lock(senderType: SenderType) {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.lock()
 }
 
 browser.browserAction.onClicked.addListener(browserActionClicked)

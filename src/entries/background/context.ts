@@ -8,6 +8,7 @@ import { PrivilegedState, PrivilegedSyncState, PrivilegedVaultMap, StorageAddres
 import { IStatePublisher } from "./pubsub/state";
 import { decodeRoot, encodeRoot } from "./serialize/root";
 import { mergeFiles } from "./serialize/merge";
+import { decrypt, deriveKeyFromSuperKey, deriveSuperKeyFromPassword, encrypt, generateIv, generateSalt } from "./crypto";
 
 
 type VaultState = {
@@ -18,10 +19,6 @@ type VaultState = {
 type TimerId = ReturnType<typeof setTimeout>
 
 const ROOT_FILE_ID = "root"
-const IV_BYTE_LENGTH = 12
-const SALT_BYTE_LENGTH = 32
-const ENCRYPTION_KEY_PARAMS = { "name": "AES-GCM", "length": 256 }
-const ROOT_KEY_APPLICATION = new TextEncoder().encode("rootKey")
 
 type BrowserClickAction = "autofill" | "requestPassword" | "showOptions" | "none"
 
@@ -29,50 +26,6 @@ type PendingRootIntegration = {
     file: Uint8Array,
     resolve: () => void,
     reject: (err: any) => void,
-}
-
-function generateIv(): Uint8Array {
-    const iv = new Uint8Array(IV_BYTE_LENGTH)
-    return crypto.getRandomValues(iv)
-}
-
-function generateSalt(): Uint8Array {
-    const salt = new Uint8Array(SALT_BYTE_LENGTH)
-    return crypto.getRandomValues(salt)
-}
-
-async function deriveSuperKeyFromPassword(masterPassword: string, passwordSalt: Uint8Array): Promise<CryptoKey> {
-    const enc = new TextEncoder();
-    const passwordKey = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(masterPassword),
-        "PBKDF2",
-        false,
-        ["deriveKey"],
-    );
-    return await crypto.subtle.deriveKey({
-        name: "PBKDF2",
-        hash: "SHA-256",
-        salt: passwordSalt,
-        iterations: 100000,
-    }, passwordKey, ENCRYPTION_KEY_PARAMS, false, ["deriveKey"])
-}
-
-async function deriveKeyFromSuperKey(superKey: CryptoKey, keySalt: Uint8Array): Promise<CryptoKey> {
-    return await crypto.subtle.deriveKey({
-        name: "HKDF",
-        hash: "SHA-256",
-        salt: keySalt,
-        info: ROOT_KEY_APPLICATION,
-    }, superKey, ENCRYPTION_KEY_PARAMS, false, ["encrypt", "decrypt"])
-}
-
-async function encrypt(key: CryptoKey, iv: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
-    return new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data))
-}
-
-async function decrypt(key: CryptoKey, iv: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
-    return new Uint8Array(await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data))
 }
 
 type LockedSyncedRoot = {
@@ -104,29 +57,10 @@ class SecureContext extends Actor implements IIntegrator {
     #statePublishTimer: TimerId | null = null
     #lockedSyncedRoot: LockedSyncedRoot | null = null
 
-    constructor() {
-        super()
-        this._post(() => this.#loadRootAddresses())
-    }
-
-    get currentClickAction(): BrowserClickAction {
-        if (this.#rootAddresses.length === 0) {
-            return "showOptions"
-        } else if (this.#key === null) {
-            return "requestPassword"
-        } else {
-            return "autofill"
-        }
-    }
-
-    get hasSuperKey(): boolean {
-        return this.#superKey !== null
-    }
-
     async #loadRootAddresses() {
         const res = await browser.storage.sync.get("rootAddresses")
         if (res.rootAddresses) {
-            this.#updateRootAddresses(res.rootAddresses)
+            await this.#updateRootAddresses(res.rootAddresses)
         }
     }
 
@@ -140,16 +74,6 @@ class SecureContext extends Actor implements IIntegrator {
                 }
             }, 0)
         }
-    }
-
-    addStatePublisher(statePublisher: IStatePublisher) {
-        this.#statePublishers.add(statePublisher)
-        statePublisher.addEventListener("disconnected", () => this.removeStatePublisher(statePublisher))
-        statePublisher.publishPrivileged(this.#privilegedState)
-    }
-
-    removeStatePublisher(statePublisher: IStatePublisher) {
-        this.#statePublishers.delete(statePublisher)
     }
 
     #syncStateChanged(fileId: string) {
@@ -235,9 +159,10 @@ class SecureContext extends Actor implements IIntegrator {
         })
         map.set(addressKey, syncManager)
         this.#syncStateChanged(fileId)
+        await this.#saveRootChanges(addressKey)
     }
 
-    #updateRootAddresses(rootAddresses: StorageAddress[]) {
+    async #updateRootAddresses(rootAddresses: StorageAddress[]) {
         this.#rootAddresses = rootAddresses
         this.#syncManagers = this.#updateSyncManagersFromAddresses(ROOT_FILE_ID, this.#rootAddresses, this.#syncManagers)
         this.#updatePrivilegedState({
@@ -246,7 +171,7 @@ class SecureContext extends Actor implements IIntegrator {
         })
     }
 
-    async #saveRootChanges() {
+    async #saveRootChanges(addressKey?: string) {
         if (this.#key && this.#root && this.#lockedSyncedRoot) {
             // Upload vault changes
             const encodedData = encodeRootData(this.#root)
@@ -258,8 +183,15 @@ class SecureContext extends Actor implements IIntegrator {
                 iv,
                 encryptedData: new Uint8Array(encryptedData),
             })
-            for (const syncManager of this.#syncManagers.values()) {
-                syncManager.onDataChanged(file)
+            if (addressKey) {
+                const syncManager = this.#syncManagers.get(addressKey)
+                if (syncManager) {
+                    syncManager.onDataChanged(file)
+                }
+            } else {
+                for (const syncManager of this.#syncManagers.values()) {
+                    syncManager.onDataChanged(file)
+                }
             }
         }
     }
@@ -273,6 +205,7 @@ class SecureContext extends Actor implements IIntegrator {
                 if (item.payload?.id === "vault") {
                     const { fileId, addresses } = item.payload
                     let vaultState = this.#vaults.get(fileId)
+                    this.#vaults.delete(fileId)
                     if (!vaultState) {
                         vaultState = { vault: null, syncManagers: new Map() }
                     }
@@ -281,8 +214,14 @@ class SecureContext extends Actor implements IIntegrator {
                 }
             }
         }
-        await this.#saveRootChanges()
+        // Disconnect from old vault addresses
+        for (const oldVaultState of this.#vaults.values()) {
+            for (const syncManager of oldVaultState.syncManagers.values()) {
+                syncManager.dispose()
+            }
+        }
         this.#vaults = newVaults
+        await this.#saveRootChanges()
 
         this.#updatePrivilegedState({
             ...this.#privilegedState,
@@ -324,19 +263,6 @@ class SecureContext extends Actor implements IIntegrator {
         throw new Error("not implemented")
     }
 
-    integrate(fileId: string, file: Uint8Array, priority: number): Promise<void> {
-        if (fileId === ROOT_FILE_ID) {
-            return this.#integrateRoot(file, priority)
-        } else {
-            return this.#integrateVault(fileId, file)
-        }
-    }
-    get _lockedSyncedRoot(): LockedSyncedRoot {
-        if (!this.#lockedSyncedRoot) {
-            throw new Error("Invalid state")
-        }
-        return this.#lockedSyncedRoot
-    }
     #updateKey(key: CryptoKey) {
         if (this.#key === null) {
             this.#key = key
@@ -355,7 +281,80 @@ class SecureContext extends Actor implements IIntegrator {
         }
     }
 
-    unlock(masterPassword: string) {
+    #syncStorageChanged = (changes: Record<string, browser.Storage.StorageChange>) => {
+        if (Object.hasOwn(changes, "rootAddresses")) {
+            this._post(() => this.#loadRootAddresses())
+        }
+    }
+
+    constructor() {
+        super()
+        browser.storage.sync.onChanged.addListener(this.#syncStorageChanged)
+        this._post(() => this.#loadRootAddresses())
+    }
+
+    get currentClickAction(): BrowserClickAction {
+        if (this.#rootAddresses.length === 0) {
+            return "showOptions"
+        } else if (this.#key === null) {
+            return "requestPassword"
+        } else {
+            return "autofill"
+        }
+    }
+
+    get _lockedSyncedRoot(): LockedSyncedRoot {
+        if (!this.#lockedSyncedRoot) {
+            throw new Error("Invalid state")
+        }
+        return this.#lockedSyncedRoot
+    }
+
+    get hasSuperKey(): boolean {
+        return this.#superKey !== null
+    }
+
+    addStatePublisher(statePublisher: IStatePublisher) {
+        this.#statePublishers.add(statePublisher)
+        statePublisher.addEventListener("disconnect", () => this.removeStatePublisher(statePublisher))
+        statePublisher.publishPrivileged(this.#privilegedState)
+    }
+
+    removeStatePublisher(statePublisher: IStatePublisher) {
+        this.#statePublishers.delete(statePublisher)
+    }
+
+    integrate(fileId: string, file: Uint8Array, priority: number): Promise<void> {
+        if (fileId === ROOT_FILE_ID) {
+            return this.#integrateRoot(file, priority)
+        } else {
+            return this.#integrateVault(fileId, file)
+        }
+    }
+
+    // Public API
+    lock(): Promise<void> {
+        return this._post(async () => {
+            if (this.#key === null) {
+                return
+            }
+            this.#key = null
+            this.#superKey = null
+            if (this.#superKeyTimer != null) {
+                clearTimeout(this.#superKeyTimer)
+                this.#superKeyTimer = null
+            }
+            this.#lockedSyncedRoot = null
+            this.#updateRoot(null)
+
+            // Re-download the encrypted root file, since we don't
+            // retain that after we unlock it.
+            for (const syncManager of this.#syncManagers.values()) {
+                syncManager.triggerDownload()
+            }
+        })
+    }
+    unlock(masterPassword: string): Promise<void> {
         return this._post(async () => {
             const { passwordSalt, keySalt, canaryIv, canaryData } = this._lockedSyncedRoot
             const superKey = await deriveSuperKeyFromPassword(masterPassword, passwordSalt)
@@ -375,11 +374,6 @@ class SecureContext extends Actor implements IIntegrator {
                 this.#superKeyTimer = null
             })
         })
-    }
-    syncStorageChanged(changes: Record<string, browser.Storage.StorageChange>) {
-        if (Object.hasOwn(changes, "rootAddresses")) {
-            this._post(() => this.#loadRootAddresses())
-        }
     }
     async createRoot(masterPassword: string) {
         return this._post(async () => {
@@ -411,5 +405,3 @@ class SecureContext extends Actor implements IIntegrator {
 }
 
 export const SECURE_CONTEXT = new SecureContext()
-
-browser.storage.sync.onChanged.addListener(SECURE_CONTEXT.syncStorageChanged)

@@ -19,8 +19,7 @@ const sharedManifest = {
     gecko: {
       id: "dpass@diggsey.com",
     }
-  }
-
+  },
 };
 
 const browserAction = {

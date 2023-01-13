@@ -26,9 +26,25 @@ function App() {
             }
         })
     }
+    const unlock = () => {
+        const masterPassword = prompt("Enter master password:")
+        if (masterPassword) {
+            sendMessage({
+                id: "unlock",
+                masterPassword
+            })
+        }
+    }
+    const lock = () => {
+        sendMessage({
+            id: "lock"
+        })
+    }
     return html`<div>
         <div>${JSON.stringify(state)}</div>
         <button type="button" onClick=${createRoot}>Create root</button>
         <button type="button" onClick=${createLocalStorage}>Create local storage</button>
+        <button type="button" onClick=${unlock}>Unlock</button>
+        <button type="button" onClick=${lock}>Lock</button>
         </div>`
 }

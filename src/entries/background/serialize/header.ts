@@ -19,7 +19,7 @@ export function decodeHeader(src: Uint8Array): Header {
     }
     return {
         version,
-        body: src.subarray(MAGIC.length + 11),
+        body: src.subarray(MAGIC.length + 1),
     }
 
 }
