@@ -1,10 +1,11 @@
 import browser, { Runtime, Action, Tabs } from "webextension-polyfill";
-import { Message, sendMessageToTab } from "../shared"
+import { Message, sendMessageToTab, StorageAddressAction } from "../shared"
 import { PRIVILEGED_PORT_NAME, StorageAddress } from "../shared/privileged/state";
 import { UNPRIVILEGED_PORT_NAME } from "../shared/state";
 import { SECURE_CONTEXT } from "./context";
 import { PrivilegedPublisher } from "./pubsub/privileged";
 import { UnprivilegedPublisher } from "./pubsub/unprivileged";
+import { objectKey } from "./storage/connection";
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -98,7 +99,7 @@ function handleMessage(message: Message, sender: Runtime.MessageSender) {
     switch (message.id) {
         case "requestAutofill": return requestAutoFill(senderType)
         case "createRoot": return createRoot(senderType, message.masterPassword)
-        case "addRootStorageAddress": return addRootStorageAddress(senderType, message.storageAddress)
+        case "editRootStorageAddresses": return editRootStorageAddresses(senderType, message.action)
         case "unlock": return unlock(senderType, message.masterPassword)
         case "lock": return lock(senderType)
         default:
@@ -151,13 +152,38 @@ async function createRoot(senderType: SenderType, masterPassword: string) {
     await SECURE_CONTEXT.createRoot(masterPassword)
 }
 
-async function addRootStorageAddress(senderType: SenderType, storageAddress: StorageAddress) {
+async function editRootStorageAddresses(senderType: SenderType, action: StorageAddressAction) {
     if (senderType.id !== "privileged") {
         return
     }
     const res = await browser.storage.sync.get("rootAddresses")
     const rootAddresses: StorageAddress[] = res.rootAddresses || []
-    rootAddresses.push(storageAddress)
+    const addressKeys = rootAddresses.map(objectKey)
+    const addressKey = objectKey(action.storageAddress)
+    const addressIndex = addressKeys.indexOf(addressKey)
+    switch (action.id) {
+        case "add":
+            if (addressIndex !== -1) {
+                throw new Error("Storage already exists")
+            }
+            rootAddresses.push(action.storageAddress)
+            break
+        case "remove":
+            if (addressIndex === -1) {
+                throw new Error("Storage does not exist")
+            }
+            rootAddresses.splice(addressIndex, 1)
+            break
+        case "move":
+            if (addressIndex === -1) {
+                throw new Error("Storage does not exist")
+            } else if (action.priority >= rootAddresses.length) {
+                throw new Error("Invalid priority")
+            }
+
+            rootAddresses.splice(action.priority, 0, ...rootAddresses.splice(addressIndex, 1))
+            break
+    }
     await browser.storage.sync.set({ rootAddresses })
 }
 

@@ -1,6 +1,7 @@
 import { ConnectionInfo, StorageAddress } from "~/entries/shared/privileged/state"
 import { Actor } from "../actor"
 import { Rc, WeakRc } from "../rc"
+import { GDriveStorage } from "./gdrive"
 import { IStorage } from "./interface"
 import { LocalStorage } from "./local"
 import { SharedStorage } from "./shared"
@@ -51,7 +52,8 @@ class StorageManager extends Actor {
                         innerStorage = await LocalStorage.open(address)
                         break
                     case "gdrive":
-                        throw new Error("Not supported")
+                        innerStorage = await GDriveStorage.open(address)
+                        break
                 }
                 storage = Rc.create(SharedStorage, innerStorage)
 

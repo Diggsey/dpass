@@ -18,7 +18,7 @@ export class UnprivilegedPublisher extends Publisher<UnprivilegedState> implemen
         return {
             privileged: false,
             origin: this.#origin,
-            hasRoot: state.hasRoot,
+            isUnlocked: state.isUnlocked,
             syncState: this.convertSyncState(state.syncState),
             vaults: mapObjectValues(state.vaults, v => this.convertVault(v))
         }

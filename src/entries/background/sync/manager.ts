@@ -12,8 +12,8 @@ export class SyncManager extends Actor {
     #fileId: string
     #integrator: IIntegrator
     #pendingData: Uint8Array | null = null
-    #downloadTriggered: boolean = false
-    #lastError: any = null
+    #downloadTriggered = false
+    #lastError: unknown = null
     #priority: number
 
     constructor(storage: IStorage, fileId: string, integrator: IIntegrator, priority: number) {

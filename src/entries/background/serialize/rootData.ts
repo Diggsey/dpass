@@ -1,5 +1,5 @@
 import * as msgpack from "@msgpack/msgpack"
-import { OauthConnectionInfo, StorageAddress } from "~/entries/shared/privileged/state"
+import { ConnectionInfo, StorageAddress } from "~/entries/shared/privileged/state"
 import { MergeableFile } from "./merge"
 import { SerializationError } from "./utils"
 
@@ -14,11 +14,18 @@ export type Vault = {
     encryptedVaultSuperKey: Uint8Array,
 }
 
-export type OauthToken = {
-    id: "oauthToken",
-    connectionInfo: OauthConnectionInfo,
-    refreshToken: string,
+export type OauthTokenPayload = {
+    id: "oauth",
+    accessToken: string,
+}
+
+export type AuthTokenPayload = OauthTokenPayload
+
+export type AuthToken = {
+    id: "authToken",
+    connectionInfo: ConnectionInfo,
     expiresAt: number,
+    payload: AuthTokenPayload,
 }
 
 export type KeyPair = {
@@ -29,7 +36,7 @@ export type KeyPair = {
     publicKey: Uint8Array,
 }
 
-export type RootFileItem = Vault | OauthToken | KeyPair
+export type RootFileItem = Vault | AuthToken | KeyPair
 export type DecryptedRootFile = MergeableFile<RootFileItem>
 
 export function decodeRootData(src: Uint8Array, version: number): DecryptedRootFile {

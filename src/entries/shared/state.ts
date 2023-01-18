@@ -2,7 +2,7 @@
 export type UnprivilegedState = {
     privileged: false,
     origin: string,
-    hasRoot: boolean,
+    isUnlocked: boolean,
     vaults: UnprivilegedVaultMap,
     syncState: UnprivilegedSyncState,
 }

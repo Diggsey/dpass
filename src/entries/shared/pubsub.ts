@@ -1,6 +1,6 @@
 import browser, { Runtime } from "webextension-polyfill";
 import { applyDelta, computeDelta, Delta } from "./delta";
-import { IDisposable } from "./disposable";
+import { Disposable } from "./mixins/disposable";
 
 export class Publisher<T> extends EventTarget {
     #port: Runtime.Port
@@ -23,12 +23,11 @@ export class Publisher<T> extends EventTarget {
     }
 }
 
-export class Subscriber<T> extends EventTarget implements IDisposable {
+export class Subscriber<T> extends Disposable(EventTarget) {
     #channelName: string
     #port: Runtime.Port | null
     #lastValue: T | null
-    #disposed: boolean = false
-    #reconnectionAttempts: number = 0
+    #reconnectionAttempts = 0
 
     constructor(channelName: string) {
         super()
@@ -38,7 +37,7 @@ export class Subscriber<T> extends EventTarget implements IDisposable {
         this.reconnect()
     }
     dispose(): void {
-        this.#disposed = true
+        super.dispose()
         this.reconnect()
     }
 
@@ -50,7 +49,7 @@ export class Subscriber<T> extends EventTarget implements IDisposable {
             this.#port = null
         }
         this.#lastValue = null
-        if (!this.#disposed) {
+        if (!this.disposed) {
             this.#port = browser.runtime.connect({ name: this.#channelName })
             this.#port.onMessage.addListener(this.#onMessage)
             this.#port.onDisconnect.addListener(this.#onDisconnect)

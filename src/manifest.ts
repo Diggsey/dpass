@@ -4,6 +4,7 @@ const permissions: chrome.runtime.ManifestPermissions[] = [
   "activeTab",
   "scripting",
   "storage",
+  "identity",
 ]
 
 const sharedManifest = {
@@ -19,7 +20,7 @@ const sharedManifest = {
     gecko: {
       id: "dpass@diggsey.com",
     }
-  },
+  }
 };
 
 const browserAction = {

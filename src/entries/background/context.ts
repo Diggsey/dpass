@@ -25,7 +25,7 @@ type BrowserClickAction = "autofill" | "requestPassword" | "showOptions" | "none
 type PendingRootIntegration = {
     file: Uint8Array,
     resolve: () => void,
-    reject: (err: any) => void,
+    reject: (err: unknown) => void,
 }
 
 type LockedSyncedRoot = {
@@ -35,6 +35,12 @@ type LockedSyncedRoot = {
     pendingRootIntegrations: Map<number, PendingRootIntegration>,
     canaryData: Uint8Array,
     canaryIv: Uint8Array,
+}
+
+class IncorrectPasswordError extends Error {
+    constructor() {
+        super("Incorrect password")
+    }
 }
 
 class SecureContext extends Actor implements IIntegrator {
@@ -47,7 +53,8 @@ class SecureContext extends Actor implements IIntegrator {
     #rootAddresses: StorageAddress[] = []
     #privilegedState: PrivilegedState = {
         privileged: true,
-        hasRoot: false,
+        hasIdentity: false,
+        isUnlocked: false,
         rootAddresses: [],
         vaults: {},
         syncState: {},
@@ -86,7 +93,7 @@ class SecureContext extends Actor implements IIntegrator {
             syncState[k] = {
                 address: v.storage.address,
                 inProgress: v.busy,
-                lastError: v.lastError,
+                lastError: v.lastError?.toString(),
             }
         }
         if (fileId === ROOT_FILE_ID) {
@@ -129,7 +136,7 @@ class SecureContext extends Actor implements IIntegrator {
             syncManager.dispose()
         }
         if (oldMap.size > 0) {
-            this.#syncStateChanged(fileId)
+            this._post(async () => this.#syncStateChanged(fileId))
         }
         return newMap
     }
@@ -198,7 +205,7 @@ class SecureContext extends Actor implements IIntegrator {
 
     async #updateRoot(newRoot: DecryptedRootFile | null) {
         this.#root = newRoot
-        let newVaults = new Map<string, VaultState>()
+        const newVaults = new Map<string, VaultState>()
         if (this.#root) {
             // Connect to new vault addresses
             for (const item of this.#root.items) {
@@ -225,7 +232,7 @@ class SecureContext extends Actor implements IIntegrator {
 
         this.#updatePrivilegedState({
             ...this.#privilegedState,
-            hasRoot: this.#root !== null,
+            isUnlocked: this.#root !== null,
             vaults: {},
             keyPairs: {},
         })
@@ -235,7 +242,7 @@ class SecureContext extends Actor implements IIntegrator {
         const { version, passwordSalt, keySalt, iv, encryptedData } = decodeRoot(file)
         if (this.#key === null) {
             if (!this.#lockedSyncedRoot || priority <= this.#lockedSyncedRoot.priority) {
-                this.#lockedSyncedRoot = {
+                this._lockedSyncedRoot = {
                     priority,
                     passwordSalt,
                     keySalt,
@@ -243,8 +250,12 @@ class SecureContext extends Actor implements IIntegrator {
                     canaryData: encryptedData,
                     canaryIv: iv,
                 }
+                this.#updatePrivilegedState({
+                    ...this.#privilegedState,
+                    hasIdentity: true,
+                })
             }
-            const pendingRootIntegrations = this.#lockedSyncedRoot.pendingRootIntegrations
+            const pendingRootIntegrations = this._lockedSyncedRoot.pendingRootIntegrations
             await new Promise<void>((resolve, reject) => {
                 pendingRootIntegrations.set(priority, { file, resolve, reject })
             })
@@ -294,7 +305,7 @@ class SecureContext extends Actor implements IIntegrator {
     }
 
     get currentClickAction(): BrowserClickAction {
-        if (this.#rootAddresses.length === 0) {
+        if (this.#lockedSyncedRoot === null) {
             return "showOptions"
         } else if (this.#key === null) {
             return "requestPassword"
@@ -308,6 +319,13 @@ class SecureContext extends Actor implements IIntegrator {
             throw new Error("Invalid state")
         }
         return this.#lockedSyncedRoot
+    }
+    set _lockedSyncedRoot(lockedSyncedRoot: LockedSyncedRoot | null) {
+        this.#lockedSyncedRoot = lockedSyncedRoot
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            hasIdentity: lockedSyncedRoot !== null,
+        })
     }
 
     get hasSuperKey(): boolean {
@@ -344,7 +362,7 @@ class SecureContext extends Actor implements IIntegrator {
                 clearTimeout(this.#superKeyTimer)
                 this.#superKeyTimer = null
             }
-            this.#lockedSyncedRoot = null
+            this._lockedSyncedRoot = null
             this.#updateRoot(null)
 
             // Re-download the encrypted root file, since we don't
@@ -360,7 +378,15 @@ class SecureContext extends Actor implements IIntegrator {
             const superKey = await deriveSuperKeyFromPassword(masterPassword, passwordSalt)
             const key = await deriveKeyFromSuperKey(superKey, keySalt)
             // Test the key against our canary data to know immediately if it's invalid
-            await decrypt(key, canaryIv, canaryData)
+            try {
+                await decrypt(key, canaryIv, canaryData)
+            } catch (err) {
+                if (err instanceof DOMException && err.name === "OperationError") {
+                    throw new IncorrectPasswordError()
+                } else {
+                    throw err
+                }
+            }
 
             this.#updateKey(key)
 
@@ -386,7 +412,7 @@ class SecureContext extends Actor implements IIntegrator {
             const key = await deriveKeyFromSuperKey(superKey, keySalt)
             const canaryIv = generateIv()
             const canaryData = await encrypt(key, canaryIv, new Uint8Array(1))
-            this.#lockedSyncedRoot = {
+            this._lockedSyncedRoot = {
                 priority: 0,
                 passwordSalt,
                 keySalt,

@@ -1,5 +1,5 @@
 import { StorageAddress } from "~/entries/shared/privileged/state"
-import { IDisposable } from "../../shared/disposable"
+import { IDisposable } from "../../shared/mixins/disposable"
 
 export type DataAndEtag = {
     data: Uint8Array,

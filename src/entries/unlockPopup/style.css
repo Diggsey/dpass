@@ -1,4 +1,4 @@
-.passwordForm {
-  display: flex;
-  flex-direction: column;
+body {
+  width: 300px;
+  overflow: hidden !important;
 }

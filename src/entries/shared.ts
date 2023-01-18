@@ -14,10 +14,15 @@ type CreateRootMessage = {
     id: "createRoot",
     masterPassword: string,
 }
-type AddRootStorageAddress = {
-    id: "addRootStorageAddress",
-    storageAddress: StorageAddress,
+type EditRootStorageAddresses = {
+    id: "editRootStorageAddresses",
+    action: StorageAddressAction
 }
+export type StorageAddressAction =
+    | { id: "add", storageAddress: StorageAddress }
+    | { id: "remove", storageAddress: StorageAddress }
+    | { id: "move", storageAddress: StorageAddress, priority: number }
+
 type UnlockMessage = {
     id: "unlock",
     masterPassword: string,
@@ -30,7 +35,7 @@ export type Message =
     | PokeActiveFrameMessage
     | OptionsPageOpenedMessage
     | CreateRootMessage
-    | AddRootStorageAddress
+    | EditRootStorageAddresses
     | UnlockMessage
     | LockMessage
 
@@ -47,8 +52,14 @@ export function expect<T>(arg: T | undefined, err?: string): T {
     return arg
 }
 
+function sleep(): Promise<void> {
+    return new Promise((resolve) => {
+        setTimeout(resolve, 1000)
+    })
+}
+
 export function sendMessage(m: Message): Promise<any> {
-    return browser.runtime.sendMessage(m)
+    return sleep().then(() => browser.runtime.sendMessage(m))
 }
 
 export function sendMessageToTab(tabId: number, m: Message): Promise<any> {

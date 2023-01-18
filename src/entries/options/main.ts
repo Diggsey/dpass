@@ -1,13 +1,18 @@
-import { render } from "preact";
+import { FunctionalComponent, render } from "preact";
 import { sendMessage } from "../shared";
 import { usePrivilegedState } from "../shared/privileged/hooks";
 import { html } from "../shared/render";
 import "./style.css";
+import "bulma/bulma.sass"
+import "@fortawesome/fontawesome-free/css/all.css"
+import { Tab, Tabs } from "../shared/components/tabs";
+import { IdentityPage } from "./identity";
+import { PrivilegedState } from "../shared/privileged/state";
+import browser from "webextension-polyfill";
 
 render(html`<${App} />`, document.body)
 
-function App() {
-    const state = usePrivilegedState()
+const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => {
     const createRoot = () => {
         const masterPassword = prompt("Enter master password:")
         if (masterPassword) {
@@ -19,10 +24,13 @@ function App() {
     }
     const createLocalStorage = () => {
         sendMessage({
-            id: "addRootStorageAddress",
-            storageAddress: {
-                id: "local",
-                folderName: "default",
+            id: "editRootStorageAddresses",
+            action: {
+                id: "add",
+                storageAddress: {
+                    id: "local",
+                    folderName: "default",
+                }
             }
         })
     }
@@ -40,11 +48,40 @@ function App() {
             id: "lock"
         })
     }
-    return html`<div>
+
+    return html`
+        <${Tabs} class="is-large">
+            <${Tab} title="Identity">
+                <${IdentityPage} state=${state} />
+            </>
+            <${Tab} title="Vaults" isDisabled=${!state?.isUnlocked}>
+                Vaults Body
+            </>
+        </>
         <div>${JSON.stringify(state)}</div>
         <button type="button" onClick=${createRoot}>Create root</button>
         <button type="button" onClick=${createLocalStorage}>Create local storage</button>
         <button type="button" onClick=${unlock}>Unlock</button>
         <button type="button" onClick=${lock}>Lock</button>
-        </div>`
+        <div>${browser.identity.getRedirectURL()}</div>
+    `
+}
+
+function App() {
+    const state = usePrivilegedState()
+    return html`<div>
+        <section class="hero is-primary">
+            <div class="hero-body">
+                <p class="title">
+                dpass
+                </p>
+                <p class="subtitle">
+                Diggsey's Password Manager
+                </p>
+            </div>
+        </section>
+        <div class="column">
+            ${state ? html`<${AppBody} state=${state} />` : html!`<div class=".loader" />`}
+        </div>
+    </div>`
 }

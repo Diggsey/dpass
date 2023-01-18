@@ -20,9 +20,6 @@ export default defineConfig(({ mode }) => {
                     "src/entries/unlockPopup/index.html",
                     "src/entries/noActionPopup/index.html",
                 ],
-                webAccessibleScripts: {
-                    include: "src/entries/content/main.ts"
-                }
             }),
         ],
         resolve: {

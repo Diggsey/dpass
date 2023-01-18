@@ -1,19 +1,23 @@
 import { LocalStorageAddress } from "~/entries/shared/privileged/state"
-import { IDisposable } from "../../shared/disposable"
+import { Disposable } from "../../shared/mixins/disposable"
 import { DataAndEtag, ETagMismatchError, IStorage } from "./interface"
 
 const OBJECT_STORE_NAME = "blobs"
 
-export class LocalStorage implements IStorage, IDisposable {
+export class LocalStorage extends Disposable(EventTarget) implements IStorage {
     readonly address: LocalStorageAddress
     #db: IDBDatabase
 
     constructor(db: IDBDatabase, address: LocalStorageAddress) {
+        super()
         this.#db = db
         this.address = address
     }
     dispose(): void {
-        this.#db.close()
+        if (!this.disposed) {
+            this.#db.close()
+        }
+        super.dispose()
     }
     static open(address: LocalStorageAddress): Promise<LocalStorage> {
         return new Promise((resolve, reject) => {
@@ -24,8 +28,8 @@ export class LocalStorage implements IStorage, IDisposable {
 
                 switch (e.oldVersion) {
                     case 0:
-                        db.createObjectStore(OBJECT_STORE_NAME);
-                    // Intentional fall-through
+                        db.createObjectStore(OBJECT_STORE_NAME)
+                    // falls through
                     default:
                         if (e.newVersion > 1) {
                             throw new Error("Unknown database version")
@@ -40,7 +44,7 @@ export class LocalStorage implements IStorage, IDisposable {
         return new Promise<T>((resolve, reject) => {
             const tx = this.#db.transaction(OBJECT_STORE_NAME, mode)
             let successFn: (() => void) | null = null
-            let errorValue: any = null
+            let errorValue: unknown = null
             tx.onabort = () => reject(errorValue)
             tx.oncomplete = () => successFn && successFn()
 

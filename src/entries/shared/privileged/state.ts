@@ -2,7 +2,8 @@ import { VaultItemMap } from "../state"
 
 export type PrivilegedState = {
     privileged: true,
-    hasRoot: boolean,
+    hasIdentity: boolean,
+    isUnlocked: boolean,
     rootAddresses: StorageAddress[],
     vaults: PrivilegedVaultMap,
     syncState: PrivilegedSyncState,
