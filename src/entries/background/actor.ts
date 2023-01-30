@@ -13,19 +13,19 @@ export class Actor extends Traceable(ObjectId(Disposable(EventTarget))) {
         }
         super.dispose()
     }
-    _post<R>(action: () => Promise<R>): Promise<R> {
+    _post<R>(name: string, action: () => Promise<R>): Promise<R> {
         if (this.disposed) {
             return Promise.reject(new Error("Disposed"))
         }
         return new Promise((resolve, reject) => {
             this._inbox.push(async () => {
-                this.trace`enter ${action}`
+                this.trace`enter ${name}`
                 try {
                     const res = await action()
-                    this.trace`leave ${action}`
+                    this.trace`leave ${name}`
                     resolve(res)
                 } catch (err) {
-                    this.trace`abort ${action} - ${err}`
+                    this.trace`abort ${name} - ${err}`
                     reject(err)
                 }
             })

@@ -1,10 +1,9 @@
 import { FunctionalComponent } from "preact";
-import { html } from "../render";
 import { cn } from "../ui";
 
 type StatusProps = {
     level: "loading" | "info" | "success" | "warning" | "danger",
-    colorText: boolean,
+    colorText?: boolean,
 }
 
 export const Status: FunctionalComponent<StatusProps> = ({ level, colorText, children }) => {
@@ -22,12 +21,10 @@ export const Status: FunctionalComponent<StatusProps> = ({ level, colorText, chi
         faExclamationTriangle: level === "warning",
         faBan: level === "danger",
     })
-    return html`
-        <div class=${cn("icon-text", colorText && colorClass)}>
-            <span class=${cn("icon", !colorText && colorClass)}>
-                <i class=${iconClass}></i>
-            </span>
-            <span>${children}</span>
-        </div>
-    `
+    return <div class={cn("icon-text", colorText && colorClass)}>
+        <span class={cn("icon", !colorText && colorClass)}>
+            <i class={iconClass}></i>
+        </span>
+        <span>{children}</span>
+    </div>
 }

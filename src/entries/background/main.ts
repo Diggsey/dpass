@@ -1,11 +1,12 @@
-import browser, { Runtime, Action, Tabs } from "webextension-polyfill";
-import { Message, sendMessageToTab, StorageAddressAction } from "../shared"
+import browser, { Runtime } from "webextension-polyfill";
+import { addMessageListener, AutofillPayload, Message, MessageResponse, StorageAddressAction } from "../shared"
 import { PRIVILEGED_PORT_NAME, StorageAddress } from "../shared/privileged/state";
 import { UNPRIVILEGED_PORT_NAME } from "../shared/state";
 import { SECURE_CONTEXT } from "./context";
 import { PrivilegedPublisher } from "./pubsub/privileged";
 import { UnprivilegedPublisher } from "./pubsub/unprivileged";
 import { objectKey } from "./storage/connection";
+import "./browserAction"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -15,7 +16,7 @@ if (location.protocol !== EXTENSION_PROTOCOL) {
     throw new Error(`Background script was loaded in an unprivileged context (${location.protocol})`)
 }
 
-let passwords = [
+const passwords = [
     { "origin": "https://accounts.google.com", "username": "foo", "password": "bar" },
     { "origin": "https://accounts.google.com", "username": "baz", "password": "bam" },
     { "origin": "https://github.com", "username": "cat", "password": "dog" },
@@ -30,58 +31,6 @@ type PrivilegedSender = {
 }
 type SenderType = UnprivilegedSender | PrivilegedSender
 
-async function beginAutofillAction(tabId: number) {
-    // Make sure our content script has been injected. We can't directly trigger
-    // anything via this injection because it will have no effect on the second injection.
-    await browser.scripting.executeScript({
-        target: {
-            allFrames: true,
-            tabId,
-        },
-        files: ["/src/entries/content/main.js"],
-        injectImmediately: true
-    })
-    // We don't know which frame is active, so send a message to all of them.
-    // Only the active frame will request auto-fill.
-    const response = await sendMessageToTab(tabId, { id: "pokeActiveFrame" })
-    if (!response) {
-        console.warn("No active frame found")
-    }
-}
-
-function browserActionClicked(tab: Tabs.Tab, info: Action.OnClickData | undefined) {
-    let clickAction = SECURE_CONTEXT.currentClickAction
-    if (info?.button === 1 || info?.modifiers?.length === 1) {
-        clickAction = "showOptions"
-    }
-    switch (clickAction) {
-        case "autofill":
-            if (tab.id !== undefined) {
-                beginAutofillAction(tab.id)
-            } else {
-                throw new Error("Not implemented")
-            }
-            break;
-
-        case "showOptions":
-            browser.runtime.openOptionsPage()
-            break;
-        case "requestPassword":
-            showPopup("src/entries/unlockPopup/index.html")
-            break;
-        case "none":
-            showPopup("src/entries/noActionPopup/index.html")
-            break;
-    }
-}
-
-function showPopup(popup: string): Promise<void> {
-    browser.browserAction.setPopup({ popup })
-    const res = browser.browserAction.openPopup()
-    browser.browserAction.setPopup({ popup: null })
-    return res
-}
-
 function classifySender(sender: Runtime.MessageSender): SenderType {
     if (sender.url) {
         const url = new URL(sender.url)
@@ -94,7 +43,7 @@ function classifySender(sender: Runtime.MessageSender): SenderType {
     }
 }
 
-function handleMessage(message: Message, sender: Runtime.MessageSender) {
+function handleMessage(message: Message, sender: Runtime.MessageSender): Promise<MessageResponse> | undefined {
     const senderType = classifySender(sender)
     switch (message.id) {
         case "requestAutofill": return requestAutoFill(senderType)
@@ -134,10 +83,10 @@ function handleConnect(port: Runtime.Port) {
     }
 }
 
-async function requestAutoFill(senderType: SenderType) {
+async function requestAutoFill(senderType: SenderType): Promise<AutofillPayload[]> {
     if (senderType.id !== "unprivileged") {
         // Only auto-fill unprivileged page
-        return
+        throw new Error("Auto-fill requested from privileged page")
     }
     const origin = senderType.origin || null
     const relevantPasswords = passwords.filter(pw => pw.origin === origin)
@@ -145,14 +94,15 @@ async function requestAutoFill(senderType: SenderType) {
     return relevantPasswords
 }
 
-async function createRoot(senderType: SenderType, masterPassword: string) {
+async function createRoot(senderType: SenderType, masterPassword: string): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
     await SECURE_CONTEXT.createRoot(masterPassword)
+    return
 }
 
-async function editRootStorageAddresses(senderType: SenderType, action: StorageAddressAction) {
+async function editRootStorageAddresses(senderType: SenderType, action: StorageAddressAction): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
@@ -185,22 +135,24 @@ async function editRootStorageAddresses(senderType: SenderType, action: StorageA
             break
     }
     await browser.storage.sync.set({ rootAddresses })
+    return
 }
 
-async function unlock(senderType: SenderType, masterPassword: string) {
+async function unlock(senderType: SenderType, masterPassword: string): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
     await SECURE_CONTEXT.unlock(masterPassword)
+    return
 }
 
-async function lock(senderType: SenderType) {
+async function lock(senderType: SenderType): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
     await SECURE_CONTEXT.lock()
+    return
 }
 
-browser.browserAction.onClicked.addListener(browserActionClicked)
-browser.runtime.onMessage.addListener(handleMessage)
+addMessageListener(handleMessage)
 browser.runtime.onConnect.addListener(handleConnect)

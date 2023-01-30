@@ -1,11 +1,9 @@
-import { Message, AutofillPayload, sendMessage } from "../shared";
-import browser from "webextension-polyfill";
+import { addMessageListener, AutofillPayload, Message, MessageResponse, sendMessage } from "../shared";
 import { renderComponent } from "./render";
 import { PayloadSelector } from "./components/payloadSelector";
-import { html } from "../shared/render";
 
 
-function handleMessage(message: Message) {
+function handleMessage(message: Message): Promise<MessageResponse> | undefined {
     switch (message.id) {
         case "pokeActiveFrame": return respondIfWeAreActive()
         default:
@@ -22,7 +20,7 @@ function populateInput(elem: HTMLInputElement, value: string) {
 
 // Given the details for this origin, and the active element,
 // attempt to populate any appropriate input fields.
-function autofillPage(activeElement: Element, payload: AutofillPayload) {
+function autofillPage(activeElement: Element, payload: AutofillPayload): boolean {
     // Only consider these input types
     const inputTypes = ["email", "password", "submit", "text"]
 
@@ -81,12 +79,12 @@ function autofillPage(activeElement: Element, payload: AutofillPayload) {
 }
 
 
-function showPayloadSelector(payloads: AutofillPayload[]) {
-    return renderComponent(resolve => html`<${PayloadSelector} payloads=${payloads} onClose=${resolve} />`)
+function showPayloadSelector(payloads: AutofillPayload[]): Promise<AutofillPayload | undefined> {
+    return renderComponent(resolve => <PayloadSelector payloads={payloads} onClose={resolve} />)
 }
 
 
-async function respondIfWeAreActive() {
+function respondIfWeAreActive() {
     // Check if we're active by looking at the type of our active element
     const activeElement = document.activeElement
     const ignoreTags = ["IFRAME", "FRAME"]
@@ -96,22 +94,23 @@ async function respondIfWeAreActive() {
         return
     }
     // We are active, so now request auto-fill for our frame
-    const payloads = await sendMessage({ id: "requestAutofill" })
-    if (!payloads) {
-        return
-    }
+    return sendMessage({ id: "requestAutofill" }).then(async (payloads) => {
+        if (!payloads) {
+            return false
+        }
 
-    let payload
-    if (payloads.length > 1) {
-        payload = await showPayloadSelector(payloads)
-    } else {
-        payload = payloads[0]
-    }
-    if (!payload) {
-        return
-    }
+        let payload: AutofillPayload | undefined
+        if (payloads.length > 1) {
+            payload = await showPayloadSelector(payloads)
+        } else {
+            payload = payloads[0]
+        }
+        if (!payload) {
+            return false
+        }
 
-    return autofillPage(activeElement, payload)
+        return autofillPage(activeElement, payload)
+    })
 }
 
-browser.runtime.onMessage.addListener(handleMessage)
+addMessageListener(handleMessage)

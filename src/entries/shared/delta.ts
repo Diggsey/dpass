@@ -25,7 +25,7 @@ export function computeDelta<T>(a: T, b: T): Delta<T> {
     return { replace: b }
 }
 
-function runtimeKeys<T extends Object>(obj: T): (keyof T)[] {
+function runtimeKeys<T extends object>(obj: T): (keyof T)[] {
     return Object.keys(obj) as (keyof T)[]
 }
 

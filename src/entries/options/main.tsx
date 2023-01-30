@@ -1,7 +1,6 @@
 import { FunctionalComponent, render } from "preact";
 import { sendMessage } from "../shared";
 import { usePrivilegedState } from "../shared/privileged/hooks";
-import { html } from "../shared/render";
 import "./style.css";
 import "bulma/bulma.sass"
 import "@fortawesome/fontawesome-free/css/all.css"
@@ -10,20 +9,18 @@ import { IdentityPage } from "./identity";
 import { PrivilegedState } from "../shared/privileged/state";
 import browser from "webextension-polyfill";
 
-render(html`<${App} />`, document.body)
-
 const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => {
-    const createRoot = () => {
+    const createRoot = async () => {
         const masterPassword = prompt("Enter master password:")
         if (masterPassword) {
-            sendMessage({
+            await sendMessage({
                 id: "createRoot",
                 masterPassword
             })
         }
     }
-    const createLocalStorage = () => {
-        sendMessage({
+    const createLocalStorage = async () => {
+        await sendMessage({
             id: "editRootStorageAddresses",
             action: {
                 id: "add",
@@ -34,54 +31,57 @@ const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => 
             }
         })
     }
-    const unlock = () => {
+    const unlock = async () => {
         const masterPassword = prompt("Enter master password:")
         if (masterPassword) {
-            sendMessage({
+            await sendMessage({
                 id: "unlock",
                 masterPassword
             })
         }
     }
-    const lock = () => {
-        sendMessage({
+    const lock = async () => {
+        await sendMessage({
             id: "lock"
         })
     }
 
-    return html`
-        <${Tabs} class="is-large">
-            <${Tab} title="Identity">
-                <${IdentityPage} state=${state} />
-            </>
-            <${Tab} title="Vaults" isDisabled=${!state?.isUnlocked}>
+    return <>
+        <Tabs class="is-large">
+            <Tab title="Identity">
+                <IdentityPage state={state} />
+            </Tab>
+            <Tab title="Vaults" isDisabled={!state?.isUnlocked}>
                 Vaults Body
-            </>
-        </>
-        <div>${JSON.stringify(state)}</div>
-        <button type="button" onClick=${createRoot}>Create root</button>
-        <button type="button" onClick=${createLocalStorage}>Create local storage</button>
-        <button type="button" onClick=${unlock}>Unlock</button>
-        <button type="button" onClick=${lock}>Lock</button>
-        <div>${browser.identity.getRedirectURL()}</div>
-    `
+            </Tab>
+        </Tabs>
+        <div>{JSON.stringify(state)}</div>
+        <button type="button" onClick={createRoot}>Create root</button>
+        <button type="button" onClick={createLocalStorage}>Create local storage</button>
+        <button type="button" onClick={unlock}>Unlock</button>
+        <button type="button" onClick={lock}>Lock</button>
+        <div>{browser.identity.getRedirectURL()}</div>
+    </>
+
 }
 
-function App() {
+const App: FunctionalComponent = () => {
     const state = usePrivilegedState()
-    return html`<div>
+    return <div>
         <section class="hero is-primary">
             <div class="hero-body">
                 <p class="title">
-                dpass
+                    dpass
                 </p>
                 <p class="subtitle">
-                Diggsey's Password Manager
+                    Diggsey's Password Manager
                 </p>
             </div>
         </section>
         <div class="column">
-            ${state ? html`<${AppBody} state=${state} />` : html!`<div class=".loader" />`}
+            {state ? <AppBody state={state} /> : <div class=".loader" />}
         </div>
-    </div>`
+    </div>
 }
+
+render(<App />, document.body)

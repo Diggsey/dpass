@@ -1,16 +1,13 @@
-import { render } from "preact";
+import { FunctionalComponent, render } from "preact";
 import { useEffect } from "preact/hooks";
 import { usePrivilegedState } from "../shared/privileged/hooks";
-import { html } from "../shared/render";
 import "./style.css";
 import "bulma/bulma.sass"
 import "@fortawesome/fontawesome-free/css/all.css"
 import { UnlockPanel } from "../shared/components/unlockForm";
 
-render(html`<${Popup} />`, document.body)
 
-
-function Popup() {
+const Popup: FunctionalComponent = () => {
     const state = usePrivilegedState()
     const isUnlocked = state?.isUnlocked
 
@@ -20,5 +17,7 @@ function Popup() {
         }
     }, [isUnlocked])
 
-    return html`<div><${UnlockPanel} /></div>`
+    return <div><UnlockPanel /></div>
 }
+
+render(<Popup />, document.body)

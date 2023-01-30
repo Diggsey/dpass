@@ -4,8 +4,12 @@ import { TOKEN_MANAGER } from "../../shared/tokens"
 import { storageConnection } from "./connection"
 import { DataAndEtag, ETagMismatchError, IStorage } from "./interface"
 
+const FILE_FIELDS = "id,headRevisionId,etag"
+
 type File = {
     id: string,
+    headRevisionId: string,
+    etag: string,
 }
 
 type FileList = {
@@ -46,7 +50,7 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
             if (response.status == 412) {
                 throw new ETagMismatchError()
             }
-            throw new Error(`GDrive request failed: ${request} => ${response}`)
+            throw new Error(`GDrive request failed: ${await response.text()}`)
         }
         return response
     }
@@ -83,19 +87,73 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
         }
         return fileList.files[0].id
     }
+    async #getGDriveFile(gdriveId: string): Promise<File> {
+        return await this.#fetchJson(`${BASE_URL}/drive/v2/files/${gdriveId}?` + new URLSearchParams({
+            supportsAllDrives: "true",
+            fields: FILE_FIELDS,
+        }))
+    }
+    async #downloadGDriveRevision(gdriveId: string, revisionId: string): Promise<Response> {
+        return await this.#fetch(`${BASE_URL}/download/drive/v2/files/${gdriveId}?` + new URLSearchParams({
+            supportsAllDrives: "true",
+            alt: "media",
+            revisionId,
+        }))
+    }
+    async #createGDriveFile(fileName: string): Promise<File> {
+        return await this.#fetchJson(`${BASE_URL}/drive/v2/files?` + new URLSearchParams({
+            supportsAllDrives: "true",
+            fields: FILE_FIELDS,
+        }), {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                parents: [{
+                    id: this.address.folderId
+                }],
+                title: fileName,
+                mimeType: "application/octet-stream"
+            })
+        })
+    }
+    async #updateGDriveFile(gdriveId: string, expectedEtag: string, data: Uint8Array): Promise<File> {
+        return await this.#fetchJson(`${BASE_URL}/upload/drive/v2/files/${gdriveId}?` + new URLSearchParams({
+            supportsAllDrives: "true",
+            uploadType: "media",
+            fields: FILE_FIELDS,
+        }), {
+            method: "PUT",
+            headers: {
+                "If-Match": expectedEtag
+            },
+            body: data
+        })
+    }
+    async #deleteGDriveFile(gdriveId: string, expectedEtag: string): Promise<Response> {
+        return await this.#fetch(`${BASE_URL}/drive/v2/files/${gdriveId}?` + new URLSearchParams({
+            supportsAllDrives: "true",
+        }), {
+            method: "DELETE",
+            headers: {
+                "If-Match": expectedEtag
+            }
+        })
+    }
     async downloadFile(fileId: string): Promise<DataAndEtag | undefined> {
         const gdriveId = await this.#getGDriveFileId(fileId)
         if (!gdriveId) {
             return
         }
-        const response = await this.#fetch(`${BASE_URL}/drive/v3/files/${gdriveId}?alt=media&supportsAllDrives=true`)
-        const etag = response.headers.get("ETag")
-        if (!etag) {
+        const file: File = await this.#getGDriveFile(gdriveId)
+        if (!file.etag) {
             throw new Error("GDrive did not return ETag on response")
         }
+        const response = await this.#downloadGDriveRevision(gdriveId, file.headRevisionId)
         const data = new Uint8Array(await response.arrayBuffer())
         return {
-            etag,
+            etag: file.etag,
             data,
         }
     }
@@ -104,44 +162,24 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
         const fileName = this.#fileName(fileId)
         if (!gdriveId) {
             // Create empty file
-            const newFile: File = await this.#fetchJson(`${BASE_URL}/drive/v3/files?supportsAllDrives=true`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    parents: [this.address.folderId],
-                    name: fileName,
-                    mimeType: "application/octet-stream"
-                })
-            })
+            const newFile: File = await this.#createGDriveFile(fileName)
             gdriveId = newFile.id
-            expectedEtag = null
+            expectedEtag = newFile.etag
+        } else if (!expectedEtag) {
+            throw new ETagMismatchError()
         }
         // Upload file contents
-        const response = await this.#fetch(`${BASE_URL}/upload/drive/v3/files/${gdriveId}?uploadType=media&supportsAllDrives=true`, {
-            method: "PATCH",
-            headers: expectedEtag ? {
-                "If-Match": expectedEtag
-            } : {},
-            body: data
-        })
-        const etag = response.headers.get("ETag")
-        if (!etag) {
+        const file = await this.#updateGDriveFile(gdriveId, expectedEtag, data)
+        if (!file.etag) {
             throw new Error("GDrive did not return ETag on response")
         }
-        return etag
+        return file.etag
     }
     async deleteFile(fileId: string, expectedEtag: string): Promise<void> {
         const gdriveId = await this.#getGDriveFileId(fileId)
         if (!gdriveId) {
             return
         }
-        await this.#fetch(`${BASE_URL}/drive/v3/files/${gdriveId}?supportsAllDrives=true`, {
-            method: "DELETE",
-            headers: expectedEtag ? {
-                "If-Match": expectedEtag
-            } : {}
-        })
+        await this.#deleteGDriveFile(gdriveId, expectedEtag)
     }
 }

@@ -42,8 +42,8 @@ class StorageManager extends Actor {
 
     open(address: StorageAddress): Promise<IStorage> {
         this.#gc()
-        return this._post(async () => {
-            const storageKey = objectKey(address)
+        const storageKey = objectKey(address)
+        return this._post(`open(${storageKey})`, async () => {
             let storage = this.#storageMap.get(storageKey)?.upgrade(SharedStorage)
             if (!storage) {
                 let innerStorage

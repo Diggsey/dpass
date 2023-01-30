@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
                 manifest: getManifest(Number(env.MANIFEST_VERSION)),
                 extraContentScripts: [
                     {
-                        js: ["src/entries/content/main.ts"]
+                        js: ["src/entries/content/main.tsx"]
                     }
                 ],
                 extraHtmlPages: [

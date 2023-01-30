@@ -20,8 +20,6 @@ type TimerId = ReturnType<typeof setTimeout>
 
 const ROOT_FILE_ID = "root"
 
-type BrowserClickAction = "autofill" | "requestPassword" | "showOptions" | "none"
-
 type PendingRootIntegration = {
     file: Uint8Array,
     resolve: () => void,
@@ -64,7 +62,7 @@ class SecureContext extends Actor implements IIntegrator {
     #statePublishTimer: TimerId | null = null
     #lockedSyncedRoot: LockedSyncedRoot | null = null
 
-    async #loadRootAddresses() {
+    #loadRootAddresses = async () => {
         const res = await browser.storage.sync.get("rootAddresses")
         if (res.rootAddresses) {
             await this.#updateRootAddresses(res.rootAddresses)
@@ -129,14 +127,14 @@ class SecureContext extends Actor implements IIntegrator {
                 oldMap.delete(addressKey)
                 newMap.set(addressKey, syncManager)
             } else {
-                this._post(() => this.#setupSyncManager(fileId, address, i))
+                void this._post(`setupSyncManager(${fileId}, ${addressKey}, ${i})`, () => this.#setupSyncManager(fileId, address, i))
             }
         }
         for (const syncManager of oldMap.values()) {
             syncManager.dispose()
         }
         if (oldMap.size > 0) {
-            this._post(async () => this.#syncStateChanged(fileId))
+            void this._post(`syncStateChanged(${fileId})`, async () => this.#syncStateChanged(fileId))
         }
         return newMap
     }
@@ -160,7 +158,7 @@ class SecureContext extends Actor implements IIntegrator {
         const storage = await STORAGE_MANAGER.open(address)
         const syncManager = new SyncManager(storage, fileId, this, priority)
         syncManager.addEventListener("busychanged", () => {
-            this._post(async () => {
+            void this._post(`syncStateChanged(${fileId})`, async () => {
                 this.#syncStateChanged(fileId)
             })
         })
@@ -262,9 +260,9 @@ class SecureContext extends Actor implements IIntegrator {
         } else {
             const buffer = await decrypt(this.#key, iv, encryptedData)
             const downloadedRoot = decodeRootData(new Uint8Array(buffer), version)
-            await this._post(async () => {
+            await this._post("mergeAndUpdateRoot(...)", async () => {
                 const mergedRoot = this.#root ? mergeFiles(this.#root, downloadedRoot) : downloadedRoot
-                this.#updateRoot(mergedRoot)
+                await this.#updateRoot(mergedRoot)
             })
 
         }
@@ -279,7 +277,7 @@ class SecureContext extends Actor implements IIntegrator {
             this.#key = key
             const pendingRootIntegrations = this._lockedSyncedRoot.pendingRootIntegrations
             for (const [priority, { file, resolve, reject }] of pendingRootIntegrations.entries()) {
-                this._post(async () => {
+                void this._post(`integrateRoot([${file.length} bytes], ${priority})`, async () => {
                     try {
                         await this.#integrateRoot(file, priority)
                         resolve()
@@ -294,24 +292,14 @@ class SecureContext extends Actor implements IIntegrator {
 
     #syncStorageChanged = (changes: Record<string, browser.Storage.StorageChange>) => {
         if (Object.hasOwn(changes, "rootAddresses")) {
-            this._post(() => this.#loadRootAddresses())
+            void this._post("loadRootAddresses()", this.#loadRootAddresses)
         }
     }
 
     constructor() {
         super()
         browser.storage.sync.onChanged.addListener(this.#syncStorageChanged)
-        this._post(() => this.#loadRootAddresses())
-    }
-
-    get currentClickAction(): BrowserClickAction {
-        if (this.#lockedSyncedRoot === null) {
-            return "showOptions"
-        } else if (this.#key === null) {
-            return "requestPassword"
-        } else {
-            return "autofill"
-        }
+        void this._post("loadRootAddresses()", this.#loadRootAddresses)
     }
 
     get _lockedSyncedRoot(): LockedSyncedRoot {
@@ -352,7 +340,7 @@ class SecureContext extends Actor implements IIntegrator {
 
     // Public API
     lock(): Promise<void> {
-        return this._post(async () => {
+        return this._post("lock()", async () => {
             if (this.#key === null) {
                 return
             }
@@ -363,7 +351,7 @@ class SecureContext extends Actor implements IIntegrator {
                 this.#superKeyTimer = null
             }
             this._lockedSyncedRoot = null
-            this.#updateRoot(null)
+            await this.#updateRoot(null)
 
             // Re-download the encrypted root file, since we don't
             // retain that after we unlock it.
@@ -373,7 +361,7 @@ class SecureContext extends Actor implements IIntegrator {
         })
     }
     unlock(masterPassword: string): Promise<void> {
-        return this._post(async () => {
+        return this._post("unlock()", async () => {
             const { passwordSalt, keySalt, canaryIv, canaryData } = this._lockedSyncedRoot
             const superKey = await deriveSuperKeyFromPassword(masterPassword, passwordSalt)
             const key = await deriveKeyFromSuperKey(superKey, keySalt)
@@ -402,7 +390,7 @@ class SecureContext extends Actor implements IIntegrator {
         })
     }
     async createRoot(masterPassword: string) {
-        return this._post(async () => {
+        return this._post("createRoot()", async () => {
             if (this.#lockedSyncedRoot) {
                 throw new Error("Root already exists")
             }
@@ -421,7 +409,7 @@ class SecureContext extends Actor implements IIntegrator {
                 pendingRootIntegrations: new Map()
             }
             this.#updateKey(key)
-            this.#updateRoot({
+            await this.#updateRoot({
                 uuid: crypto.randomUUID(),
                 items: []
             })

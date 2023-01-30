@@ -1,6 +1,5 @@
 import { ComponentChildren, FunctionComponent, toChildArray, VNode } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { html } from "../render";
 import { ClassName, cn } from "../ui";
 
 type TabsProps = {
@@ -35,23 +34,21 @@ export const Tabs: FunctionComponent<TabsProps> = ({ "class": className, childre
             isActive: tab === activeTab,
             isDisabled: tab.props.isDisabled,
         })
-        return html`
-            <li key=${tab.key} class=${tabClass}>
-                <a onclick=${() => (!tab.props.isDisabled && setActiveTabKey(tab.key ?? i))}>
-                    ${tab.props.title}
-                </a>
-            </li>
-        `
+        return <li key={tab.key} class={tabClass}>
+            <a onClick={() => (!tab.props.isDisabled && setActiveTabKey(tab.key ?? i))}>
+                {tab.props.title}
+            </a>
+        </li>
     }
 
-    return html`
-        <div class=${cn("tabs", className)}>
+    return <>
+        <div class={cn("tabs", className)}>
             <ul>
-                ${tabs.map(renderTitle)}
+                {tabs.map(renderTitle)}
             </ul>
         </div>
-        ${activeTab ? activeTab.props.children : null}
-    `
+        {activeTab ? activeTab.props.children : null}
+    </>
 }
 
 export const Tab: FunctionComponent<TabProps> = () => {

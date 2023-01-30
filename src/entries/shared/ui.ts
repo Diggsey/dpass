@@ -33,18 +33,18 @@ type PromiseState<R, P> = {
 } | {
     readonly inProgress: false,
     readonly lastArgs?: P,
-    readonly lastError?: any,
+    readonly lastError?: unknown,
     readonly lastResult?: R,
 }
 
-type PromiseStateResult<F extends (...args: any) => Promise<any>> = [
-    PromiseState<Awaited<ReturnType<F>>, Parameters<F>>,
-    (...args: Parameters<F>) => Promise<Awaited<ReturnType<F>>>,
+type PromiseStateResult<R, F extends (...args: never[]) => Promise<R>> = [
+    PromiseState<R, Parameters<F>>,
+    (...args: Parameters<F>) => Promise<R>,
     () => void,
 ]
 
-export function usePromiseState<F extends (...args: any[]) => Promise<any>>(cb: F, inputs: Inputs): PromiseStateResult<F> {
-    const [state, setState] = useState<PromiseState<Awaited<ReturnType<F>>, Parameters<F>>>({ inProgress: false })
+export function usePromiseState<R, F extends (...args: never[]) => Promise<R>>(cb: F, inputs: Inputs): PromiseStateResult<R, F> {
+    const [state, setState] = useState<PromiseState<R, Parameters<F>>>({ inProgress: false })
     const inProgress = useRef(false)
     const fn = useCallback(async (...args: Parameters<F>) => {
         if (inProgress.current) {
@@ -53,7 +53,7 @@ export function usePromiseState<F extends (...args: any[]) => Promise<any>>(cb: 
         inProgress.current = true
         setState({ inProgress: true, lastArgs: args })
         try {
-            const lastResult = await cb(...args)
+            const lastResult: R = await cb(...args)
             setState(oldState => ({ ...oldState, lastResult, inProgress: false }))
             return lastResult
         } catch (lastError) {

@@ -7,6 +7,10 @@ const permissions: chrome.runtime.ManifestPermissions[] = [
   "identity",
 ]
 
+const hostPermissions: string[] = [
+  "https://www.googleapis.com/*"
+]
+
 const sharedManifest = {
   icons: {
     48: "icons/icon-48.png",
@@ -15,7 +19,6 @@ const sharedManifest = {
     page: "src/entries/options/index.html",
     open_in_tab: true,
   },
-  permissions,
   browser_specific_settings: {
     gecko: {
       id: "dpass@diggsey.com",
@@ -28,6 +31,7 @@ const browserAction = {
     48: "icons/icon-48.png",
   },
   default_title: "Auto-fill using dpass",
+  default_area: "navbar",
 };
 
 const ManifestV2 = {
@@ -41,6 +45,10 @@ const ManifestV2 = {
     ...sharedManifest.options_ui,
     chrome_style: false,
   },
+  permissions: [
+    ...permissions,
+    ...hostPermissions,
+  ]
 };
 
 const ManifestV3 = {
@@ -49,6 +57,8 @@ const ManifestV3 = {
   background: {
     service_worker: "src/entries/background/serviceWorker.ts",
   },
+  permissions,
+  host_permissions: hostPermissions,
 };
 
 export function getManifest(manifestVersion: number): chrome.runtime.ManifestV2 | chrome.runtime.ManifestV3 {

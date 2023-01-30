@@ -6,7 +6,6 @@ import { Status } from "~/entries/shared/components/status";
 import { PrivilegedState, StorageAddress, PrivilegedSyncState } from "~/entries/shared/privileged/state";
 import { TOKEN_MANAGER } from "~/entries/shared/tokens";
 import { cn, usePromiseState } from "~/entries/shared/ui";
-import { html } from "../../shared/render";
 
 type AddressViewProps = { index: number, address: StorageAddress, syncStates: PrivilegedSyncState }
 
@@ -15,11 +14,11 @@ const AddressView: FunctionalComponent<AddressViewProps> = ({ index, address, sy
     const syncState = syncStates[storageKey] ?? { address, inProgress: true }
     let status = null
     if (syncState.inProgress) {
-        status = html`<${Status} level="loading" />`
+        status = <Status level="loading" />
     } else if (syncState.lastError) {
-        status = html`<${Status} level="danger">${syncState.lastError}</>`
+        status = <Status level="danger">{syncState.lastError}</Status>
     } else if (syncState.lastWarning) {
-        status = html`<${Status} level="warning">${syncState.lastWarning}</>`
+        status = <Status level="warning">{syncState.lastWarning}</Status>
     }
 
     const [movingUp, moveUp] = usePromiseState(async () => {
@@ -51,27 +50,25 @@ const AddressView: FunctionalComponent<AddressViewProps> = ({ index, address, sy
     }, [address])
 
     const deleteButton = deletingAddress.inProgress
-        ? html`<span class="loader" />`
-        : html`<button onClick=${deleteAddress} class="delete" />`
+        ? <span class="loader" />
+        : <button onClick={deleteAddress} class="delete" />
 
-    return html`
-        <div class="panel-block is-flex">
-            <a class="is-flex-grow-0" onClick=${moveUp}>
-                <span class="icon is-medium">
-                    <i class=${moveIconClass} />
-                </span>
-            </a>
-            <div class="is-flex-grow-1">
-                <p>${storageKey}</p>
-            </div>
-            <div class="is-flex-grow-1">
-                ${status}
-            </div>
-            <div class="is-flex-grow-0">
-                ${deleteButton}
-            </div>
+    return <div class="panel-block is-flex">
+        <a class="is-flex-grow-0" onClick={moveUp}>
+            <span class="icon is-medium">
+                <i class={moveIconClass} />
+            </span>
+        </a>
+        <div class="is-flex-grow-1">
+            <p>{storageKey}</p>
         </div>
-    `
+        <div class="is-flex-grow-1">
+            {status}
+        </div>
+        <div class="is-flex-grow-0">
+            {deleteButton}
+        </div>
+    </div>
 }
 
 export const StoragePanel: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => {
@@ -81,18 +78,14 @@ export const StoragePanel: FunctionalComponent<{ state: PrivilegedState }> = ({ 
     })
 
     const panelBody = state.rootAddresses.map((address, i) => (
-        html`<${AddressView} key=${objectKey(address)} index=${i} address=${address} syncStates=${state.syncState} />`
+        <AddressView key={objectKey(address)} index={i} address={address} syncStates={state.syncState} />
     ))
-    const storageAddressWarning = state.rootAddresses.length === 0 && html`
-        <div class="panel-block">
-            <${Status} level="warning">No storage addresses configured</>
-        </div>
-    `
-    const identityWarning = !state.hasIdentity && html`
-        <div class="panel-block">
-            <${Status} level="warning">No identity found</>
-        </div>
-    `
+    const storageAddressWarning = state.rootAddresses.length === 0 && <div class="panel-block">
+        <Status level="warning">No storage addresses configured</Status>
+    </div>
+    const identityWarning = !state.hasIdentity && <div class="panel-block">
+        <Status level="warning">No identity found</Status>
+    </div>
 
     const [addingStorage, addStorage] = usePromiseState(async (storageAddress: StorageAddress) => {
         await sendMessage({
@@ -104,9 +97,7 @@ export const StoragePanel: FunctionalComponent<{ state: PrivilegedState }> = ({ 
         })
     }, [])
 
-    const addStorageError = addingStorage.lastError && html`
-        <${Status} level="danger" colorText=${true}>${addingStorage.lastError.toString()}</>
-    `
+    const addStorageError = addingStorage.lastError && <Status level="danger" colorText={true}>{addingStorage.lastError.toString()}</Status>
 
     const addStorageButtonClass = (id: StorageAddress["id"]) => cn({
         isLoading: addingStorage.inProgress && addingStorage.lastArgs[0].id === id,
@@ -117,12 +108,12 @@ export const StoragePanel: FunctionalComponent<{ state: PrivilegedState }> = ({ 
         addingStorage.inProgress && addingStorage.lastArgs[0].id !== id
     )
 
-    const addLocalStorage = () => {
+    const addLocalStorage = async () => {
         const folderName = prompt("Enter folder name:", "default")
         if (!folderName) {
             return
         }
-        addStorage({
+        await addStorage({
             id: "local",
             folderName,
         })
@@ -167,48 +158,44 @@ export const StoragePanel: FunctionalComponent<{ state: PrivilegedState }> = ({ 
         })
     }, [])
 
-    const createIdentityError = creatingIdentity.lastError && html`
-        <${Status} level="danger" colorText=${true}>${creatingIdentity.lastError.toString()}</>
-    `
+    const createIdentityError = creatingIdentity.lastError && <Status level="danger" colorText={true}>{creatingIdentity.lastError.toString()}</Status>
 
-    return html`
-        <article class=${panelClass}>
-            <p class="panel-heading">
-                Storage
-            </p>
-            ${panelBody}
-            ${storageAddressWarning}
-            ${identityWarning}
-            <div class="panel-block is-flex-direction-column is-align-items-start gap-1">
-                <div class="is-flex is-flex-wrap-wrap gap-1">
-                    <${IconButton}
-                        class=${addStorageButtonClass("local")}
-                        iconClass="fas fa-location-dot"
-                        disabled=${disabledValue("local")}
-                        onclick=${addLocalStorage}
-                    >
-                        Add Local Storage
-                    </>
-                    <${IconButton}
-                        class=${addStorageButtonClass("gdrive")}
-                        iconClass="fab fa-google-drive"
-                        disabled=${disabledValue("gdrive")}
-                        onclick=${addGDriveStorage}
-                    >
-                        Add GDrive Storage
-                    </>
-                </div>
-                ${addStorageError}
-                <${IconButton}
-                    class=${cn({ isLoading: creatingIdentity.inProgress, isPrimary: true })}
-                    iconClass="fas fa-user-plus"
-                    disabled=${state.hasIdentity || state.rootAddresses.length === 0}
-                    onclick=${createIdentity}
+    return <article class={panelClass}>
+        <p class="panel-heading">
+            Storage
+        </p>
+        {panelBody}
+        {storageAddressWarning}
+        {identityWarning}
+        <div class="panel-block is-flex-direction-column is-align-items-start gap-1">
+            <div class="is-flex is-flex-wrap-wrap gap-1">
+                <IconButton
+                    class={addStorageButtonClass("local")}
+                    iconClass="fas fa-location-dot"
+                    disabled={disabledValue("local")}
+                    onClick={addLocalStorage}
                 >
-                    New Identity
-                </>
-                ${createIdentityError}
+                    Add Local Storage
+                </IconButton>
+                <IconButton
+                    class={addStorageButtonClass("gdrive")}
+                    iconClass="fab fa-google-drive"
+                    disabled={disabledValue("gdrive")}
+                    onClick={addGDriveStorage}
+                >
+                    Add GDrive Storage
+                </IconButton>
             </div>
-        </nav>
-    `
+            {addStorageError}
+            <IconButton
+                class={cn({ isLoading: creatingIdentity.inProgress, isPrimary: true })}
+                iconClass="fas fa-user-plus"
+                disabled={state.hasIdentity || state.rootAddresses.length === 0}
+                onClick={createIdentity}
+            >
+                New Identity
+            </IconButton>
+            {createIdentityError}
+        </div>
+    </article>
 }

@@ -36,15 +36,15 @@ export class SyncManager extends Actor {
     }
     onDataChanged(data: Uint8Array) {
         this.#pendingData = data
-        this._post(() => this.#tryUpload())
+        void this._post("tryUpload()", this.#tryUpload)
     }
     triggerDownload() {
         if (!this.#downloadTriggered) {
             this.#downloadTriggered = true
-            this._post(() => this.#tryDownload())
+            void this._post("tryDownload()", this.#tryDownload)
         }
     }
-    async #tryUpload() {
+    #tryUpload = async () => {
         if (this.#lastSeenEtag !== this.#lastIntegratedEtag) {
             this.triggerDownload()
             return
@@ -65,7 +65,7 @@ export class SyncManager extends Actor {
             }
         }
     }
-    async #tryDownload() {
+    #tryDownload = async () => {
         try {
             const result = await this.storage.downloadFile(this.#fileId)
             if (result) {

@@ -22,7 +22,7 @@ export function renderComponent<T>(
     }
 
     return new Promise<T>((resolve) => {
-        let component = renderFn(resolve)
+        const component = renderFn(resolve)
         render(component, appRoot)
         shadowRoot.appendChild(appRoot)
         document.body.appendChild(appContainer)
