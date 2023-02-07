@@ -1,5 +1,5 @@
 import * as msgpack from "@msgpack/msgpack"
-import { ConnectionInfo, StorageAddress } from "~/entries/shared/privileged/state"
+import { AuthToken, StorageAddress } from "~/entries/shared/privileged/state"
 import { MergeableFile } from "./merge"
 import { SerializationError } from "./utils"
 
@@ -9,23 +9,16 @@ export type Vault = {
     fileId: string,
     addresses: StorageAddress[],
     vaultKey: Uint8Array,
-    // Salt for decrypting the below key
+
+    // For each vault, there is a "personal vault key"
+    // derived from our super-key using HKDF and the
+    // following salt.
     personalVaultSalt: Uint8Array,
+    // This "personal vault key", along with this IV
+    // are used to encrypt/decrypt the "vault super key".
+    personalVaultIv: Uint8Array,
+    // Which is stored here encrypted.
     encryptedVaultSuperKey: Uint8Array,
-}
-
-export type OauthTokenPayload = {
-    id: "oauth",
-    accessToken: string,
-}
-
-export type AuthTokenPayload = OauthTokenPayload
-
-export type AuthToken = {
-    id: "authToken",
-    connectionInfo: ConnectionInfo,
-    expiresAt: number,
-    payload: AuthTokenPayload,
 }
 
 export type KeyPair = {
@@ -36,7 +29,12 @@ export type KeyPair = {
     publicKey: Uint8Array,
 }
 
-export type RootFileItem = Vault | AuthToken | KeyPair
+export type RootInfo = {
+    id: "rootInfo",
+    name: string,
+}
+
+export type RootFileItem = Vault | AuthToken | KeyPair | RootInfo
 export type DecryptedRootFile = MergeableFile<RootFileItem>
 
 export function decodeRootData(src: Uint8Array, version: number): DecryptedRootFile {

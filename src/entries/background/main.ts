@@ -1,11 +1,10 @@
 import browser, { Runtime } from "webextension-polyfill";
-import { addMessageListener, AutofillPayload, Message, MessageResponse, StorageAddressAction } from "../shared"
+import { addMessageListener, AutofillPayload, Message, MessageResponse, objectKey, StorageAddressAction } from "../shared"
 import { PRIVILEGED_PORT_NAME, StorageAddress } from "../shared/privileged/state";
 import { UNPRIVILEGED_PORT_NAME } from "../shared/state";
 import { SECURE_CONTEXT } from "./context";
 import { PrivilegedPublisher } from "./pubsub/privileged";
 import { UnprivilegedPublisher } from "./pubsub/unprivileged";
-import { objectKey } from "./storage/connection";
 import "./browserAction"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
@@ -48,9 +47,13 @@ function handleMessage(message: Message, sender: Runtime.MessageSender): Promise
     switch (message.id) {
         case "requestAutofill": return requestAutoFill(senderType)
         case "createRoot": return createRoot(senderType, message.masterPassword)
-        case "editRootStorageAddresses": return editRootStorageAddresses(senderType, message.action)
+        case "editRootName": return editRootName(senderType, message.name)
+        case "editStorageAddresses": return editStorageAddresses(senderType, message.vaultId, message.action)
         case "unlock": return unlock(senderType, message.masterPassword)
         case "lock": return lock(senderType)
+        case "changeRootPassword": return changeRootPassword(senderType, message.oldPassword, message.newPassword)
+        case "createVault": return createVault(senderType, message.name)
+        case "removeVault": return removeVault(senderType, message.vaultId)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -102,39 +105,65 @@ async function createRoot(senderType: SenderType, masterPassword: string): Promi
     return
 }
 
-async function editRootStorageAddresses(senderType: SenderType, action: StorageAddressAction): Promise<undefined> {
+async function editRootName(senderType: SenderType, name: string): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    const res = await browser.storage.sync.get("rootAddresses")
-    const rootAddresses: StorageAddress[] = res.rootAddresses || []
-    const addressKeys = rootAddresses.map(objectKey)
-    const addressKey = objectKey(action.storageAddress)
-    const addressIndex = addressKeys.indexOf(addressKey)
-    switch (action.id) {
-        case "add":
-            if (addressIndex !== -1) {
-                throw new Error("Storage already exists")
-            }
-            rootAddresses.push(action.storageAddress)
-            break
-        case "remove":
-            if (addressIndex === -1) {
-                throw new Error("Storage does not exist")
-            }
-            rootAddresses.splice(addressIndex, 1)
-            break
-        case "move":
-            if (addressIndex === -1) {
-                throw new Error("Storage does not exist")
-            } else if (action.priority >= rootAddresses.length) {
-                throw new Error("Invalid priority")
-            }
+    await SECURE_CONTEXT.updateRootName(name)
+    return
+}
 
-            rootAddresses.splice(action.priority, 0, ...rootAddresses.splice(addressIndex, 1))
-            break
+async function changeRootPassword(senderType: SenderType, oldPassword: string, newPassword: string): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
     }
-    await browser.storage.sync.set({ rootAddresses })
+    await SECURE_CONTEXT.changePassword(oldPassword, newPassword)
+    return
+}
+
+async function editStorageAddresses(senderType: SenderType, vaultId: string | null, action: StorageAddressAction): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+
+    const addressModifier = (addresses: StorageAddress[]) => {
+        const addressKeys = addresses.map(objectKey)
+        const addressKey = objectKey(action.storageAddress)
+        const addressIndex = addressKeys.indexOf(addressKey)
+        const copiedAddresses = [...addresses]
+        switch (action.id) {
+            case "add":
+                if (addressIndex !== -1) {
+                    throw new Error("Storage already exists")
+                }
+                copiedAddresses.push(action.storageAddress)
+                break
+            case "remove":
+                if (addressIndex === -1) {
+                    throw new Error("Storage does not exist")
+                }
+                copiedAddresses.splice(addressIndex, 1)
+                break
+            case "move":
+                if (addressIndex === -1) {
+                    throw new Error("Storage does not exist")
+                } else if (action.priority >= copiedAddresses.length) {
+                    throw new Error("Invalid priority")
+                }
+
+                copiedAddresses.splice(action.priority, 0, ...copiedAddresses.splice(addressIndex, 1))
+                break
+        }
+        return copiedAddresses
+    }
+
+    if (vaultId !== null) {
+        await SECURE_CONTEXT.editVaultStorageAddresses(vaultId, addressModifier)
+    } else {
+        const res = await browser.storage.sync.get("rootAddresses")
+        const rootAddresses: StorageAddress[] = addressModifier(res.rootAddresses || [])
+        await browser.storage.sync.set({ rootAddresses })
+    }
     return
 }
 
@@ -151,6 +180,22 @@ async function lock(senderType: SenderType): Promise<undefined> {
         return
     }
     await SECURE_CONTEXT.lock()
+    return
+}
+
+async function createVault(senderType: SenderType, name: string): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.createVault(name)
+    return
+}
+
+async function removeVault(senderType: SenderType, vaultId: string): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.removeVault(vaultId)
     return
 }
 

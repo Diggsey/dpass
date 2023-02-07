@@ -1,3 +1,4 @@
+import { objectKey } from "~/entries/shared"
 import { ConnectionInfo, StorageAddress } from "~/entries/shared/privileged/state"
 import { Actor } from "../actor"
 import { Rc, WeakRc } from "../rc"
@@ -11,17 +12,6 @@ export function storageConnection(addr: StorageAddress): ConnectionInfo {
         case "local": return { id: "none" }
         case "gdrive": return { id: "oauth", serverId: "google", userId: addr.userId }
     }
-}
-
-interface ObjectWithId extends Object {
-    id: string
-}
-
-export function objectKey({ id, ...params }: ObjectWithId): string {
-    const paramsArray = Object.entries(params)
-    paramsArray.sort((a, b) => a[0].localeCompare(b[0]))
-    const paramStr = paramsArray.map(([k, v]) => `${k}=${v}`).join(",")
-    return `${id}:${paramStr}`
 }
 
 class StorageManager extends Actor {

@@ -1,13 +1,16 @@
 import { FunctionalComponent } from "preact"
+import { LockPanel } from "~/entries/shared/components/lockForm"
 import { UnlockPanel } from "~/entries/shared/components/unlockForm"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
-import { StoragePanel } from "./storage"
+import { IdentityStoragePanel } from "./storage"
 
 export const IdentityPage: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => {
-    const storagePanel = <StoragePanel state={state} />
-    const unlockPanel = state.hasIdentity && !state.isUnlocked && <UnlockPanel />
+    const storagePanel = <IdentityStoragePanel state={state} />
+    const unlockPanel = state.hasIdentity && !state.isUnlocked && <UnlockPanel isUnlocked={false} />
+    const lockPanel = state.hasIdentity && state.isUnlocked && state.rootInfo && <LockPanel rootInfo={state.rootInfo} />
     return <>
         {storagePanel}
         {unlockPanel}
+        {lockPanel}
     </>
 }

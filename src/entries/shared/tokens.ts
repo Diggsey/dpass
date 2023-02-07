@@ -1,7 +1,6 @@
-import { ConnectionInfo, OauthConnectionInfo } from "./privileged/state";
-import { objectKey } from "../background/storage/connection";
+import { AuthToken, ConnectionInfo, OauthConnectionInfo, OauthTokenPayload } from "./privileged/state";
 import browser from "webextension-polyfill";
-import { AuthToken, OauthTokenPayload } from "../background/serialize/rootData";
+import { objectKey } from ".";
 
 function getTokenKey(connectionInfo: ConnectionInfo): string {
     return `token-${objectKey(connectionInfo)}`

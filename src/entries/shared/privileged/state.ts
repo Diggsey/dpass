@@ -4,10 +4,18 @@ export type PrivilegedState = {
     privileged: true,
     hasIdentity: boolean,
     isUnlocked: boolean,
+    isSuper: boolean,
+    rootInfo: RootInfo | null,
     rootAddresses: StorageAddress[],
     vaults: PrivilegedVaultMap,
     syncState: PrivilegedSyncState,
     keyPairs: KeyPairMap,
+}
+
+export type RootInfo = {
+    creationTimestamp: number,
+    updateTimestamp: number,
+    name: string,
 }
 
 export type KeyPairMap = {
@@ -19,7 +27,6 @@ export type KeyPair = {
     updateTimestamp: number,
     name?: string,
     publicKey: Uint8Array,
-    privateKey: Uint8Array | null,
 }
 
 export type PrivilegedVaultMap = {
@@ -29,6 +36,7 @@ export type PrivilegedVaultMap = {
 export type PrivilegedVault = {
     name: string,
     items: VaultItemMap | null,
+    addresses: StorageAddress[],
     syncState: PrivilegedSyncState,
 }
 
@@ -65,5 +73,19 @@ export type OauthConnectionInfo = {
 
 export type StorageAddress = LocalStorageAddress | GDriveStorageAddress
 export type ConnectionInfo = OauthConnectionInfo | NoConnectionInfo
+
+export type OauthTokenPayload = {
+    id: "oauth",
+    accessToken: string,
+}
+
+export type AuthTokenPayload = OauthTokenPayload
+
+export type AuthToken = {
+    id: "authToken",
+    connectionInfo: ConnectionInfo,
+    expiresAt: number,
+    payload: AuthTokenPayload,
+}
 
 export const PRIVILEGED_PORT_NAME = "privilegedState"

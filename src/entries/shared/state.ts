@@ -25,21 +25,23 @@ export type VaultItemMap = {
 
 export type VaultItem = {
     origin: string | null,
-    name?: string,
+    name: string,
     creationTimestamp: number,
     updateTimestamp: number,
     data: VaultItemData,
 }
 
+export function computeItemDisplayName(item: VaultItem): string {
+    return item.name || item.origin || "Unnamed"
+}
+
 export type VaultItemData = UnlockedVaultItemData | LockedVaultItemData
 
 export type UnlockedVaultItemData = {
-    locked: false,
-    encrypted: boolean,
+    encrypted: false,
     payload: VaultItemPayload,
 }
 export type LockedVaultItemData = {
-    locked: true,
     encrypted: true,
 }
 
@@ -51,6 +53,7 @@ export type VaultItemPayload = {
 
 export type VaultItemField = {
     name: string,
+    value: string,
     autofillMode: AutofillMode
 }
 

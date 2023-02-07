@@ -9,6 +9,23 @@ type BrowserClickAction = "autofill" | "requestPassword" | "showOptions" | "none
 class BrowserAction extends EventTarget implements IStatePublisher {
     #popup: string | null = null
     #clickAction: BrowserClickAction = "showOptions"
+    #changingPopup: Promise<void> | null = null
+
+    async #changePopup(popup: string | null) {
+        while (this.#changingPopup) {
+            await this.#changingPopup
+        }
+        let resolveFn = () => { }
+        this.#changingPopup = new Promise(resolve => {
+            resolveFn = resolve
+        })
+        try {
+            await browser.browserAction.setPopup({ popup })
+        } finally {
+            this.#changingPopup = null
+            resolveFn()
+        }
+    }
 
     get _popup(): string | null {
         return this.#popup
@@ -16,7 +33,7 @@ class BrowserAction extends EventTarget implements IStatePublisher {
     set _popup(popup: string | null) {
         if (this.#popup !== popup) {
             this.#popup = popup
-            void browser.browserAction.setPopup({ popup })
+            void this.#changePopup(popup)
         }
     }
 

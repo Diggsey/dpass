@@ -4,11 +4,13 @@ import { SerializationError } from "./utils"
 
 export type EncryptedVaultFile = {
     version: number,
+    keySalt: Uint8Array,
     iv: Uint8Array,
     encryptedData: Uint8Array,
 }
 
 type VaultFileBody = {
+    keySalt: Uint8Array,
     iv: Uint8Array,
     encryptedData: Uint8Array,
 }

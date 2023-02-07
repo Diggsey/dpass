@@ -1,5 +1,5 @@
 import browser, { Runtime } from "webextension-polyfill";
-import { StorageAddress } from "./shared/privileged/state";
+import { StorageAddress } from "./privileged/state";
 
 type RequestAutofillMessage = {
     id: "requestAutofill"
@@ -14,9 +14,27 @@ type CreateRootMessage = {
     id: "createRoot",
     masterPassword: string,
 }
-type EditRootStorageAddresses = {
-    id: "editRootStorageAddresses",
+type EditRootNameMessage = {
+    id: "editRootName",
+    name: string,
+}
+type EditStorageAddressesMessage = {
+    id: "editStorageAddresses",
+    vaultId: string | null,
     action: StorageAddressAction
+}
+type ChangeRootPasswordMessage = {
+    id: "changeRootPassword",
+    oldPassword: string,
+    newPassword: string,
+}
+type CreateVaultMessage = {
+    id: "createVault",
+    name: string,
+}
+type RemoveVaultMessage = {
+    id: "removeVault",
+    vaultId: string,
 }
 export type StorageAddressAction =
     | { id: "add", storageAddress: StorageAddress }
@@ -36,9 +54,13 @@ export type Message =
     | PokeActiveFrameMessage
     | OptionsPageOpenedMessage
     | CreateRootMessage
-    | EditRootStorageAddresses
+    | EditRootNameMessage
+    | EditStorageAddressesMessage
     | UnlockMessage
     | LockMessage
+    | ChangeRootPasswordMessage
+    | CreateVaultMessage
+    | RemoveVaultMessage
 
 
 type MessageResponses = {
@@ -46,9 +68,13 @@ type MessageResponses = {
     pokeActiveFrame: boolean,
     optionsPageOpened: undefined,
     createRoot: undefined,
-    editRootStorageAddresses: undefined,
+    editRootName: undefined,
+    editStorageAddresses: undefined,
     unlock: undefined,
     lock: undefined,
+    changeRootPassword: undefined,
+    createVault: undefined,
+    removeVault: undefined,
 }
 export type MessageResponse<M extends Message = Message> = MessageResponses[M["id"]]
 
@@ -63,6 +89,17 @@ export function expect<T>(arg: T | undefined, err?: string): T {
         throw new Error(err)
     }
     return arg
+}
+
+interface ObjectWithId extends Object {
+    id: string
+}
+
+export function objectKey({ id, ...params }: ObjectWithId): string {
+    const paramsArray = Object.entries(params)
+    paramsArray.sort((a, b) => a[0].localeCompare(b[0]))
+    const paramStr = paramsArray.map(([k, v]) => `${k}=${v}`).join(",")
+    return `${id}:${paramStr}`
 }
 
 export function sendMessage<M extends Message>(m: M): Promise<MessageResponse<M> | undefined> {

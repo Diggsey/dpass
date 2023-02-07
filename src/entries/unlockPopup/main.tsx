@@ -9,15 +9,16 @@ import { UnlockPanel } from "../shared/components/unlockForm";
 
 const Popup: FunctionalComponent = () => {
     const state = usePrivilegedState()
-    const isUnlocked = state?.isUnlocked
+    const isSuper = state?.isSuper
+    const isUnlocked = !!state?.isUnlocked
 
     useEffect(() => {
-        if (isUnlocked) {
+        if (isSuper) {
             window.close()
         }
-    }, [isUnlocked])
+    }, [isSuper])
 
-    return <div><UnlockPanel /></div>
+    return <div><UnlockPanel isUnlocked={isUnlocked} /></div>
 }
 
 render(<Popup />, document.body)

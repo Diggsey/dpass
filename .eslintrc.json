@@ -5,8 +5,72 @@
     },
     "extends": [
         "eslint:recommended",
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "plugin:import/recommended",
+        "plugin:import/typescript"
     ],
+    "settings": {
+        "import/resolver": {
+            "typescript": true
+        }
+    },
+    "rules": {
+        "import/no-named-as-default-member": "off",
+        "import/no-restricted-paths": [
+            "warn",
+            {
+                "zones": [
+                    {
+                        "from": "./src",
+                        "target": "./src/entries/background",
+                        "except": [
+                            "./entries/background",
+                            "./entries/shared"
+                        ]
+                    },
+                    {
+                        "from": "./src",
+                        "target": "./src/entries/content",
+                        "except": [
+                            "./entries/content",
+                            "./entries/shared"
+                        ]
+                    },
+                    {
+                        "from": "./src",
+                        "target": "./src/entries/options",
+                        "except": [
+                            "./entries/options",
+                            "./entries/shared"
+                        ]
+                    },
+                    {
+                        "from": "./src",
+                        "target": "./src/entries/unlockPopup",
+                        "except": [
+                            "./entries/unlockPopup",
+                            "./entries/shared"
+                        ]
+                    },
+                    {
+                        "from": "./src",
+                        "target": "./src/entries/noActionPopup",
+                        "except": [
+                            "./entries/noActionPopup",
+                            "./entries/shared"
+                        ]
+                    },
+                    {
+                        "from": "./src",
+                        "target": "./src/entries/shared",
+                        "except": [
+                            "./entries/shared"
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
     "overrides": [
         {
             "files": [
@@ -36,7 +100,8 @@
                     }
                 ],
                 "no-unused-vars": "off",
-                "@typescript-eslint/no-floating-promises": "warn"
+                "@typescript-eslint/no-floating-promises": "warn",
+                "@typescript-eslint/no-empty-function": "off"
             }
         }
     ],

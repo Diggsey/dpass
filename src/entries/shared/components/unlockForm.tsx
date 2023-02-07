@@ -16,7 +16,7 @@ export const UnlockForm: FunctionalComponent = () => {
             })
         }
     }, [])
-    const unlockError = unlocking.lastError && <Status level="danger" colorText={true}>{unlocking.lastError.toString()}</Status>
+    const unlockError = unlocking.lastError ? <Status level="danger" colorText={true}>{unlocking.lastError.toString()}</Status> : null
 
     const buttonClass = cn({
         button: true,
@@ -42,14 +42,19 @@ export const UnlockForm: FunctionalComponent = () => {
     </form>
 }
 
-export const UnlockPanel: FunctionalComponent = () => {
+type UnlockPanelProps = {
+    isUnlocked: boolean,
+}
+
+export const UnlockPanel: FunctionalComponent<UnlockPanelProps> = ({ isUnlocked }) => {
+    const title = isUnlocked ? "Protected" : "Locked"
     return <article class="panel is-danger">
         <p class="panel-heading">
             <div class="icon-text">
                 <span class="icon">
                     <i class="fas fa-lock"></i>
                 </span>
-                <span>Locked</span>
+                <span>{title}</span>
             </div>
         </p>
         <div class="panel-block">
