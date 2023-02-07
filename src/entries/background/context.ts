@@ -1,17 +1,18 @@
 import { Actor } from "./actor";
 import { decodeRootData, DecryptedRootFile, encodeRootData, KeyPair, RootInfo, Vault } from "./serialize/rootData";
-import { decodeVaultData, DecryptedVaultFile, encodeVaultData } from "./serialize/vaultData";
+import { decodeVaultData, DecryptedVaultFile, encodeVaultData, NormalItem, VaultFileItem, VaultInfoItem, VaultItemData } from "./serialize/vaultData";
 import { STORAGE_MANAGER } from "./storage/connection";
 import { IIntegrator, SyncManager } from "./sync/manager";
 import browser from "webextension-polyfill";
-import { PrivilegedState, PrivilegedSyncState, StorageAddress } from "../shared/privileged/state";
+import { PrivilegedState, PrivilegedSyncState, PrivilegedVault, StorageAddress } from "../shared/privileged/state";
 import { IStatePublisher } from "./pubsub/state";
 import { decodeRoot, encodeRoot } from "./serialize/root";
-import { areFilesEqual, extractItems, itemCreator, itemPatcher, MergeableItem, mergeFiles } from "./serialize/merge";
-import { decrypt, deriveKeyFromSuperKey, deriveSuperKeyFromPassword, encrypt, encryptKey, exportKey, generateIv, generateSalt, generateSuperKey, importKey, KeyApplication } from "./crypto";
-import { objectKey } from "../shared";
+import { areFilesEqual, extractItems, itemCreator, itemPatcher, MergeableItem, mergeFiles, newFile } from "./serialize/merge";
+import { decrypt, decryptKey, deriveKeyFromSuperKey, deriveSuperKeyFromPassword, encrypt, encryptKey, exportKey, generateIv, generateSalt, generateSuperKey, importKey, KeyApplication } from "./crypto";
+import { ItemDetails, objectKey } from "../shared";
 import { requestUnlock } from "./unlock";
 import { decodeVault, encodeVault } from "./serialize/vault";
+import * as msgpack from "@msgpack/msgpack"
 
 
 type VaultState = {
@@ -19,9 +20,13 @@ type VaultState = {
     vault: DecryptedVaultFile | null,
     syncManagers: Map<string, SyncManager>,
 }
+type NewVaultHint = {
+    keySalt: Uint8Array,
+    vault: DecryptedVaultFile,
+}
 
 type UpdateRootHint = {
-    newVaultKeySalts?: { [vaultId: string]: Uint8Array }
+    newVaults?: { [vaultId: string]: NewVaultHint }
 }
 
 type TimerId = ReturnType<typeof setTimeout>
@@ -233,8 +238,11 @@ class SecureContext extends Actor implements IIntegrator {
                     let vaultState = this.#vaults.get(fileId)
                     this.#vaults.delete(fileId)
                     if (!vaultState) {
-                        const keySalt = hint?.newVaultKeySalts && hint.newVaultKeySalts[fileId] || null
-                        vaultState = { keySalt, vault: null, syncManagers: new Map() }
+                        const vaultHint = hint?.newVaults && hint.newVaults[fileId] || {
+                            keySalt: null,
+                            vault: null,
+                        }
+                        vaultState = { ...vaultHint, syncManagers: new Map() }
                     }
                     vaultState = {
                         ...vaultState,
@@ -260,10 +268,13 @@ class SecureContext extends Actor implements IIntegrator {
         // Extract "vault" items
         const vaults = this.#root ?
             Object.fromEntries(extractItems(this.#root, (item): item is MergeableItem<Vault> => item.payload.id === "vault").map(vault => {
-                const prevVault = this.#privilegedState.vaults[vault.payload.fileId]
+                const vaultState = this.#vaults.get(vault.payload.fileId)
+                if (!vaultState) {
+                    throw new Error("Vault state should have been initialized")
+                }
+                const prevVault = this.#privilegedState.vaults[vault.payload.fileId] || this.#computePrivilegedVaultState(vaultState.vault)
                 return [vault.payload.fileId, {
-                    name: vault.payload.name,
-                    items: prevVault?.items || {},
+                    ...prevVault,
                     addresses: vault.payload.addresses,
                     syncState: prevVault?.syncState || {}
                 }]
@@ -326,15 +337,15 @@ class SecureContext extends Actor implements IIntegrator {
     }
 
     async #saveVaultChanges(vaultId: string, addressKey?: string) {
-        const vaultInfo = this.#getVaultInfo(vaultId)
+        const vaultDesc = this.#getVaultDesc(vaultId)
         const vaultState = this.#vaults.get(vaultId)
-        if (!vaultInfo || !vaultState?.vault || !vaultState.keySalt) {
+        if (!vaultDesc || !vaultState?.vault || !vaultState.keySalt) {
             return
         }
         // Upload vault changes
         const encodedData = encodeVaultData(vaultState.vault)
         const iv = generateIv()
-        const vaultKey = await importKey(vaultInfo.payload.vaultKey)
+        const vaultKey = await importKey(vaultDesc.payload.vaultKey)
         const encryptedData = await encrypt(vaultKey, iv, encodedData)
         const file = encodeVault({
             keySalt: vaultState.keySalt,
@@ -353,24 +364,76 @@ class SecureContext extends Actor implements IIntegrator {
         }
     }
 
-    async #updateVault(vaultId: string, newVault: DecryptedVaultFile, keySalt: Uint8Array) {
+    #computePrivilegedVaultState(vault: DecryptedVaultFile | null): PrivilegedVault {
+        if (!vault) {
+            return {
+                name: "<Unknown>",
+                items: {},
+                addresses: [],
+                syncState: {},
+            }
+        }
+
+        // Extract "vault info" item
+        const vaultInfo = extractItems(vault, (item): item is MergeableItem<VaultInfoItem> => item.payload.id === "vaultInfo")[0]
+        if (!vaultInfo) {
+            throw new Error("Missing vault info")
+        }
+
+        // Extract normal items
+        const normalItems = extractItems(vault, (item): item is MergeableItem<NormalItem> => item.payload.id === "normal")
+
+        return {
+            name: vaultInfo.payload.name,
+            items: Object.fromEntries(normalItems.map(normalItem => [normalItem.uuid, {
+                creationTimestamp: normalItem.creationTimestamp,
+                updateTimestamp: normalItem.updateTimestamp,
+                name: normalItem.payload.name,
+                origin: normalItem.payload.origin,
+                data: normalItem.payload.data.encrypted
+                    ? { encrypted: true }
+                    : { encrypted: false, payload: normalItem.payload.data.payload }
+            }])),
+            addresses: [],
+            syncState: {},
+        }
+    }
+
+    async #updateVault(vaultId: string, newVault: DecryptedVaultFile, keySalt?: Uint8Array) {
         const prevVaultState = this.#vaults.get(vaultId)
         if (!prevVaultState) {
             return
         }
-        if (areFilesEqual(prevVaultState.vault, newVault)) {
+        if (areFilesEqual(prevVaultState.vault, newVault) && (!keySalt || keySalt === prevVaultState.keySalt)) {
             return
         }
         this.#vaults.set(vaultId, {
             syncManagers: prevVaultState.syncManagers,
-            keySalt,
+            keySalt: keySalt || prevVaultState.keySalt,
             vault: newVault,
         })
 
         await this.#saveVaultChanges(vaultId)
+
+        const prevVault = this.#privilegedState.vaults[vaultId]
+        if (!prevVault) {
+            return
+        }
+
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            vaults: {
+                ...this.#privilegedState.vaults,
+                [vaultId]: {
+                    ...this.#computePrivilegedVaultState(newVault),
+                    addresses: prevVault.addresses,
+                    syncState: prevVault.syncState,
+                },
+            },
+        })
     }
 
-    #getVaultInfo(vaultId: string): MergeableItem<Vault> | undefined {
+    #getVaultDesc(vaultId: string): MergeableItem<Vault> | undefined {
         if (!this.#root) {
             return
         }
@@ -378,12 +441,12 @@ class SecureContext extends Actor implements IIntegrator {
     }
 
     async #integrateVault(fileId: string, file: Uint8Array) {
-        const vaultInfo = this.#getVaultInfo(fileId)
-        if (!vaultInfo) {
+        const vaultDesc = this.#getVaultDesc(fileId)
+        if (!vaultDesc) {
             return
         }
         const { version, keySalt, iv, encryptedData } = decodeVault(file)
-        const vaultKey = await importKey(vaultInfo.payload.vaultKey)
+        const vaultKey = await importKey(vaultDesc.payload.vaultKey)
         const buffer = await decrypt(vaultKey, iv, encryptedData)
         const downloadedVault = decodeVaultData(new Uint8Array(buffer), version)
         await this._post(`mergeAndUpdateVault(${fileId})`, async () => {
@@ -603,14 +666,17 @@ class SecureContext extends Actor implements IIntegrator {
             return payload
         }))
     }
-    async createVault(name: string): Promise<void> {
+    async #requireSuperKey(): Promise<CryptoKey> {
         if (!this.#superKey) {
             await requestUnlock()
             if (!this.#superKey) {
                 throw new Error("Failed to unlock")
             }
         }
-        const superKey = this.#superKey
+        return this.#superKey
+    }
+    async createVault(name: string): Promise<void> {
+        const superKey = await this.#requireSuperKey()
         const personalVaultSalt = generateSalt()
         const personalVaultIv = generateIv()
         const personalVaultKey = await deriveKeyFromSuperKey(superKey, personalVaultSalt, KeyApplication.personalVaultKey)
@@ -620,9 +686,12 @@ class SecureContext extends Actor implements IIntegrator {
         const rawVaultKey = await exportKey(vaultKey)
         const encryptedVaultSuperKey = await encryptKey(personalVaultKey, personalVaultIv, vaultSuperKey)
         const fileId = crypto.randomUUID()
+        const vault: DecryptedVaultFile = itemCreator<VaultFileItem, VaultInfoItem>({
+            id: "vaultInfo",
+            name,
+        })(newFile())
         await this.#patchRoot(itemCreator({
             id: "vault",
-            name,
             fileId,
             addresses: [],
             vaultKey: rawVaultKey,
@@ -630,7 +699,7 @@ class SecureContext extends Actor implements IIntegrator {
             personalVaultIv,
             encryptedVaultSuperKey,
         }), {
-            newVaultKeySalts: { [fileId]: keySalt }
+            newVaults: { [fileId]: { keySalt, vault } }
         })
     }
     async removeVault(vaultId: string) {
@@ -647,6 +716,66 @@ class SecureContext extends Actor implements IIntegrator {
                 }
             }
         }))
+    }
+    #patchVault(vaultId: string, f: (root: DecryptedVaultFile) => DecryptedVaultFile): Promise<void> {
+        return this._post(`patchVault(${vaultId}, ...)`, async () => {
+            const vaultState = this.#vaults.get(vaultId)
+            if (!vaultState?.vault) {
+                throw new Error("No such vault - cannot update")
+            }
+            await this.#updateVault(vaultId, f(vaultState.vault))
+        })
+    }
+    async #deriveVaultItemKey(vaultId: string, itemSalt: Uint8Array): Promise<CryptoKey> {
+        const superKey = await this.#requireSuperKey()
+        const vaultDesc = this.#getVaultDesc(vaultId)
+        if (!vaultDesc) {
+            throw new Error("Vault not found")
+        }
+        const { personalVaultSalt, personalVaultIv, encryptedVaultSuperKey } = vaultDesc.payload
+        const personalVaultKey = await deriveKeyFromSuperKey(superKey, personalVaultSalt, KeyApplication.personalVaultKey)
+        const vaultSuperKey = await decryptKey(personalVaultKey, personalVaultIv, encryptedVaultSuperKey)
+        const vaultItemKey = await deriveKeyFromSuperKey(vaultSuperKey, itemSalt, KeyApplication.itemKey)
+        return vaultItemKey
+    }
+    async #buildItemFromDetails(vaultId: string, details: ItemDetails): Promise<NormalItem> {
+        let data: VaultItemData
+        if (details.encrypted) {
+            const salt = generateSalt()
+            const iv = generateIv()
+            const itemKey = await this.#deriveVaultItemKey(vaultId, salt)
+            const payload = await encrypt(itemKey, iv, msgpack.encode(details.payload))
+            data = {
+                encrypted: true,
+                salt,
+                iv,
+                payload,
+            }
+        } else {
+            data = {
+                encrypted: false,
+                payload: details.payload,
+            }
+        }
+        return {
+            id: "normal",
+            name: details.name,
+            origin: details.origin,
+            data,
+        }
+    }
+    async createVaultItem(vaultId: string, details: ItemDetails): Promise<string> {
+        const itemId = crypto.randomUUID()
+        const item = await this.#buildItemFromDetails(vaultId, details)
+        await this.#patchVault(vaultId, itemCreator(item, itemId))
+        return itemId
+    }
+    async deleteVaultItem(vaultId: string, itemId: string) {
+        await this.#patchVault(vaultId, itemPatcher((item, uuid) => uuid === itemId && item?.id === "normal" ? null : item))
+    }
+    async updateVaultItem(vaultId: string, itemId: string, details: ItemDetails) {
+        const updatedItem = await this.#buildItemFromDetails(vaultId, details)
+        await this.#patchVault(vaultId, itemPatcher((item, uuid) => uuid === itemId && item?.id === "normal" ? updatedItem : item))
     }
 }
 

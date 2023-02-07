@@ -9,27 +9,26 @@ type PlainVaultItemData = {
 }
 type EncryptedVaultItemData = {
     encrypted: true,
+    salt: Uint8Array,
+    iv: Uint8Array,
     payload: Uint8Array,
 }
 
-type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
-type VaultItem = {
-    origin: string | null,
-    name: string | null,
+export type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
+
+export type NormalItem = {
+    id: "normal",
+    origin: string,
+    name: string,
     data: VaultItemData
 }
 
-type NormalItem = {
-    id: "normal",
-    inner: VaultItem,
-}
-
-type VaultNameItem = {
-    id: "vaultName",
+export type VaultInfoItem = {
+    id: "vaultInfo",
     name: string,
 }
 
-export type VaultFileItem = NormalItem | VaultNameItem
+export type VaultFileItem = NormalItem | VaultInfoItem
 export type DecryptedVaultFile = MergeableFile<VaultFileItem>
 
 export function decodeVaultData(src: Uint8Array, version: number): DecryptedVaultFile {

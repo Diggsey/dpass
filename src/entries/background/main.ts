@@ -1,5 +1,5 @@
 import browser, { Runtime } from "webextension-polyfill";
-import { addMessageListener, AutofillPayload, Message, MessageResponse, objectKey, StorageAddressAction } from "../shared"
+import { addMessageListener, AutofillPayload, ItemDetails, Message, MessageResponse, objectKey, StorageAddressAction } from "../shared"
 import { PRIVILEGED_PORT_NAME, StorageAddress } from "../shared/privileged/state";
 import { UNPRIVILEGED_PORT_NAME } from "../shared/state";
 import { SECURE_CONTEXT } from "./context";
@@ -54,6 +54,9 @@ function handleMessage(message: Message, sender: Runtime.MessageSender): Promise
         case "changeRootPassword": return changeRootPassword(senderType, message.oldPassword, message.newPassword)
         case "createVault": return createVault(senderType, message.name)
         case "removeVault": return removeVault(senderType, message.vaultId)
+        case "createVaultItem": return createVaultItem(senderType, message.vaultId, message.details)
+        case "updateVaultItem": return updateVaultItem(senderType, message.vaultId, message.itemId, message.details)
+        case "deleteVaultItem": return deleteVaultItem(senderType, message.vaultId, message.itemId)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -196,6 +199,29 @@ async function removeVault(senderType: SenderType, vaultId: string): Promise<und
         return
     }
     await SECURE_CONTEXT.removeVault(vaultId)
+    return
+}
+
+async function createVaultItem(senderType: SenderType, vaultId: string, details: ItemDetails): Promise<string | undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    return await SECURE_CONTEXT.createVaultItem(vaultId, details)
+}
+
+async function updateVaultItem(senderType: SenderType, vaultId: string, itemId: string, details: ItemDetails): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.updateVaultItem(vaultId, itemId, details)
+    return
+}
+
+async function deleteVaultItem(senderType: SenderType, vaultId: string, itemId: string): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.deleteVaultItem(vaultId, itemId)
     return
 }
 

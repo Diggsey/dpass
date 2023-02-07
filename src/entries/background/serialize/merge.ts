@@ -127,3 +127,10 @@ export function areFilesEqual<T>(a: MergeableFile<T> | null, b: MergeableFile<T>
     }
     return true
 }
+
+export function newFile<T>(): MergeableFile<T> {
+    return {
+        uuid: crypto.randomUUID(),
+        items: [],
+    }
+}

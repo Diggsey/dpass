@@ -5,7 +5,6 @@ import { SerializationError } from "./utils"
 
 export type Vault = {
     id: "vault",
-    name: string,
     fileId: string,
     addresses: StorageAddress[],
     vaultKey: Uint8Array,

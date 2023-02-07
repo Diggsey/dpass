@@ -7,6 +7,7 @@ import { Tab, Tabs } from "../shared/components/tabs";
 import { IdentityPage } from "./identity";
 import { PrivilegedState } from "../shared/privileged/state";
 import { VaultsPage } from "./vaults";
+import { ItemsPage } from "./items";
 
 const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => {
     return <>
@@ -16,6 +17,9 @@ const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({ state }) => 
             </Tab>
             <Tab title="Vaults" isDisabled={!state?.isUnlocked}>
                 <VaultsPage state={state} />
+            </Tab>
+            <Tab title="Items" isDisabled={Object.keys(state.vaults).length === 0}>
+                <ItemsPage state={state} />
             </Tab>
         </Tabs>
     </>

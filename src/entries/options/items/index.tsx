@@ -1,7 +1,10 @@
 import { FunctionalComponent } from "preact"
 import { useMemo, useState } from "preact/hooks"
+import { sendMessage } from "~/entries/shared"
+import { IconButton } from "~/entries/shared/components/iconButton"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
 import { computeItemDisplayName, VaultItem } from "~/entries/shared/state"
+import { cn, usePromiseState } from "~/entries/shared/ui"
 
 type ItemInfo = {
     displayName: string,
@@ -68,7 +71,7 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({ sta
         const filteredItems = allItems
             .map((itemInfo): [number, ItemInfo] => [computeItemSearchScore(searchTerms, itemInfo), itemInfo])
             .filter(([score, _itemInfo]) => score > 0.0)
-        filteredItems.sort((a, b) => a[0] - b[0])
+        filteredItems.sort((a, b) => b[0] - a[0])
         return filteredItems.map(([_score, itemInfo]) => itemInfo)
     }, [allItems, searchTerm])
 
@@ -79,9 +82,39 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({ sta
         </tr>
     ))
 
+    const [creatingItem, createItem] = usePromiseState(async () => {
+        const vaultId = Object.keys(state.vaults)[0]
+        const name = prompt("Enter item name:", "Unnamed")
+        if (!name) {
+            return
+        }
+        await sendMessage({
+            id: "createVaultItem",
+            vaultId,
+            details: {
+                name,
+                origin: "",
+                encrypted: false,
+                payload: {
+                    fields: []
+                }
+            }
+        })
+    }, [state.vaults])
+
     return <>
         <div>
-            <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.currentTarget.value)} />
+            <IconButton
+                class={cn({ isLoading: creatingItem.inProgress })}
+                iconClass="fas fa-location-dot"
+                disabled={creatingItem.inProgress}
+                onClick={createItem}
+            >
+                Create New Item
+            </IconButton>
+        </div>
+        <div>
+            <input type="text" value={searchTerm} onInput={e => setSearchTerm(e.currentTarget.value)} />
         </div>
         <table class="table">
             <tbody>

@@ -1,5 +1,6 @@
 import browser, { Runtime } from "webextension-polyfill";
 import { StorageAddress } from "./privileged/state";
+import { VaultItemPayload } from "./state";
 
 type RequestAutofillMessage = {
     id: "requestAutofill"
@@ -48,6 +49,28 @@ type UnlockMessage = {
 type LockMessage = {
     id: "lock"
 }
+export type ItemDetails = {
+    origin: string,
+    name: string,
+    encrypted: boolean,
+    payload: VaultItemPayload,
+}
+type CreateVaultItemMessage = {
+    id: "createVaultItem",
+    vaultId: string,
+    details: ItemDetails,
+}
+type DeleteVaultItemMessage = {
+    id: "deleteVaultItem",
+    vaultId: string,
+    itemId: string,
+}
+type UpdateVaultItemMessage = {
+    id: "updateVaultItem",
+    vaultId: string,
+    itemId: string,
+    details: ItemDetails,
+}
 
 export type Message =
     | RequestAutofillMessage
@@ -61,6 +84,9 @@ export type Message =
     | ChangeRootPasswordMessage
     | CreateVaultMessage
     | RemoveVaultMessage
+    | CreateVaultItemMessage
+    | DeleteVaultItemMessage
+    | UpdateVaultItemMessage
 
 
 type MessageResponses = {
@@ -75,6 +101,9 @@ type MessageResponses = {
     changeRootPassword: undefined,
     createVault: undefined,
     removeVault: undefined,
+    createVaultItem: string,
+    deleteVaultItem: undefined,
+    updateVaultItem: undefined,
 }
 export type MessageResponse<M extends Message = Message> = MessageResponses[M["id"]]
 

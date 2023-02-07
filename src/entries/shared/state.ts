@@ -24,7 +24,7 @@ export type VaultItemMap = {
 }
 
 export type VaultItem = {
-    origin: string | null,
+    origin: string,
     name: string,
     creationTimestamp: number,
     updateTimestamp: number,
@@ -35,13 +35,13 @@ export function computeItemDisplayName(item: VaultItem): string {
     return item.name || item.origin || "Unnamed"
 }
 
-export type VaultItemData = UnlockedVaultItemData | LockedVaultItemData
+export type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
 
-export type UnlockedVaultItemData = {
+export type PlainVaultItemData = {
     encrypted: false,
     payload: VaultItemPayload,
 }
-export type LockedVaultItemData = {
+export type EncryptedVaultItemData = {
     encrypted: true,
 }
 
