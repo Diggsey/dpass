@@ -8,11 +8,12 @@ import { PrivilegedState, PrivilegedSyncState, PrivilegedVault, StorageAddress }
 import { IStatePublisher } from "./pubsub/state";
 import { decodeRoot, encodeRoot } from "./serialize/root";
 import { areFilesEqual, extractItems, itemCreator, itemPatcher, MergeableItem, mergeFiles, newFile } from "./serialize/merge";
-import { decrypt, decryptKey, deriveKeyFromSuperKey, deriveSuperKeyFromPassword, encrypt, encryptKey, exportKey, generateIv, generateSalt, generateSuperKey, importKey, KeyApplication } from "./crypto";
+import { combineKeys, decrypt, decryptKey, deriveKeyFromSuperKey, deriveSuperKeyFromPassword as deriveKeyFromPassword, encrypt, encryptKey, exportKey, generateSalt, generateSuperKey, importKey, KeyApplication } from "./crypto";
 import { ItemDetails, objectKey } from "../shared";
 import { requestUnlock } from "./unlock";
 import { decodeVault, encodeVault } from "./serialize/vault";
 import * as msgpack from "@msgpack/msgpack"
+import { deleteKey, loadKey, PersistentKeyType, storeKey } from "./persistentKeys";
 
 
 type VaultState = {
@@ -43,10 +44,10 @@ type PendingRootIntegration = {
 type LockedSyncedRoot = {
     priority: number,
     passwordSalt: Uint8Array,
+    sentenceSalt: Uint8Array,
     keySalt: Uint8Array,
     pendingRootIntegrations: Map<number, PendingRootIntegration>,
     canaryData: Uint8Array,
-    canaryIv: Uint8Array,
 }
 
 class IncorrectPasswordError extends Error {
@@ -56,6 +57,7 @@ class IncorrectPasswordError extends Error {
 }
 
 class SecureContext extends Actor implements IIntegrator {
+    #setupKey: CryptoKey | null = null
     #superKey: CryptoKey | null = null
     #superKeyTimer: TimerId | null = null
     #key: CryptoKey | null = null
@@ -66,6 +68,7 @@ class SecureContext extends Actor implements IIntegrator {
     #privilegedState: PrivilegedState = {
         privileged: true,
         hasIdentity: false,
+        isSetUp: false,
         isUnlocked: false,
         isSuper: false,
         rootInfo: null,
@@ -82,6 +85,26 @@ class SecureContext extends Actor implements IIntegrator {
         const res = await browser.storage.sync.get("rootAddresses")
         if (res.rootAddresses) {
             await this.#updateRootAddresses(res.rootAddresses)
+        }
+    }
+
+    #updateSetupKey(setupKey: CryptoKey | null, alreadyStored?: boolean) {
+        if (setupKey && !alreadyStored) {
+            void storeKey(PersistentKeyType.setupKey, setupKey)
+        } else if (setupKey === null) {
+            void deleteKey(PersistentKeyType.setupKey)
+        }
+        this.#setupKey = setupKey
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            isSetUp: setupKey !== null,
+        })
+    }
+
+    #loadSetupKey = async () => {
+        const setupKey = await loadKey(PersistentKeyType.setupKey)
+        if (setupKey) {
+            this.#updateSetupKey(setupKey, true)
         }
     }
 
@@ -202,12 +225,11 @@ class SecureContext extends Actor implements IIntegrator {
         if (this.#key && this.#root && this.#lockedSyncedRoot) {
             // Upload root changes
             const encodedData = encodeRootData(this.#root)
-            const iv = generateIv()
-            const encryptedData = await encrypt(this.#key, iv, encodedData)
+            const encryptedData = await encrypt(this.#key, encodedData)
             const file = encodeRoot({
                 passwordSalt: this.#lockedSyncedRoot.passwordSalt,
+                sentenceSalt: this.#lockedSyncedRoot.sentenceSalt,
                 keySalt: this.#lockedSyncedRoot.keySalt,
-                iv,
                 encryptedData: new Uint8Array(encryptedData),
             })
             if (addressKey) {
@@ -305,16 +327,16 @@ class SecureContext extends Actor implements IIntegrator {
     }
 
     async #integrateRoot(file: Uint8Array, priority: number) {
-        const { version, passwordSalt, keySalt, iv, encryptedData } = decodeRoot(file)
+        const { version, passwordSalt, sentenceSalt, keySalt, encryptedData } = decodeRoot(file)
         if (this.#key === null) {
             if (!this.#lockedSyncedRoot || priority <= this.#lockedSyncedRoot.priority) {
                 this._lockedSyncedRoot = {
                     priority,
                     passwordSalt,
+                    sentenceSalt,
                     keySalt,
                     pendingRootIntegrations: this.#lockedSyncedRoot?.pendingRootIntegrations || new Map(),
                     canaryData: encryptedData,
-                    canaryIv: iv,
                 }
                 this.#updatePrivilegedState({
                     ...this.#privilegedState,
@@ -326,7 +348,7 @@ class SecureContext extends Actor implements IIntegrator {
                 pendingRootIntegrations.set(priority, { file, resolve, reject })
             })
         } else {
-            const buffer = await decrypt(this.#key, iv, encryptedData)
+            const buffer = await decrypt(this.#key, encryptedData)
             const downloadedRoot = decodeRootData(new Uint8Array(buffer), version)
             await this._post("mergeAndUpdateRoot(...)", async () => {
                 const mergedRoot = this.#root ? mergeFiles(this.#root, downloadedRoot) : downloadedRoot
@@ -344,12 +366,10 @@ class SecureContext extends Actor implements IIntegrator {
         }
         // Upload vault changes
         const encodedData = encodeVaultData(vaultState.vault)
-        const iv = generateIv()
         const vaultKey = await importKey(vaultDesc.payload.vaultKey)
-        const encryptedData = await encrypt(vaultKey, iv, encodedData)
+        const encryptedData = await encrypt(vaultKey, encodedData)
         const file = encodeVault({
             keySalt: vaultState.keySalt,
-            iv,
             encryptedData: new Uint8Array(encryptedData),
         })
         if (addressKey) {
@@ -445,9 +465,9 @@ class SecureContext extends Actor implements IIntegrator {
         if (!vaultDesc) {
             return
         }
-        const { version, keySalt, iv, encryptedData } = decodeVault(file)
+        const { version, keySalt, encryptedData } = decodeVault(file)
         const vaultKey = await importKey(vaultDesc.payload.vaultKey)
-        const buffer = await decrypt(vaultKey, iv, encryptedData)
+        const buffer = await decrypt(vaultKey, encryptedData)
         const downloadedVault = decodeVaultData(new Uint8Array(buffer), version)
         await this._post(`mergeAndUpdateVault(${fileId})`, async () => {
             const vaultState = this.#vaults.get(fileId)
@@ -462,14 +482,7 @@ class SecureContext extends Actor implements IIntegrator {
         if (wasNull) {
             const pendingRootIntegrations = this._lockedSyncedRoot.pendingRootIntegrations
             for (const [priority, { file, resolve, reject }] of pendingRootIntegrations.entries()) {
-                void this._post(`integrateRoot([${file.length} bytes], ${priority})`, async () => {
-                    try {
-                        await this.#integrateRoot(file, priority)
-                        resolve()
-                    } catch (err) {
-                        reject(err)
-                    }
-                })
+                this.#integrateRoot(file, priority).then(resolve, reject)
             }
             pendingRootIntegrations.clear()
         }
@@ -485,6 +498,7 @@ class SecureContext extends Actor implements IIntegrator {
         super()
         browser.storage.sync.onChanged.addListener(this.#syncStorageChanged)
         void this._post("loadRootAddresses()", this.#loadRootAddresses)
+        void this._post("loadSetupKey", this.#loadSetupKey)
     }
 
     get _lockedSyncedRoot(): LockedSyncedRoot {
@@ -524,9 +538,9 @@ class SecureContext extends Actor implements IIntegrator {
     }
 
     // Public API
-    lock(): Promise<void> {
+    lock(unenroll: boolean): Promise<void> {
         return this._post("lock()", async () => {
-            if (this.#key === null) {
+            if (this.#key === null && (!unenroll || !this.#setupKey)) {
                 return
             }
             this.#key = null
@@ -542,6 +556,10 @@ class SecureContext extends Actor implements IIntegrator {
             this._lockedSyncedRoot = null
             await this.#updateRoot(null)
 
+            if (unenroll) {
+                this.#updateSetupKey(null)
+            }
+
             // Re-download the encrypted root file, since we don't
             // retain that after we unlock it.
             for (const syncManager of this.#syncManagers.values()) {
@@ -549,13 +567,23 @@ class SecureContext extends Actor implements IIntegrator {
             }
         })
     }
-    async #unlockInner(masterPassword: string): Promise<void> {
-        const { passwordSalt, keySalt, canaryIv, canaryData } = this._lockedSyncedRoot
-        const superKey = await deriveSuperKeyFromPassword(masterPassword, passwordSalt)
+    async #unlockInner(masterPassword: string, secretSentence: string | null): Promise<void> {
+        const { passwordSalt, sentenceSalt, keySalt, canaryData } = this._lockedSyncedRoot
+        const keyFromPassword = await deriveKeyFromPassword(masterPassword, passwordSalt)
+        let setupKey = this.#setupKey
+        if (secretSentence !== null) {
+            const keyFromSentence = await deriveKeyFromPassword(secretSentence, sentenceSalt)
+            setupKey = await combineKeys(keyFromSentence, keyFromPassword)
+        }
+        if (!setupKey) {
+            throw new Error("Secret sentence is required to unlock!")
+        }
+
+        const superKey = await combineKeys(setupKey, keyFromPassword)
         const key = await deriveKeyFromSuperKey(superKey, keySalt, KeyApplication.rootKey)
         // Test the key against our canary data to know immediately if it's invalid
         try {
-            await decrypt(key, canaryIv, canaryData)
+            await decrypt(key, canaryData)
         } catch (err) {
             if (err instanceof DOMException && err.name === "OperationError") {
                 throw new IncorrectPasswordError()
@@ -564,6 +592,9 @@ class SecureContext extends Actor implements IIntegrator {
             }
         }
 
+        if (secretSentence !== null) {
+            this.#updateSetupKey(setupKey)
+        }
         this.#saveKey(key)
 
         if (this.#superKeyTimer != null) {
@@ -584,26 +615,32 @@ class SecureContext extends Actor implements IIntegrator {
             isSuper: true,
         })
     }
-    unlock(masterPassword: string): Promise<void> {
-        return this._post("unlock()", () => this.#unlockInner(masterPassword))
+    unlock(masterPassword: string, secretSentence: string | null): Promise<void> {
+        return this._post("unlock()", () => this.#unlockInner(masterPassword, secretSentence))
     }
-    createRoot(masterPassword: string): Promise<void> {
+    createRoot(masterPassword: string, secretSentence: string): Promise<void> {
         return this._post("createRoot(<redacted>)", async () => {
             if (this.#lockedSyncedRoot) {
                 throw new Error("Root already exists")
             }
             const passwordSalt = generateSalt()
+            const sentenceSalt = generateSalt()
             const keySalt = generateSalt()
-            const superKey = await deriveSuperKeyFromPassword(masterPassword, passwordSalt)
+            const keyFromPassword = await deriveKeyFromPassword(masterPassword, passwordSalt)
+            const keyFromSentence = await deriveKeyFromPassword(secretSentence, sentenceSalt)
+            const setupKey = await combineKeys(keyFromSentence, keyFromPassword)
+
+            this.#updateSetupKey(setupKey)
+
+            const superKey = await combineKeys(setupKey, keyFromPassword)
             const key = await deriveKeyFromSuperKey(superKey, keySalt, KeyApplication.rootKey)
-            const canaryIv = generateIv()
-            const canaryData = await encrypt(key, canaryIv, new Uint8Array(1))
+            const canaryData = await encrypt(key, new Uint8Array(1))
             const currentTs = Date.now()
             this._lockedSyncedRoot = {
                 priority: 0,
                 passwordSalt,
+                sentenceSalt,
                 keySalt,
-                canaryIv,
                 canaryData,
                 pendingRootIntegrations: new Map()
             }
@@ -617,6 +654,7 @@ class SecureContext extends Actor implements IIntegrator {
                     payload: {
                         id: "rootInfo",
                         name: "Unnamed",
+                        secretSentence,
                     }
                 }]
             })
@@ -625,20 +663,23 @@ class SecureContext extends Actor implements IIntegrator {
     changePassword(oldPassword: string, newPassword: string): Promise<void> {
         return this._post("changePassword(<redacted>, <redacted>)", async () => {
             // Check that old password is valid
-            await this.#unlockInner(oldPassword)
+            await this.#unlockInner(oldPassword, null)
+            const setupKey = this.#setupKey
+            if (!setupKey) {
+                throw new Error("Secret sentence is required to unlock!")
+            }
 
             // Re-derive all of our salts and keys
             const passwordSalt = generateSalt()
             const keySalt = generateSalt()
-            const superKey = await deriveSuperKeyFromPassword(newPassword, passwordSalt)
+            const keyFromPassword = await deriveKeyFromPassword(newPassword, passwordSalt)
+            const superKey = await combineKeys(setupKey, keyFromPassword)
             const key = await deriveKeyFromSuperKey(superKey, keySalt, KeyApplication.rootKey)
-            const canaryIv = generateIv()
-            const canaryData = await encrypt(key, canaryIv, new Uint8Array(1))
+            const canaryData = await encrypt(key, new Uint8Array(1))
             this._lockedSyncedRoot = {
                 ...this._lockedSyncedRoot,
                 passwordSalt,
                 keySalt,
-                canaryIv,
                 canaryData,
             }
             this.#saveKey(key)
@@ -678,13 +719,12 @@ class SecureContext extends Actor implements IIntegrator {
     async createVault(name: string): Promise<void> {
         const superKey = await this.#requireSuperKey()
         const personalVaultSalt = generateSalt()
-        const personalVaultIv = generateIv()
         const personalVaultKey = await deriveKeyFromSuperKey(superKey, personalVaultSalt, KeyApplication.personalVaultKey)
         const vaultSuperKey = await generateSuperKey()
         const keySalt = generateSalt()
         const vaultKey = await deriveKeyFromSuperKey(vaultSuperKey, keySalt, KeyApplication.vaultKey)
         const rawVaultKey = await exportKey(vaultKey)
-        const encryptedVaultSuperKey = await encryptKey(personalVaultKey, personalVaultIv, vaultSuperKey)
+        const encryptedVaultSuperKey = await encryptKey(personalVaultKey, vaultSuperKey)
         const fileId = crypto.randomUUID()
         const vault: DecryptedVaultFile = itemCreator<VaultFileItem, VaultInfoItem>({
             id: "vaultInfo",
@@ -696,7 +736,6 @@ class SecureContext extends Actor implements IIntegrator {
             addresses: [],
             vaultKey: rawVaultKey,
             personalVaultSalt,
-            personalVaultIv,
             encryptedVaultSuperKey,
         }), {
             newVaults: { [fileId]: { keySalt, vault } }
@@ -732,9 +771,9 @@ class SecureContext extends Actor implements IIntegrator {
         if (!vaultDesc) {
             throw new Error("Vault not found")
         }
-        const { personalVaultSalt, personalVaultIv, encryptedVaultSuperKey } = vaultDesc.payload
+        const { personalVaultSalt, encryptedVaultSuperKey } = vaultDesc.payload
         const personalVaultKey = await deriveKeyFromSuperKey(superKey, personalVaultSalt, KeyApplication.personalVaultKey)
-        const vaultSuperKey = await decryptKey(personalVaultKey, personalVaultIv, encryptedVaultSuperKey)
+        const vaultSuperKey = await decryptKey(personalVaultKey, encryptedVaultSuperKey)
         const vaultItemKey = await deriveKeyFromSuperKey(vaultSuperKey, itemSalt, KeyApplication.itemKey)
         return vaultItemKey
     }
@@ -742,13 +781,11 @@ class SecureContext extends Actor implements IIntegrator {
         let data: VaultItemData
         if (details.encrypted) {
             const salt = generateSalt()
-            const iv = generateIv()
             const itemKey = await this.#deriveVaultItemKey(vaultId, salt)
-            const payload = await encrypt(itemKey, iv, msgpack.encode(details.payload))
+            const payload = await encrypt(itemKey, msgpack.encode(details.payload))
             data = {
                 encrypted: true,
                 salt,
-                iv,
                 payload,
             }
         } else {

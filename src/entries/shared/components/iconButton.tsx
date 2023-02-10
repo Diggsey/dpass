@@ -12,7 +12,7 @@ type IconButtonProps = {
 export const IconButton: FunctionalComponent<IconButtonProps> = ({
     "class": className, iconSizeClass, iconClass, disabled, onClick, children
 }) => (
-    <button class={cn("button", className)} disabled={disabled} onClick={onClick}>
+    <button type="button" class={cn("button", className)} disabled={disabled} onClick={onClick}>
         <span class={cn("icon", iconSizeClass)}>
             <i class={cn(iconClass)} />
         </span>

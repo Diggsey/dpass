@@ -66,6 +66,7 @@ export class SyncManager extends Actor {
         }
     }
     #tryDownload = async () => {
+        this.#downloadTriggered = false
         try {
             const result = await this.storage.downloadFile(this.#fileId)
             if (result) {
@@ -79,8 +80,6 @@ export class SyncManager extends Actor {
             this.#lastError = null
         } catch (err) {
             this.#lastError = err
-        } finally {
-            this.#downloadTriggered = false
         }
     }
 }

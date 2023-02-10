@@ -4,6 +4,7 @@ import { IconButton } from "~/entries/shared/components/iconButton";
 import { Status } from "~/entries/shared/components/status";
 import { PrivilegedState } from "~/entries/shared/privileged/state";
 import { cn, usePromiseState } from "~/entries/shared/ui";
+import { generateRandomWords } from "~/entries/shared/wordlist";
 import { StorageAddresses } from "../storage/addresses";
 import { StorageButtons } from "../storage/buttons";
 
@@ -25,9 +26,18 @@ export const IdentityStoragePanel: FunctionalComponent<{ state: PrivilegedState 
         if (masterPassword.length < 8) {
             throw new Error("Master password must be least 8 characters.")
         }
+        const words = await generateRandomWords(3)
+        let secretSentence: string | null = ""
+        do {
+            secretSentence = prompt(`Enter a memorable sentence using the words "${words[0]}", "${words[1]}" and "${words[2]}":`, secretSentence)
+            if (secretSentence === null) {
+                return
+            }
+        } while (!words.every(word => (secretSentence || "").toLowerCase().includes(word.toLowerCase())))
         await sendMessage({
             id: "createRoot",
             masterPassword,
+            secretSentence,
         })
     }, [])
 

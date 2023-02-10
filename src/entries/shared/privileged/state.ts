@@ -3,6 +3,7 @@ import { VaultItemMap } from "../state"
 export type PrivilegedState = {
     privileged: true,
     hasIdentity: boolean,
+    isSetUp: boolean,
     isUnlocked: boolean,
     isSuper: boolean,
     rootInfo: RootInfo | null,

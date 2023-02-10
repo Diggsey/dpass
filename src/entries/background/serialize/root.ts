@@ -5,15 +5,15 @@ import { SerializationError } from "./utils"
 export type EncryptedRootFile = {
     version: number,
     passwordSalt: Uint8Array,
+    sentenceSalt: Uint8Array,
     keySalt: Uint8Array,
-    iv: Uint8Array,
     encryptedData: Uint8Array,
 }
 
 type RootFileBody = {
     passwordSalt: Uint8Array,
+    sentenceSalt: Uint8Array,
     keySalt: Uint8Array,
-    iv: Uint8Array,
     encryptedData: Uint8Array,
 }
 

@@ -14,6 +14,7 @@ type OptionsPageOpenedMessage = {
 type CreateRootMessage = {
     id: "createRoot",
     masterPassword: string,
+    secretSentence: string,
 }
 type EditRootNameMessage = {
     id: "editRootName",
@@ -45,9 +46,11 @@ export type StorageAddressAction =
 type UnlockMessage = {
     id: "unlock",
     masterPassword: string,
+    secretSentence: string | null,
 }
 type LockMessage = {
-    id: "lock"
+    id: "lock",
+    unenroll: boolean,
 }
 export type ItemDetails = {
     origin: string,

@@ -11,6 +11,7 @@ const Popup: FunctionalComponent = () => {
     const state = usePrivilegedState()
     const isSuper = state?.isSuper
     const isUnlocked = !!state?.isUnlocked
+    const isSetUp = !!state?.isSetUp
 
     useEffect(() => {
         if (isSuper) {
@@ -18,7 +19,7 @@ const Popup: FunctionalComponent = () => {
         }
     }, [isSuper])
 
-    return <div><UnlockPanel isUnlocked={isUnlocked} /></div>
+    return <div><UnlockPanel isSetUp={isSetUp} isUnlocked={isUnlocked} /></div>
 }
 
 render(<Popup />, document.body)

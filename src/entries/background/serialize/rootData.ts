@@ -13,10 +13,8 @@ export type Vault = {
     // derived from our super-key using HKDF and the
     // following salt.
     personalVaultSalt: Uint8Array,
-    // This "personal vault key", along with this IV
-    // are used to encrypt/decrypt the "vault super key".
-    personalVaultIv: Uint8Array,
-    // Which is stored here encrypted.
+    // This "personal vault key" is used to encrypt/decrypt the
+    // "vault super key" which is stored here encrypted:
     encryptedVaultSuperKey: Uint8Array,
 }
 
@@ -31,6 +29,7 @@ export type KeyPair = {
 export type RootInfo = {
     id: "rootInfo",
     name: string,
+    secretSentence: string,
 }
 
 export type RootFileItem = Vault | AuthToken | KeyPair | RootInfo

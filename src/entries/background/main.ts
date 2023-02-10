@@ -46,11 +46,11 @@ function handleMessage(message: Message, sender: Runtime.MessageSender): Promise
     const senderType = classifySender(sender)
     switch (message.id) {
         case "requestAutofill": return requestAutoFill(senderType)
-        case "createRoot": return createRoot(senderType, message.masterPassword)
+        case "createRoot": return createRoot(senderType, message.masterPassword, message.secretSentence)
         case "editRootName": return editRootName(senderType, message.name)
         case "editStorageAddresses": return editStorageAddresses(senderType, message.vaultId, message.action)
-        case "unlock": return unlock(senderType, message.masterPassword)
-        case "lock": return lock(senderType)
+        case "unlock": return unlock(senderType, message.masterPassword, message.secretSentence)
+        case "lock": return lock(senderType, message.unenroll)
         case "changeRootPassword": return changeRootPassword(senderType, message.oldPassword, message.newPassword)
         case "createVault": return createVault(senderType, message.name)
         case "removeVault": return removeVault(senderType, message.vaultId)
@@ -100,11 +100,11 @@ async function requestAutoFill(senderType: SenderType): Promise<AutofillPayload[
     return relevantPasswords
 }
 
-async function createRoot(senderType: SenderType, masterPassword: string): Promise<undefined> {
+async function createRoot(senderType: SenderType, masterPassword: string, secretSentence: string): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    await SECURE_CONTEXT.createRoot(masterPassword)
+    await SECURE_CONTEXT.createRoot(masterPassword, secretSentence)
     return
 }
 
@@ -170,19 +170,19 @@ async function editStorageAddresses(senderType: SenderType, vaultId: string | nu
     return
 }
 
-async function unlock(senderType: SenderType, masterPassword: string): Promise<undefined> {
+async function unlock(senderType: SenderType, masterPassword: string, secretSentence: string | null): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    await SECURE_CONTEXT.unlock(masterPassword)
+    await SECURE_CONTEXT.unlock(masterPassword, secretSentence)
     return
 }
 
-async function lock(senderType: SenderType): Promise<undefined> {
+async function lock(senderType: SenderType, unenroll: boolean): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    await SECURE_CONTEXT.lock()
+    await SECURE_CONTEXT.lock(unenroll)
     return
 }
 

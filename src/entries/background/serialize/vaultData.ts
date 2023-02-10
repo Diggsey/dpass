@@ -10,7 +10,6 @@ type PlainVaultItemData = {
 type EncryptedVaultItemData = {
     encrypted: true,
     salt: Uint8Array,
-    iv: Uint8Array,
     payload: Uint8Array,
 }
 
