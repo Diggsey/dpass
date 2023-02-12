@@ -40,7 +40,7 @@ const App: FunctionalComponent = () => {
             </div>
         </section>
         <div class="column">
-            {state ? <AppBody state={state} /> : <div class=".loader" />}
+            {state ? <AppBody state={state} /> : <div class="loader" />}
         </div>
     </div>
 }

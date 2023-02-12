@@ -41,6 +41,25 @@ export const IdentityStoragePanel: FunctionalComponent<{ state: PrivilegedState 
         })
     }, [])
 
+    const quickSetup = async () => {
+        await sendMessage({
+            id: "editStorageAddresses",
+            vaultId: null,
+            action: {
+                id: "add",
+                storageAddress: {
+                    id: "local",
+                    folderName: "default",
+                },
+            }
+        })
+        await sendMessage({
+            id: "createRoot",
+            masterPassword: "password",
+            secretSentence: "goliath slashed overload",
+        })
+    }
+
     const createIdentityError = creatingIdentity.lastError && <Status level="danger" colorText={true}>{creatingIdentity.lastError.toString()}</Status>
 
     return <article class={panelClass}>
@@ -60,6 +79,13 @@ export const IdentityStoragePanel: FunctionalComponent<{ state: PrivilegedState 
                 New Identity
             </IconButton>
             {createIdentityError}
+            <IconButton
+                iconClass="fas fa-wand-magic"
+                disabled={state.hasIdentity || state.rootAddresses.length !== 0}
+                onClick={quickSetup}
+            >
+                Quick Setup
+            </IconButton>
         </div>
     </article>
 }

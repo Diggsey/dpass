@@ -1,14 +1,14 @@
 html {
   height: 100%;
+  overflow: hidden !important;
+  scrollbar-width: none;
 }
 
 body {
-  height: 100%;
   overflow: hidden !important;
+  scrollbar-width: none;
+  transition: height 0.3s;
   min-width: 300px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 body>div {

@@ -1,7 +1,7 @@
 import browser, { Runtime } from "webextension-polyfill";
-import { addMessageListener, AutofillPayload, ItemDetails, Message, MessageResponse, objectKey, StorageAddressAction } from "../shared"
+import { addMessageListener, AutofillPayload, doesLoginUrlMatch, FrameDetails, ItemDetails, Message, MessageResponse, objectKey, sendMessageToFrame, StorageAddressAction } from "../shared"
 import { PRIVILEGED_PORT_NAME, StorageAddress } from "../shared/privileged/state";
-import { UNPRIVILEGED_PORT_NAME } from "../shared/state";
+import { UNPRIVILEGED_PORT_NAME, VaultItemPayload } from "../shared/state";
 import { SECURE_CONTEXT } from "./context";
 import { PrivilegedPublisher } from "./pubsub/privileged";
 import { UnprivilegedPublisher } from "./pubsub/unprivileged";
@@ -15,15 +15,10 @@ if (location.protocol !== EXTENSION_PROTOCOL) {
     throw new Error(`Background script was loaded in an unprivileged context (${location.protocol})`)
 }
 
-const passwords = [
-    { "origin": "https://accounts.google.com", "username": "foo", "password": "bar" },
-    { "origin": "https://accounts.google.com", "username": "baz", "password": "bam" },
-    { "origin": "https://github.com", "username": "cat", "password": "dog" },
-]
-
 type UnprivilegedSender = {
     id: "unprivileged",
     origin?: string,
+    url?: URL,
 }
 type PrivilegedSender = {
     id: "privileged"
@@ -36,7 +31,7 @@ function classifySender(sender: Runtime.MessageSender): SenderType {
         if (url.protocol === EXTENSION_PROTOCOL && url.host === EXTENSION_HOST) {
             return { id: "privileged" }
         }
-        return { id: "unprivileged", origin: url.origin }
+        return { id: "unprivileged", origin: url.origin, url }
     } else {
         return { id: "unprivileged" }
     }
@@ -45,7 +40,7 @@ function classifySender(sender: Runtime.MessageSender): SenderType {
 function handleMessage(message: Message, sender: Runtime.MessageSender): Promise<MessageResponse> | undefined {
     const senderType = classifySender(sender)
     switch (message.id) {
-        case "requestAutofill": return requestAutoFill(senderType)
+        case "requestAutofill": return requestAutoFill(senderType, message.vaultId, message.itemId)
         case "createRoot": return createRoot(senderType, message.masterPassword, message.secretSentence)
         case "editRootName": return editRootName(senderType, message.name)
         case "editStorageAddresses": return editStorageAddresses(senderType, message.vaultId, message.action)
@@ -57,6 +52,9 @@ function handleMessage(message: Message, sender: Runtime.MessageSender): Promise
         case "createVaultItem": return createVaultItem(senderType, message.vaultId, message.details)
         case "updateVaultItem": return updateVaultItem(senderType, message.vaultId, message.itemId, message.details)
         case "deleteVaultItem": return deleteVaultItem(senderType, message.vaultId, message.itemId)
+        case "decryptVaultItem": return decryptVaultItem(senderType, message.vaultId, message.itemId)
+        case "getFrameDetails": return getFrameDetails(sender)
+        case "forward": return forward(senderType, message.tabId, message.frameId, message.message)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -68,36 +66,65 @@ function handleConnect(port: Runtime.Port) {
         return
     }
     const senderType = classifySender(port.sender)
-    switch (port.name) {
-        case PRIVILEGED_PORT_NAME:
-            if (senderType.id === "privileged") {
-                SECURE_CONTEXT.addStatePublisher(new PrivilegedPublisher(port))
-            } else {
-                port.disconnect()
+    if (port.name === PRIVILEGED_PORT_NAME) {
+        if (senderType.id === "privileged") {
+            SECURE_CONTEXT.addStatePublisher(new PrivilegedPublisher(port))
+        } else {
+            port.disconnect()
+        }
+    } else if (port.name.startsWith(UNPRIVILEGED_PORT_NAME)) {
+        const requestedOrigin = port.name.slice(UNPRIVILEGED_PORT_NAME.length + 1)
+        let actualOrigin = undefined
+        if (senderType.id === "unprivileged") {
+            if (!requestedOrigin || requestedOrigin === senderType.origin) {
+                actualOrigin = senderType.origin
             }
-            break
-        case UNPRIVILEGED_PORT_NAME:
-            if (senderType.id === "unprivileged" && senderType.origin) {
-                SECURE_CONTEXT.addStatePublisher(new UnprivilegedPublisher(senderType.origin, port))
-            } else {
-                port.disconnect()
-            }
-            break
-        default:
-            console.warn(`Received unknown connection request: ${port.name}`)
-            break
+        } else if (requestedOrigin) {
+            actualOrigin = requestedOrigin
+        }
+        if (actualOrigin !== undefined) {
+            SECURE_CONTEXT.addStatePublisher(new UnprivilegedPublisher(actualOrigin, port))
+        } else {
+            port.disconnect()
+        }
+    } else {
+        console.warn(`Received unknown connection request: ${port.name}`)
     }
 }
 
-async function requestAutoFill(senderType: SenderType): Promise<AutofillPayload[]> {
+async function requestAutoFill(senderType: SenderType, vaultId: string, itemId: string): Promise<AutofillPayload | undefined> {
     if (senderType.id !== "unprivileged") {
         // Only auto-fill unprivileged page
         throw new Error("Auto-fill requested from privileged page")
     }
-    const origin = senderType.origin || null
-    const relevantPasswords = passwords.filter(pw => pw.origin === origin)
+    const origin = senderType.origin || ""
 
-    return relevantPasswords
+    const item = SECURE_CONTEXT.getVaultItem(vaultId, itemId)
+    if (!item.origins.includes(origin)) {
+        throw new Error("Invalid origin")
+    }
+
+    let payload
+    if (item.data.encrypted) {
+        payload = await SECURE_CONTEXT.decryptVaultItem(vaultId, itemId)
+    } else {
+        payload = item.data.payload
+    }
+
+    if (payload.restrict_url) {
+        if (!senderType.url || !payload.login_url || !doesLoginUrlMatch(senderType.url, payload.login_url)) {
+            throw new Error("Invalid URL")
+        }
+    }
+
+    const usernameField = payload.fields.filter(field => field.autofillMode.id === "username")[0]
+    const passwordField = payload.fields.filter(field => field.autofillMode.id === "password")[0]
+
+    return {
+        origin,
+        username: usernameField?.value,
+        password: passwordField?.value,
+    }
 }
 
 async function createRoot(senderType: SenderType, masterPassword: string, secretSentence: string): Promise<undefined> {
@@ -223,6 +250,31 @@ async function deleteVaultItem(senderType: SenderType, vaultId: string, itemId: 
     }
     await SECURE_CONTEXT.deleteVaultItem(vaultId, itemId)
     return
+}
+
+async function decryptVaultItem(senderType: SenderType, vaultId: string, itemId: string): Promise<VaultItemPayload | undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    return await SECURE_CONTEXT.decryptVaultItem(vaultId, itemId)
+}
+
+async function getFrameDetails(sender: Runtime.MessageSender): Promise<FrameDetails | undefined> {
+    if (sender.tab?.windowId === undefined || sender.tab.id === undefined || sender.frameId === undefined) {
+        return
+    }
+    return {
+        windowId: sender.tab.windowId,
+        tabId: sender.tab.id,
+        frameId: sender.frameId,
+    }
+}
+
+async function forward(senderType: SenderType, tabId: number, frameId: number, message: Message): Promise<unknown | undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    return await sendMessageToFrame(tabId, frameId, message)
 }
 
 addMessageListener(handleMessage)

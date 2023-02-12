@@ -5,6 +5,7 @@ import { IconButton } from "~/entries/shared/components/iconButton"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
 import { computeItemDisplayName, VaultItem } from "~/entries/shared/state"
 import { cn, usePromiseState } from "~/entries/shared/ui"
+import { Item } from "./item"
 
 type ItemInfo = {
     displayName: string,
@@ -31,8 +32,8 @@ function computeItemSearchScore(searchTerms: string[], itemInfo: ItemInfo): numb
         [itemInfo.displayName.toLowerCase(), 10],
         [itemInfo.vaultName.toLowerCase(), 1],
     ]
-    if (itemInfo.item.origin) {
-        fieldWeights.push([itemInfo.item.origin.toLowerCase(), 2])
+    for (const origin of itemInfo.item.origins) {
+        fieldWeights.push([origin.toLowerCase(), 2])
     }
     const itemData = itemInfo.item.data
     if (!itemData.encrypted) {
@@ -75,12 +76,22 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({ sta
         return filteredItems.map(([_score, itemInfo]) => itemInfo)
     }, [allItems, searchTerm])
 
-    const tableRows = filteredItems.map(itemInfo => (
-        <tr key={itemInfo.itemId}>
-            <td>{itemInfo.displayName}</td>
-            <td>{itemInfo.vaultName}</td>
-        </tr>
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+    const selectedItem = allItems.find(item => item.itemId === selectedItemId)
+
+    const itemHeaders = filteredItems.map(itemInfo => (
+        <div key={itemInfo.itemId} class={cn({
+            box: true,
+            isClickable: true,
+            hasBackgroundLight: itemInfo.itemId !== selectedItemId,
+        })} onClick={() => setSelectedItemId(itemInfo.itemId)}>
+            <h4>{itemInfo.displayName}</h4>
+            <h5>{itemInfo.vaultName}</h5>
+        </div>
     ))
+    const itemView = selectedItem
+        ? <Item key={selectedItemId} vaultId={selectedItem.vaultId} itemId={selectedItem.itemId} item={selectedItem.item} />
+        : <div>No item selected</div >
 
     const [creatingItem, createItem] = usePromiseState(async () => {
         const vaultId = Object.keys(state.vaults)[0]
@@ -93,7 +104,7 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({ sta
             vaultId,
             details: {
                 name,
-                origin: "",
+                origins: [],
                 encrypted: false,
                 payload: {
                     fields: []
@@ -102,24 +113,27 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({ sta
         })
     }, [state.vaults])
 
-    return <>
+    return <div class="is-flex is-flex-direction-row">
         <div>
-            <IconButton
-                class={cn({ isLoading: creatingItem.inProgress })}
-                iconClass="fas fa-location-dot"
-                disabled={creatingItem.inProgress}
-                onClick={createItem}
-            >
-                Create New Item
-            </IconButton>
+            <div>
+                <IconButton
+                    class={cn({ isLoading: creatingItem.inProgress })}
+                    iconClass="fas fa-location-dot"
+                    disabled={creatingItem.inProgress}
+                    onClick={createItem}
+                >
+                    Create New Item
+                </IconButton>
+            </div>
+            <div>
+                <input type="text" value={searchTerm} onInput={e => setSearchTerm(e.currentTarget.value)} />
+            </div>
+            <div>
+                {itemHeaders}
+            </div>
         </div>
-        <div>
-            <input type="text" value={searchTerm} onInput={e => setSearchTerm(e.currentTarget.value)} />
+        <div class="is-flex-grow-1">
+            {itemView}
         </div>
-        <table class="table">
-            <tbody>
-                {tableRows}
-            </tbody>
-        </table>
-    </>
+    </div>
 }

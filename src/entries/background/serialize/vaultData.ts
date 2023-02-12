@@ -17,7 +17,7 @@ export type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
 
 export type NormalItem = {
     id: "normal",
-    origin: string,
+    origins: string[],
     name: string,
     data: VaultItemData
 }

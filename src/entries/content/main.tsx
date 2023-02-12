@@ -1,11 +1,10 @@
-import { addMessageListener, AutofillPayload, Message, MessageResponse, sendMessage } from "../shared";
-import { renderComponent } from "./render";
-import { PayloadSelector } from "./components/payloadSelector";
-
+import { addMessageListener, AutofillPayload, Message, MessageResponse, RequestAutofillMessage, sendMessage } from "../shared";
+import { handleModalMessage, openModal } from "./modal";
 
 function handleMessage(message: Message): Promise<MessageResponse> | undefined {
     switch (message.id) {
         case "pokeActiveFrame": return respondIfWeAreActive()
+        case "contentModal": return handleModalMessage(message)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -78,11 +77,19 @@ function autofillPage(activeElement: Element, payload: AutofillPayload): boolean
     return usernameInput != null || passwordInput != null
 }
 
+async function beginAutofill(activeElement: Element): Promise<boolean> {
+    const req: RequestAutofillMessage = await openModal("autofillEmbed", {
+        origin: window.origin,
+        url: window.location.href,
+    })
+    const payload = await sendMessage(req)
 
-function showPayloadSelector(payloads: AutofillPayload[]): Promise<AutofillPayload | undefined> {
-    return renderComponent(resolve => <PayloadSelector payloads={payloads} onClose={resolve} />)
+    if (payload) {
+        return autofillPage(activeElement, payload)
+    } else {
+        return false
+    }
 }
-
 
 function respondIfWeAreActive() {
     // Check if we're active by looking at the type of our active element
@@ -94,23 +101,7 @@ function respondIfWeAreActive() {
         return
     }
     // We are active, so now request auto-fill for our frame
-    return sendMessage({ id: "requestAutofill" }).then(async (payloads) => {
-        if (!payloads) {
-            return false
-        }
-
-        let payload: AutofillPayload | undefined
-        if (payloads.length > 1) {
-            payload = await showPayloadSelector(payloads)
-        } else {
-            payload = payloads[0]
-        }
-        if (!payload) {
-            return false
-        }
-
-        return autofillPage(activeElement, payload)
-    })
+    return beginAutofill(activeElement)
 }
 
 addMessageListener(handleMessage)

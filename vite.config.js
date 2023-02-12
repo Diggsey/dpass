@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
                 extraHtmlPages: [
                     "src/entries/unlockPopup/index.html",
                     "src/entries/noActionPopup/index.html",
+                    "src/entries/autofillEmbed/index.html",
                 ],
             }),
         ],

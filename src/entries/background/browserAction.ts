@@ -44,7 +44,7 @@ class BrowserAction extends EventTarget implements IStatePublisher {
         if (this.#clickAction !== clickAction) {
             this.#clickAction = clickAction
             if (clickAction === "requestPassword") {
-                this._popup = "src/entries/unlockPopup/index.html"
+                this._popup = "src/entries/unlockPopup/index.html#popup"
             } else {
                 this._popup = null
             }

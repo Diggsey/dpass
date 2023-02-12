@@ -14,6 +14,7 @@ import { requestUnlock } from "./unlock";
 import { decodeVault, encodeVault } from "./serialize/vault";
 import * as msgpack from "@msgpack/msgpack"
 import { deleteKey, loadKey, PersistentKeyType, storeKey } from "./persistentKeys";
+import { VaultItemPayload } from "../shared/state";
 
 
 type VaultState = {
@@ -33,7 +34,9 @@ type UpdateRootHint = {
 type TimerId = ReturnType<typeof setTimeout>
 
 const ROOT_FILE_ID = "root"
-const SUPER_KEY_TIMEOUT = 30000
+// 5 minutes
+// const SUPER_KEY_TIMEOUT = 5 * 60 * 1000
+const SUPER_KEY_TIMEOUT = 15 * 1000
 
 type PendingRootIntegration = {
     file: Uint8Array,
@@ -409,7 +412,7 @@ class SecureContext extends Actor implements IIntegrator {
                 creationTimestamp: normalItem.creationTimestamp,
                 updateTimestamp: normalItem.updateTimestamp,
                 name: normalItem.payload.name,
-                origin: normalItem.payload.origin,
+                origins: normalItem.payload.origins,
                 data: normalItem.payload.data.encrypted
                     ? { encrypted: true }
                     : { encrypted: false, payload: normalItem.payload.data.payload }
@@ -508,6 +511,13 @@ class SecureContext extends Actor implements IIntegrator {
         return this.#lockedSyncedRoot
     }
     set _lockedSyncedRoot(lockedSyncedRoot: LockedSyncedRoot | null) {
+        if (!lockedSyncedRoot && this.#lockedSyncedRoot) {
+            for (const pendingIntegration of this.#lockedSyncedRoot.pendingRootIntegrations) {
+                pendingIntegration[1].reject(new Error("Cancelled"))
+            }
+            this.#lockedSyncedRoot.pendingRootIntegrations.clear()
+        }
+
         this.#lockedSyncedRoot = lockedSyncedRoot
         this.#updatePrivilegedState({
             ...this.#privilegedState,
@@ -777,42 +787,64 @@ class SecureContext extends Actor implements IIntegrator {
         const vaultItemKey = await deriveKeyFromSuperKey(vaultSuperKey, itemSalt, KeyApplication.itemKey)
         return vaultItemKey
     }
-    async #buildItemFromDetails(vaultId: string, details: ItemDetails): Promise<NormalItem> {
-        let data: VaultItemData
-        if (details.encrypted) {
+    async #buildItemDataFromPayload(vaultId: string, payload: VaultItemPayload, encrypted: boolean): Promise<VaultItemData> {
+        if (encrypted) {
             const salt = generateSalt()
             const itemKey = await this.#deriveVaultItemKey(vaultId, salt)
-            const payload = await encrypt(itemKey, msgpack.encode(details.payload))
-            data = {
+            return {
                 encrypted: true,
                 salt,
-                payload,
+                payload: await encrypt(itemKey, msgpack.encode(payload)),
             }
         } else {
-            data = {
+            return {
                 encrypted: false,
-                payload: details.payload,
+                payload,
             }
-        }
-        return {
-            id: "normal",
-            name: details.name,
-            origin: details.origin,
-            data,
         }
     }
     async createVaultItem(vaultId: string, details: ItemDetails): Promise<string> {
         const itemId = crypto.randomUUID()
-        const item = await this.#buildItemFromDetails(vaultId, details)
-        await this.#patchVault(vaultId, itemCreator(item, itemId))
+        const { payload, encrypted, ...rest } = details
+        const data = await this.#buildItemDataFromPayload(vaultId, payload || { fields: [] }, encrypted)
+        await this.#patchVault(vaultId, itemCreator({
+            id: "normal",
+            ...rest,
+            data
+        }, itemId))
         return itemId
     }
     async deleteVaultItem(vaultId: string, itemId: string) {
         await this.#patchVault(vaultId, itemPatcher((item, uuid) => uuid === itemId && item?.id === "normal" ? null : item))
     }
     async updateVaultItem(vaultId: string, itemId: string, details: ItemDetails) {
-        const updatedItem = await this.#buildItemFromDetails(vaultId, details)
-        await this.#patchVault(vaultId, itemPatcher((item, uuid) => uuid === itemId && item?.id === "normal" ? updatedItem : item))
+        const { payload, encrypted, ...rest } = details
+        const data = payload && await this.#buildItemDataFromPayload(vaultId, payload, encrypted)
+        await this.#patchVault(vaultId, itemPatcher((item, uuid) => uuid === itemId && item?.id === "normal" ? {
+            id: "normal",
+            ...rest,
+            data: data || item.data,
+        } : item))
+    }
+    getVaultItem(vaultId: string, itemId: string): NormalItem {
+        const vaultState = this.#vaults.get(vaultId)
+        if (!vaultState?.vault) {
+            throw new Error("No such vault - cannot decrypt item")
+        }
+        const item = extractItems(vaultState.vault, (item): item is MergeableItem<NormalItem> => item.payload.id === "normal" && item.uuid === itemId)[0]
+        if (!item) {
+            throw new Error("No such item")
+        }
+        return item.payload
+    }
+    async decryptVaultItem(vaultId: string, itemId: string): Promise<VaultItemPayload> {
+        const payload = this.getVaultItem(vaultId, itemId)
+        if (!payload.data.encrypted) {
+            throw new Error("No such encrypted item")
+        }
+        const itemKey = await this.#deriveVaultItemKey(vaultId, payload.data.salt)
+        const buffer = await decrypt(itemKey, payload.data.payload)
+        return msgpack.decode(buffer) as VaultItemPayload
     }
 }
 

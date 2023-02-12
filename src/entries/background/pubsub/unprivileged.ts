@@ -1,5 +1,5 @@
 import { Runtime } from "webextension-polyfill";
-import { mapObjectValues } from "~/entries/shared";
+import { filterObjectValues, mapObjectValues } from "~/entries/shared";
 import { PrivilegedState, PrivilegedSyncState, PrivilegedVault } from "~/entries/shared/privileged/state";
 import { Publisher } from "~/entries/shared/pubsub";
 import { UnprivilegedState, UnprivilegedSyncState, UnprivilegedVault } from "~/entries/shared/state";
@@ -20,7 +20,7 @@ export class UnprivilegedPublisher extends Publisher<UnprivilegedState> implemen
             origin: this.#origin,
             isUnlocked: state.isUnlocked,
             syncState: this.convertSyncState(state.syncState),
-            vaults: mapObjectValues(state.vaults, v => this.convertVault(v))
+            vaults: mapObjectValues(state.vaults, v => this.convertVault(v)),
         }
     }
     convertSyncState(syncState: PrivilegedSyncState): UnprivilegedSyncState {
@@ -38,7 +38,7 @@ export class UnprivilegedPublisher extends Publisher<UnprivilegedState> implemen
     convertVault(vault: PrivilegedVault): UnprivilegedVault {
         return {
             name: vault.name,
-            items: vault.items,
+            items: vault.items && filterObjectValues(vault.items, item => item.origins.includes(this.#origin)),
             syncState: this.convertSyncState(vault.syncState)
         }
     }

@@ -24,7 +24,7 @@ export type VaultItemMap = {
 }
 
 export type VaultItem = {
-    origin: string,
+    origins: string[],
     name: string,
     creationTimestamp: number,
     updateTimestamp: number,
@@ -32,7 +32,7 @@ export type VaultItem = {
 }
 
 export function computeItemDisplayName(item: VaultItem): string {
-    return item.name || item.origin || "Unnamed"
+    return item.name || item.origins.join(", ") || "Unnamed"
 }
 
 export type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
@@ -52,6 +52,7 @@ export type VaultItemPayload = {
 }
 
 export type VaultItemField = {
+    uuid: string,
     name: string,
     value: string,
     autofillMode: AutofillMode
@@ -60,7 +61,7 @@ export type VaultItemField = {
 export type AutofillMode = PresetAutofillMode | CustomAutofillMode
 
 export type PresetAutofillMode = {
-    id: "username" | "email" | "password" | "none"
+    id: "username" | "email" | "password" | "text"
 }
 export type CustomAutofillMode = {
     id: "custom",

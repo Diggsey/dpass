@@ -2,8 +2,10 @@ import browser, { Runtime } from "webextension-polyfill";
 import { StorageAddress } from "./privileged/state";
 import { VaultItemPayload } from "./state";
 
-type RequestAutofillMessage = {
+export type RequestAutofillMessage = {
     id: "requestAutofill"
+    vaultId: string,
+    itemId: string,
 }
 type PokeActiveFrameMessage = {
     id: "pokeActiveFrame"
@@ -53,10 +55,10 @@ type LockMessage = {
     unenroll: boolean,
 }
 export type ItemDetails = {
-    origin: string,
+    origins: string[],
     name: string,
     encrypted: boolean,
-    payload: VaultItemPayload,
+    payload?: VaultItemPayload,
 }
 type CreateVaultItemMessage = {
     id: "createVaultItem",
@@ -74,6 +76,40 @@ type UpdateVaultItemMessage = {
     itemId: string,
     details: ItemDetails,
 }
+type DecryptVaultItemMessage = {
+    id: "decryptVaultItem",
+    vaultId: string,
+    itemId: string,
+}
+type GetFrameDetailsMessage = {
+    id: "getFrameDetails",
+}
+export type ContentModalMessage = {
+    id: "contentModal",
+    uuid: string,
+    payload: ContentModalPayload,
+}
+
+export type ContentModalPayload = CloseContentModalPayload | ResizeContentModalPayload
+
+type CloseContentModalPayload = {
+    id: "close"
+    resolve?: unknown,
+    reject?: string,
+}
+
+type ResizeContentModalPayload = {
+    id: "resize",
+    width: number,
+    height: number,
+}
+
+type ForwardMessage = {
+    id: "forward",
+    tabId: number,
+    frameId: number,
+    message: Message,
+}
 
 export type Message =
     | RequestAutofillMessage
@@ -90,10 +126,14 @@ export type Message =
     | CreateVaultItemMessage
     | DeleteVaultItemMessage
     | UpdateVaultItemMessage
+    | DecryptVaultItemMessage
+    | GetFrameDetailsMessage
+    | ContentModalMessage
+    | ForwardMessage
 
 
 type MessageResponses = {
-    requestAutofill: AutofillPayload[],
+    requestAutofill: AutofillPayload,
     pokeActiveFrame: boolean,
     optionsPageOpened: undefined,
     createRoot: undefined,
@@ -107,6 +147,10 @@ type MessageResponses = {
     createVaultItem: string,
     deleteVaultItem: undefined,
     updateVaultItem: undefined,
+    decryptVaultItem: VaultItemPayload,
+    getFrameDetails: FrameDetails,
+    contentModal: undefined,
+    forward: unknown,
 }
 export type MessageResponse<M extends Message = Message> = MessageResponses[M["id"]]
 
@@ -114,6 +158,12 @@ export interface AutofillPayload {
     origin: string,
     username: string | null,
     password: string | null,
+}
+
+export type FrameDetails = {
+    windowId: number,
+    tabId: number,
+    frameId: number,
 }
 
 export function expect<T>(arg: T | undefined, err?: string): T {
@@ -142,8 +192,21 @@ export function sendMessageToTab<M extends Message>(tabId: number, m: M): Promis
     return browser.tabs.sendMessage(tabId, m)
 }
 
+export function sendMessageToFrame<M extends Message>(tabId: number, frameId: number, m: M): Promise<MessageResponse<M> | undefined> {
+    if (!browser.tabs) {
+        return sendMessage({ id: "forward", tabId, frameId, message: m }) as Promise<MessageResponse<M> | undefined>
+    }
+    return browser.tabs.sendMessage(tabId, m, {
+        frameId,
+    })
+}
+
 export function mapObjectValues<T, U>(obj: { [key: string]: T }, f: (v: T) => U): { [key: string]: U } {
     return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, f(v)]))
+}
+
+export function filterObjectValues<T>(obj: { [key: string]: T }, f: (v: T) => boolean): { [key: string]: T } {
+    return Object.fromEntries(Object.entries(obj).filter(([_k, v]) => f(v)))
 }
 
 interface MessageListener {
@@ -152,4 +215,16 @@ interface MessageListener {
 
 export function addMessageListener(listener: MessageListener) {
     browser.runtime.onMessage.addListener(listener)
+}
+
+export function doesLoginUrlMatch(urlStr: string | URL, loginUrlStr: string | URL): boolean {
+    const loginUrl = new URL(loginUrlStr)
+    const url = new URL(urlStr)
+    if (loginUrl.search === "") {
+        url.search = ""
+    }
+    if (loginUrl.hash === "") {
+        url.hash = ""
+    }
+    return url.href === loginUrl.href
 }
