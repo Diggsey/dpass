@@ -1,6 +1,6 @@
 import browser, { Runtime } from "webextension-polyfill";
 import { StorageAddress } from "./privileged/state";
-import { VaultItemPayload } from "./state";
+import { VaultItemField, VaultItemPayload } from "./state";
 
 export type RequestAutofillMessage = {
     id: "requestAutofill"
@@ -155,9 +155,7 @@ type MessageResponses = {
 export type MessageResponse<M extends Message = Message> = MessageResponses[M["id"]]
 
 export interface AutofillPayload {
-    origin: string,
-    username: string | null,
-    password: string | null,
+    fields: VaultItemField[]
 }
 
 export type FrameDetails = {

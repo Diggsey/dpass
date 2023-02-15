@@ -1,6 +1,7 @@
 import { FunctionalComponent } from "preact"
+import { AutofillMode, PRESET_AUTOFILL_MAPPING, PRESET_AUTOFILL_VALUES } from "~/entries/shared/autofill"
 import { PasswordInput } from "~/entries/shared/components/passwordInput"
-import { AutofillMode, VaultItemField } from "~/entries/shared/state"
+import { VaultItemField } from "~/entries/shared/state"
 
 type FieldProps = {
     field: VaultItemField,
@@ -9,23 +10,20 @@ type FieldProps = {
 }
 
 export const Field: FunctionalComponent<FieldProps> = ({ field, onUpdate, onDelete }) => {
-    const setAutofillMode = (id: string) => {
+    const setAutofillMode = (mode: string) => {
         let autofillMode: AutofillMode
-        switch (id) {
-            case "username":
-            case "email":
-            case "password":
-            case "text":
-                autofillMode = { id }
-                break
-            case "custom":
-                autofillMode = {
-                    id,
-                    key: field.autofillMode.id === "custom" ? field.autofillMode.key : ""
-                }
-                break
-            default:
-                throw new Error("Invalid autofill mode")
+        const id = PRESET_AUTOFILL_VALUES.find(x => x === mode)
+        if (id) {
+            autofillMode = {
+                id
+            }
+        } else if (id === "custom") {
+            autofillMode = {
+                id,
+                key: field.autofillMode.id === "custom" ? field.autofillMode.key : ""
+            }
+        } else {
+            throw new Error("Invalid autofill mode")
         }
         onUpdate({
             ...field,
@@ -35,6 +33,7 @@ export const Field: FunctionalComponent<FieldProps> = ({ field, onUpdate, onDele
     let valueView
     switch (field.autofillMode.id) {
         case "password":
+        case "passwordNote":
             valueView = <PasswordInput
                 class="is-expanded"
                 placeholder="Password"
@@ -67,10 +66,9 @@ export const Field: FunctionalComponent<FieldProps> = ({ field, onUpdate, onDele
             <div class="control">
                 <div class="select">
                     <select value={field.autofillMode.id} onChange={e => setAutofillMode(e.currentTarget.value)}>
-                        <option value="username">Username</option>
-                        <option value="email">Email</option>
-                        <option value="password">Password</option>
-                        <option value="text">Text</option>
+                        {PRESET_AUTOFILL_VALUES.map(id => (
+                            <option value={id}>{PRESET_AUTOFILL_MAPPING[id].name}</option>
+                        ))}
                         <option value="custom">Custom</option>
                     </select>
                 </div>

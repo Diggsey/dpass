@@ -1,3 +1,4 @@
+import { AutofillMode } from "./autofill"
 
 export type UnprivilegedState = {
     privileged: false,
@@ -56,16 +57,6 @@ export type VaultItemField = {
     name: string,
     value: string,
     autofillMode: AutofillMode
-}
-
-export type AutofillMode = PresetAutofillMode | CustomAutofillMode
-
-export type PresetAutofillMode = {
-    id: "username" | "email" | "password" | "text"
-}
-export type CustomAutofillMode = {
-    id: "custom",
-    key: string,
 }
 
 export const UNPRIVILEGED_PORT_NAME = "unprivilegedState"

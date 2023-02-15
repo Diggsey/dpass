@@ -76,7 +76,7 @@ const AutofillEmbed: FunctionalComponent<ModalProps<"autofillEmbed">> = ({ args,
         <p class="panel-heading">
             <div class="icon-text">
                 <span class="icon">
-                    <i class="fas fa-pen-field"></i>
+                    <i class="fas fa-pen-to-square"></i>
                 </span>
                 <span>dpass: Auto-fill</span>
             </div>

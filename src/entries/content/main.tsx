@@ -1,4 +1,5 @@
 import { addMessageListener, AutofillPayload, Message, MessageResponse, RequestAutofillMessage, sendMessage } from "../shared";
+import { AutofillMode, customMatcher, PRESET_AUTOFILL_MAPPING, PRESET_AUTOFILL_VALUES } from "../shared/autofill";
 import { handleModalMessage, openModal } from "./modal";
 
 function handleMessage(message: Message): Promise<MessageResponse> | undefined {
@@ -19,73 +20,67 @@ function populateInput(elem: HTMLInputElement, value: string) {
 
 // Given the details for this origin, and the active element,
 // attempt to populate any appropriate input fields.
-function autofillPage(activeElement: Element, payload: AutofillPayload): boolean {
-    // Only consider these input types
-    const inputTypes = ["email", "password", "submit", "text"]
+function autofillPage(allInputs: HTMLInputElement[], payload: AutofillPayload) {
+    const candidateModes = payload.fields.map(x => x.autofillMode)
+    for (const elem of allInputs) {
+        if (elem.value.trim().length > 0) {
+            // Don't overwrite existing values
+            continue
+        }
+        const category = categorizeInput(elem, candidateModes)[0]
+        if (category === undefined) {
+            // Don't know how to auto-fill
+            continue
+        }
+        const field = payload.fields.find(f => f.autofillMode === category)
+        if (field === undefined) {
+            throw new Error("Returned invalid auto-fill mode")
+        }
+        populateInput(elem, field.value)
+    }
+}
 
-    // Find every input on the page of the appropriate type
-    let allInputs = Array.from(document.getElementsByTagName('input')).filter(elem => inputTypes.includes(elem.type))
+function categorizeInput(elem: HTMLInputElement, candidates?: AutofillMode[]): AutofillMode[] {
+    return (candidates ?? PRESET_AUTOFILL_VALUES.map(id => ({ id }))).map(candidate =>
+        [candidate, candidate.id === "custom"
+            ? customMatcher(elem, candidate.key)
+            : PRESET_AUTOFILL_MAPPING[candidate.id].matcher(elem)] as const
+    )
+        .filter(x => x[1] > 0)
+        .sort((a, b) => a[1] - b[1])
+        .map(x => x[0])
+}
 
-    // Initially, assume there is no username or password input present
-    let usernameInput = null
-    let passwordInput = null
-
-    // If the active element is one of our inputs, assume the user already focused
-    // one of the fields they want to populate.
+function findInputToFill(activeElement: Element, allInputs: HTMLInputElement[]): HTMLInputElement | null {
     if (activeElement instanceof HTMLInputElement) {
-        const activeIdx = allInputs.indexOf(activeElement)
-        if (activeIdx !== -1) {
-            if (activeElement.type === "password") {
-                // If it's a password input, we need only consider other inputs
-                // before this one in the page.
-                passwordInput = activeElement
-                allInputs = allInputs.slice(0, activeIdx)
-            } else {
-                // if this is not a password input, only consider later inputs
-                // for password candidates.
-                usernameInput = activeElement
-                allInputs = allInputs.slice(activeIdx + 1)
-            }
-        }
+        return activeElement
+    } else {
+        return allInputs[0] || null
     }
+}
 
-    // If we don't have our password input yet, pick the first input of that type
-    if (passwordInput == null) {
-        const passwordIdx = allInputs.findIndex(elem => elem.type === "password")
-        if (passwordIdx !== -1) {
-            // Only consider username fields before this one
-            passwordInput = allInputs[passwordIdx]
-            allInputs = allInputs.slice(0, passwordIdx)
-        }
-    }
-    // If we found a password field, but no username field, assume the username
-    // is immediately before the password.
-    if (usernameInput == null && passwordInput != null && allInputs.length > 0) {
-        usernameInput = allInputs[allInputs.length - 1]
-    }
-
-    // If we found the username field and have a value for it, populate it
-    if (usernameInput != null && payload.username != null) {
-        populateInput(usernameInput, payload.username)
-    }
-    // If we found the password field and have a value for it, populate it
-    if (passwordInput != null && payload.password != null) {
-        populateInput(passwordInput, payload.password)
-    }
-
-    // Return success if we found either field
-    return usernameInput != null || passwordInput != null
+function findAllInputs(): HTMLInputElement[] {
+    const inputTypes = ["email", "password", "text"]
+    return Array.from(document.getElementsByTagName('input')).filter(elem => inputTypes.includes(elem.type))
 }
 
 async function beginAutofill(activeElement: Element): Promise<boolean> {
+    const allInputs = findAllInputs()
+    const inputToFill = findInputToFill(activeElement, allInputs)
+    if (!inputToFill) {
+        return false
+    }
+    const categories = categorizeInput(inputToFill)
     const req: RequestAutofillMessage = await openModal("autofillEmbed", {
         origin: window.origin,
         url: window.location.href,
+        categories,
     })
     const payload = await sendMessage(req)
 
     if (payload) {
-        return autofillPage(activeElement, payload)
+        autofillPage(allInputs, payload)
+        return true
     } else {
         return false
     }

@@ -117,13 +117,8 @@ async function requestAutoFill(senderType: SenderType, vaultId: string, itemId: 
         }
     }
 
-    const usernameField = payload.fields.filter(field => field.autofillMode.id === "username")[0]
-    const passwordField = payload.fields.filter(field => field.autofillMode.id === "password")[0]
-
     return {
-        origin,
-        username: usernameField?.value,
-        password: passwordField?.value,
+        fields: payload.fields
     }
 }
 
