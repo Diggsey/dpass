@@ -1,5 +1,5 @@
 import { FunctionalComponent } from "preact"
-import { sendMessage } from "~/entries/shared"
+import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import { PrivilegedState } from "~/entries/shared/privileged/state"

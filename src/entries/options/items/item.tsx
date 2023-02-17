@@ -1,11 +1,12 @@
 import { FunctionalComponent } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { ItemDetails, sendMessage } from "~/entries/shared";
+import { sendMessage } from "~/entries/shared/messages";
 import { IconButton } from "~/entries/shared/components/iconButton";
 import { Status } from "~/entries/shared/components/status";
 import { VaultItem, VaultItemField, VaultItemPayload } from "~/entries/shared/state";
 import { cn, usePromiseState } from "~/entries/shared/ui";
-import { Field } from "./field";
+import { Field } from "../../shared/components/field";
+import { ItemDetails } from "~/entries/shared/messages/vault";
 
 type ItemProps = {
     vaultId: string,

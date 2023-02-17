@@ -1,5 +1,5 @@
 import { FunctionalComponent } from "preact";
-import { sendMessage } from "~/entries/shared";
+import { sendMessage } from "../messages";
 import { cn, usePromiseState } from "../ui";
 import { LockButtons } from "./lockForm";
 import { PasswordInput } from "./passwordInput";

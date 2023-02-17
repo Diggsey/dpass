@@ -1,6 +1,6 @@
 import { FunctionalComponent } from "preact"
 import { useMemo, useState } from "preact/hooks"
-import { sendMessage } from "~/entries/shared"
+import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
 import { computeItemDisplayName, VaultItem } from "~/entries/shared/state"

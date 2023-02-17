@@ -1,7 +1,7 @@
 import { FunctionalComponent } from "preact";
-import { sendMessage } from "~/entries/shared";
 import { IconButton } from "~/entries/shared/components/iconButton";
 import { Status } from "~/entries/shared/components/status";
+import { sendMessage } from "~/entries/shared/messages";
 import { PrivilegedState } from "~/entries/shared/privileged/state";
 import { cn, usePromiseState } from "~/entries/shared/ui";
 import { generateRandomWords } from "~/entries/shared/wordlist";
@@ -57,6 +57,51 @@ export const IdentityStoragePanel: FunctionalComponent<{ state: PrivilegedState 
             id: "createRoot",
             masterPassword: "password",
             secretSentence: "goliath slashed overload",
+        })
+        const vaultId = await sendMessage({
+            id: "createVault",
+            name: "Personal Vault",
+        })
+        if (vaultId === undefined) {
+            console.error("Failed to create vault")
+            return
+        }
+        await sendMessage({
+            id: "editStorageAddresses",
+            vaultId,
+            action: {
+                id: "add",
+                storageAddress: {
+                    id: "local",
+                    folderName: "default",
+                },
+            }
+        })
+        await sendMessage({
+            id: "createVaultItem",
+            vaultId,
+            details: {
+                origins: ["https://accounts.google.com"],
+                name: "Google",
+                encrypted: false,
+                payload: {
+                    fields: [{
+                        uuid: crypto.randomUUID(),
+                        name: "Username",
+                        autofillMode: {
+                            id: "username"
+                        },
+                        value: "foobar",
+                    }, {
+                        uuid: crypto.randomUUID(),
+                        name: "Password",
+                        autofillMode: {
+                            id: "password"
+                        },
+                        value: "testpassword",
+                    }]
+                }
+            }
         })
     }
 

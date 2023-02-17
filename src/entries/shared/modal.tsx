@@ -1,11 +1,14 @@
 import { ComponentType, render } from "preact";
-import { ContentModalPayload, FrameDetails, RequestAutofillMessage, sendMessageToFrame } from ".";
-import { AutofillMode } from "./autofill";
+import { sendMessageToFrame } from "./messages";
+import { DetectedField, RequestAutofillMessage } from "./messages/autofill";
+import { FrameDetails } from "./messages/misc";
+import { ContentModalPayload } from "./messages/modal";
 
 export type AutofillArgs = {
     origin: string,
     url: string,
-    categories: AutofillMode[],
+    fields: DetectedField[],
+    manual: boolean,
 }
 
 export type ModalList = {

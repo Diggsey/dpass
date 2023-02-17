@@ -2,7 +2,7 @@ import { PrivilegedState } from "../shared/privileged/state";
 import { IStatePublisher } from "./pubsub/state";
 import browser, { Action, Tabs } from "webextension-polyfill";
 import { SECURE_CONTEXT } from "./context";
-import { sendMessageToTab } from "../shared";
+import { sendMessageToFrame, sendMessageToTab } from "../shared/messages";
 
 type BrowserClickAction = "autofill" | "requestPassword" | "showOptions" | "none"
 
@@ -63,13 +63,13 @@ class BrowserAction extends EventTarget implements IStatePublisher {
 
     onClick = (tab: Tabs.Tab, info: Action.OnClickData | undefined) => {
         let clickAction = this._clickAction
-        if (info?.button === 1 || info?.modifiers?.length === 1) {
+        if (info?.button === 1) {
             clickAction = "showOptions"
         }
         switch (clickAction) {
             case "autofill":
                 if (tab.id !== undefined) {
-                    void this.beginAutofillAction(tab.id)
+                    void this.beginAutofillAction(tab.id, info?.modifiers?.includes("Shift") ?? false)
                 } else {
                     throw new Error("Not implemented")
                 }
@@ -85,7 +85,7 @@ class BrowserAction extends EventTarget implements IStatePublisher {
         }
     }
 
-    async beginAutofillAction(tabId: number) {
+    async beginAutofillAction(tabId: number, manual: boolean) {
         // Make sure our content script has been injected. We can't directly trigger
         // anything via this injection because it will have no effect on the second injection.
         await browser.scripting.executeScript({
@@ -98,10 +98,22 @@ class BrowserAction extends EventTarget implements IStatePublisher {
         })
         // We don't know which frame is active, so send a message to all of them.
         // Only the active frame will request auto-fill.
-        const response = await sendMessageToTab(tabId, { id: "pokeActiveFrame" })
+        const response = await sendMessageToTab(tabId, { id: "pokeActiveFrame", manual })
         if (response === undefined) {
             console.warn("No active frame found")
+            return
         }
+        const item = await sendMessageToFrame(tabId, 0, {
+            id: "showItemSelector",
+            args: {
+                ...response,
+                manual,
+            },
+        })
+        if (item === undefined) {
+            return
+        }
+        await sendMessageToTab(tabId, { id: "performAutofill", item, origin: response.origin })
     }
 
 }

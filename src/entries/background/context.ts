@@ -9,12 +9,13 @@ import { IStatePublisher } from "./pubsub/state";
 import { decodeRoot, encodeRoot } from "./serialize/root";
 import { areFilesEqual, extractItems, itemCreator, itemPatcher, MergeableItem, mergeFiles, newFile } from "./serialize/merge";
 import { combineKeys, decrypt, decryptKey, deriveKeyFromSuperKey, deriveSuperKeyFromPassword as deriveKeyFromPassword, encrypt, encryptKey, exportKey, generateSalt, generateSuperKey, importKey, KeyApplication } from "./crypto";
-import { ItemDetails, objectKey } from "../shared";
+import { objectKey } from "../shared";
 import { requestUnlock } from "./unlock";
 import { decodeVault, encodeVault } from "./serialize/vault";
 import * as msgpack from "@msgpack/msgpack"
 import { deleteKey, loadKey, PersistentKeyType, storeKey } from "./persistentKeys";
 import { VaultItemPayload } from "../shared/state";
+import { ItemDetails } from "../shared/messages/vault";
 
 
 type VaultState = {
@@ -577,6 +578,26 @@ class SecureContext extends Actor implements IIntegrator {
             }
         })
     }
+    #saveSuperKey(superKey: CryptoKey) {
+        if (this.#superKeyTimer != null) {
+            clearTimeout(this.#superKeyTimer)
+            this.#superKeyTimer = null
+        }
+        this.#superKey = superKey
+        this.#superKeyTimer = setTimeout(() => {
+            this.#superKey = null
+            this.#superKeyTimer = null
+            this.#updatePrivilegedState({
+                ...this.#privilegedState,
+                isSuper: false,
+            })
+        }, SUPER_KEY_TIMEOUT)
+
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            isSuper: true,
+        })
+    }
     async #unlockInner(masterPassword: string, secretSentence: string | null): Promise<void> {
         const { passwordSalt, sentenceSalt, keySalt, canaryData } = this._lockedSyncedRoot
         const keyFromPassword = await deriveKeyFromPassword(masterPassword, passwordSalt)
@@ -606,24 +627,7 @@ class SecureContext extends Actor implements IIntegrator {
             this.#updateSetupKey(setupKey)
         }
         this.#saveKey(key)
-
-        if (this.#superKeyTimer != null) {
-            clearTimeout(this.#superKeyTimer)
-            this.#superKeyTimer = null
-        }
-        this.#superKey = superKey
-        this.#superKeyTimer = setTimeout(() => {
-            this.#superKey = null
-            this.#superKeyTimer = null
-            this.#updatePrivilegedState({
-                ...this.#privilegedState,
-                isSuper: false,
-            })
-        }, SUPER_KEY_TIMEOUT)
-        this.#updatePrivilegedState({
-            ...this.#privilegedState,
-            isSuper: true,
-        })
+        this.#saveSuperKey(superKey)
     }
     unlock(masterPassword: string, secretSentence: string | null): Promise<void> {
         return this._post("unlock()", () => this.#unlockInner(masterPassword, secretSentence))
@@ -655,6 +659,7 @@ class SecureContext extends Actor implements IIntegrator {
                 pendingRootIntegrations: new Map()
             }
             this.#saveKey(key)
+            this.#saveSuperKey(superKey)
             await this.#updateRoot({
                 uuid: crypto.randomUUID(),
                 items: [{
@@ -726,7 +731,7 @@ class SecureContext extends Actor implements IIntegrator {
         }
         return this.#superKey
     }
-    async createVault(name: string): Promise<void> {
+    async createVault(name: string): Promise<string> {
         const superKey = await this.#requireSuperKey()
         const personalVaultSalt = generateSalt()
         const personalVaultKey = await deriveKeyFromSuperKey(superKey, personalVaultSalt, KeyApplication.personalVaultKey)
@@ -750,6 +755,7 @@ class SecureContext extends Actor implements IIntegrator {
         }), {
             newVaults: { [fileId]: { keySalt, vault } }
         })
+        return fileId
     }
     async removeVault(vaultId: string) {
         await this.#patchRoot(itemPatcher((item, _uuid) => item?.id === "vault" && item.fileId === vaultId ? null : item))

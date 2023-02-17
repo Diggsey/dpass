@@ -1,5 +1,5 @@
 import { FunctionalComponent } from "preact";
-import { sendMessage } from "~/entries/shared";
+import { sendMessage } from "../messages";
 import { RootInfo } from "../privileged/state";
 import { cn, usePromiseState } from "../ui";
 import { IconButton } from "./iconButton";

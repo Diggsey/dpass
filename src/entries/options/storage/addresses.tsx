@@ -1,5 +1,6 @@
 import { FunctionalComponent } from "preact"
-import { objectKey, sendMessage } from "~/entries/shared"
+import { objectKey } from "~/entries/shared"
+import { sendMessage } from "~/entries/shared/messages"
 import { Status } from "~/entries/shared/components/status"
 import { PrivilegedSyncState, StorageAddress } from "~/entries/shared/privileged/state"
 import { cn, usePromiseState } from "~/entries/shared/ui"

@@ -1,5 +1,5 @@
 import { FunctionalComponent } from "preact"
-import { AutofillMode, PRESET_AUTOFILL_MAPPING, PRESET_AUTOFILL_VALUES } from "~/entries/shared/autofill"
+import { AutofillMode, defaultName, PRESET_AUTOFILL_MAPPING, PRESET_AUTOFILL_VALUES } from "~/entries/shared/autofill"
 import { PasswordInput } from "~/entries/shared/components/passwordInput"
 import { VaultItemField } from "~/entries/shared/state"
 
@@ -25,8 +25,13 @@ export const Field: FunctionalComponent<FieldProps> = ({ field, onUpdate, onDele
         } else {
             throw new Error("Invalid autofill mode")
         }
+        let name = field.name
+        if (name === defaultName(field.autofillMode)) {
+            name = defaultName(autofillMode)
+        }
         onUpdate({
             ...field,
+            name,
             autofillMode,
         })
     }
@@ -52,7 +57,7 @@ export const Field: FunctionalComponent<FieldProps> = ({ field, onUpdate, onDele
                 />
             </div>
     }
-    return <>
+    return <div class="my-3 p-3 has-background-light">
         <div class="field has-addons">
             <div class="control is-expanded">
                 <input
@@ -91,5 +96,5 @@ export const Field: FunctionalComponent<FieldProps> = ({ field, onUpdate, onDele
             {valueView}
             <button class="delete is-large is-align-self-center" onClick={() => onDelete(field)} />
         </div>
-    </>
+    </div>
 }

@@ -146,6 +146,13 @@ export type CustomAutofillMode = {
     key: string,
 }
 
+export function defaultName(autofillMode: AutofillMode): string {
+    if (autofillMode.id === "custom") {
+        throw new Error("Not implemented")
+    }
+    return PRESET_AUTOFILL_MAPPING[autofillMode.id].name
+}
+
 function scoreValue(value: string | undefined, valueScores: { [value: string]: number }, patternScores?: [RegExp, number][]): number {
     if (value === undefined) {
         return 0
@@ -202,7 +209,7 @@ function emailMatcher(elem: HTMLInputElement): number {
             "email": 1.0,
         }),
         scoreValue(elem.type, {
-            "email": 1.0,
+            "email": 0.9,
         }),
         scoreValue(elem.placeholder.trim().toLowerCase(), {
             "email": 0.9,

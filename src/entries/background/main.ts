@@ -1,11 +1,16 @@
 import browser, { Runtime } from "webextension-polyfill";
-import { addMessageListener, AutofillPayload, doesLoginUrlMatch, FrameDetails, ItemDetails, Message, MessageResponse, objectKey, sendMessageToFrame, StorageAddressAction } from "../shared"
 import { PRIVILEGED_PORT_NAME, StorageAddress } from "../shared/privileged/state";
 import { UNPRIVILEGED_PORT_NAME, VaultItemPayload } from "../shared/state";
 import { SECURE_CONTEXT } from "./context";
 import { PrivilegedPublisher } from "./pubsub/privileged";
 import { UnprivilegedPublisher } from "./pubsub/unprivileged";
 import "./browserAction"
+import { addMessageListener, Message, MessageResponse, sendMessageToFrame } from "../shared/messages";
+import { AutofillPayload } from "../shared/messages/autofill";
+import { doesLoginUrlMatch, objectKey } from "../shared";
+import { StorageAddressAction } from "../shared/messages/storage";
+import { ItemDetails } from "../shared/messages/vault";
+import { FrameDetails } from "../shared/messages/misc";
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -208,12 +213,11 @@ async function lock(senderType: SenderType, unenroll: boolean): Promise<undefine
     return
 }
 
-async function createVault(senderType: SenderType, name: string): Promise<undefined> {
+async function createVault(senderType: SenderType, name: string): Promise<string | undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    await SECURE_CONTEXT.createVault(name)
-    return
+    return await SECURE_CONTEXT.createVault(name)
 }
 
 async function removeVault(senderType: SenderType, vaultId: string): Promise<undefined> {

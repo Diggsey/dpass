@@ -1,5 +1,6 @@
 import browser from "webextension-polyfill"
-import { ContentModalMessage, sendMessage } from "../shared";
+import { sendMessage } from "../shared/messages";
+import { ContentModalMessage } from "../shared/messages/misc";
 import { ModalArgs, ModalList, ModalResult } from "../shared/modal";
 
 type OpenModal = {
@@ -65,7 +66,7 @@ export async function openModal<P extends keyof ModalList>(
 
     setTimeout(() => {
         appContainer.style.visibility = "visible"
-    }, 100)
+    }, 50)
 
     try {
         return await promise

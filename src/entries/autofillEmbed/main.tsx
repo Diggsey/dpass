@@ -4,34 +4,18 @@ import "@fortawesome/fontawesome-free/css/all.css"
 import "./style.css";
 import { ModalProps, renderModal } from "../shared/modal";
 import { useUnprivilegedState } from "../shared/unprivileged";
-import { useEffect, useMemo } from "preact/hooks";
-import { computeItemDisplayName, UnprivilegedState, VaultItem } from "../shared/state";
-
-type ItemInfo = {
-    displayName: string,
-    vaultName: string,
-    vaultId: string,
-    itemId: string,
-    item: VaultItem,
-}
-
-type AutofillItemProps = {
-    item: ItemInfo,
-    chooseItem: (item: ItemInfo) => void,
-}
-
-const AutofillItem: FunctionalComponent<AutofillItemProps> = ({ item, chooseItem }) => {
-    return <div class="box is-clickable" onClick={() => chooseItem(item)}>
-        <h4>{item.displayName}</h4>
-        <h5>{item.vaultName}</h5>
-    </div>
-}
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { computeItemDisplayName, UnprivilegedState, VaultItemField } from "../shared/state";
+import { AutofillItem } from "./item";
+import { defaultName } from "../shared/autofill";
+import { Field } from "../shared/components/field";
+import { IconButton } from "../shared/components/iconButton";
 
 type AutofillInnerProps = {
     state: UnprivilegedState,
 } & ModalProps<"autofillEmbed">
 
-const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({ state, resolve, reject }) => {
+const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({ state, args, resolve, reject }) => {
     const allItems = useMemo(() => {
         const allItems = Object.entries(state.vaults)
             .flatMap(([vaultId, vault]) => Object.entries(vault.items || {})
@@ -56,16 +40,50 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({ state, resolve
     }
 
     useEffect(() => {
-        if (allItems.length === 1) {
+        if (allItems.length === 1 && !args.manual) {
             chooseItem(allItems[0])
         }
-    }, [allItems.length])
+    }, [allItems.length, args.manual])
 
-    return <div>
-        {allItems.map(item => <AutofillItem item={item} chooseItem={chooseItem} />)}
-        {allItems.length === 0 ? <div>No applicable vault items</div> : null}
-        <div>
-            <button type="button" class="button" onClick={() => reject(null)}>Cancel</button>
+    const [fields, setFields] = useState<VaultItemField[]>(() => (
+        args.fields.map(f => ({
+            uuid: crypto.randomUUID(),
+            name: defaultName(f.autofillModes[0]),
+            autofillMode: f.autofillModes[0],
+            value: f.value,
+        }))
+    ))
+
+    const addField = () => {
+        setFields([...fields, {
+            uuid: crypto.randomUUID(),
+            name: "Password",
+            autofillMode: { id: "password" },
+            value: "",
+        }])
+    }
+
+    return <div class="columns is-mobile">
+        <div class="column is-one-quarter">
+            {allItems.map(item => <AutofillItem item={item} chooseItem={chooseItem} />)}
+            {allItems.length === 0 ? <div>No applicable vault items</div> : null}
+            <div>
+                <button type="button" class="button" onClick={() => reject(null)}>Cancel</button>
+            </div>
+        </div>
+        <div class="column">
+            {fields.map((f, i) => (
+                <Field
+                    field={f}
+                    onUpdate={(nf => setFields([...fields.slice(0, i), nf, ...fields.slice(i + 1)]))}
+                    onDelete={() => setFields([...fields.slice(0, i), ...fields.slice(i + 1)])}
+                />
+            ))}
+            <div class="field">
+                <div class="control">
+                    <IconButton iconClass="fas fa-plus" onClick={addField}>Add new field</IconButton>
+                </div>
+            </div>
         </div>
     </div>
 }
