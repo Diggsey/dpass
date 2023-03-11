@@ -1,6 +1,6 @@
-import browser, { Runtime } from "webextension-polyfill";
-import { applyDelta, computeDelta, Delta } from "./delta";
-import { Disposable } from "./mixins/disposable";
+import browser, { Runtime } from "webextension-polyfill"
+import { applyDelta, computeDelta, Delta } from "./delta"
+import { Disposable } from "./mixins/disposable"
 
 export class Publisher<T> extends EventTarget {
     #port: Runtime.Port
@@ -10,7 +10,9 @@ export class Publisher<T> extends EventTarget {
         super()
         this.#port = port
         this.#lastValue = null
-        this.#port.onDisconnect.addListener(() => this.dispatchEvent(new CustomEvent("disconnect")))
+        this.#port.onDisconnect.addListener(() =>
+            this.dispatchEvent(new CustomEvent("disconnect"))
+        )
     }
 
     publish(newValue: T) {

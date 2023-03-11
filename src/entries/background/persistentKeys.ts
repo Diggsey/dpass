@@ -1,9 +1,9 @@
-import browser from "webextension-polyfill";
+import browser from "webextension-polyfill"
 
 import { exportKey, importKey } from "./crypto"
 
 export enum PersistentKeyType {
-    setupKey = "setupKey"
+    setupKey = "setupKey",
 }
 
 export async function storeKey(keyType: PersistentKeyType, key: CryptoKey) {
@@ -11,7 +11,9 @@ export async function storeKey(keyType: PersistentKeyType, key: CryptoKey) {
     await browser.storage.local.set({ [`key-${keyType}`]: Array.from(rawKey) })
 }
 
-export async function loadKey(keyType: PersistentKeyType): Promise<CryptoKey | null> {
+export async function loadKey(
+    keyType: PersistentKeyType
+): Promise<CryptoKey | null> {
     const k = `key-${keyType}`
     const record = await browser.storage.local.get(k)
     if (record[k]) {

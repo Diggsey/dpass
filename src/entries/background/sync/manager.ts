@@ -16,7 +16,12 @@ export class SyncManager extends Actor {
     #lastError: unknown = null
     #priority: number
 
-    constructor(storage: IStorage, fileId: string, integrator: IIntegrator, priority: number) {
+    constructor(
+        storage: IStorage,
+        fileId: string,
+        integrator: IIntegrator,
+        priority: number
+    ) {
         super()
         this.#fileId = fileId
         this.storage = storage
@@ -53,7 +58,11 @@ export class SyncManager extends Actor {
             return
         }
         try {
-            this.#lastSeenEtag = await this.storage.uploadFile(this.#fileId, this.#lastIntegratedEtag, this.#pendingData)
+            this.#lastSeenEtag = await this.storage.uploadFile(
+                this.#fileId,
+                this.#lastIntegratedEtag,
+                this.#pendingData
+            )
             this.#pendingData = null
             this.#lastError = null
             this.#lastIntegratedEtag = this.#lastSeenEtag
@@ -71,7 +80,11 @@ export class SyncManager extends Actor {
             const result = await this.storage.downloadFile(this.#fileId)
             if (result) {
                 this.#lastSeenEtag = result.etag
-                await this.#integrator.integrate(this.#fileId, result.data, this.#priority)
+                await this.#integrator.integrate(
+                    this.#fileId,
+                    result.data,
+                    this.#priority
+                )
                 this.#lastIntegratedEtag = result.etag
             } else {
                 this.#lastSeenEtag = null

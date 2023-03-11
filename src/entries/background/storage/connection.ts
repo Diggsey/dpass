@@ -1,5 +1,8 @@
 import { objectKey } from "~/entries/shared"
-import { ConnectionInfo, StorageAddress } from "~/entries/shared/privileged/state"
+import {
+    ConnectionInfo,
+    StorageAddress,
+} from "~/entries/shared/privileged/state"
 import { Actor } from "../actor"
 import { Rc, WeakRc } from "../rc"
 import { GDriveStorage } from "./gdrive"
@@ -9,8 +12,10 @@ import { SharedStorage } from "./shared"
 
 export function storageConnection(addr: StorageAddress): ConnectionInfo {
     switch (addr.id) {
-        case "local": return { id: "none" }
-        case "gdrive": return { id: "oauth", serverId: "google", userId: addr.userId }
+        case "local":
+            return { id: "none" }
+        case "gdrive":
+            return { id: "oauth", serverId: "google", userId: addr.userId }
     }
 }
 
@@ -34,7 +39,9 @@ class StorageManager extends Actor {
         this.#gc()
         const storageKey = objectKey(address)
         return this._post(`open(${storageKey})`, async () => {
-            let storage = this.#storageMap.get(storageKey)?.upgrade(SharedStorage)
+            let storage = this.#storageMap
+                .get(storageKey)
+                ?.upgrade(SharedStorage)
             if (!storage) {
                 let innerStorage
                 switch (address.id) {
@@ -51,7 +58,6 @@ class StorageManager extends Actor {
             }
             return storage
         })
-
     }
 }
 

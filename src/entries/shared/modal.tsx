@@ -1,31 +1,34 @@
-import { ComponentType, render } from "preact";
-import { sendMessageToFrame } from "./messages";
-import { DetectedField, RequestAutofillMessage } from "./messages/autofill";
-import { FrameDetails } from "./messages/misc";
-import { ContentModalPayload } from "./messages/modal";
+import { ComponentType, render } from "preact"
+import { sendMessageToFrame } from "./messages"
+import { DetectedField, RequestAutofillMessage } from "./messages/autofill"
+import { FrameDetails } from "./messages/misc"
+import { ContentModalPayload } from "./messages/modal"
 
 export type AutofillArgs = {
-    origin: string,
-    url: string,
-    fields: DetectedField[],
-    manual: boolean,
+    origin: string
+    url: string
+    fields: DetectedField[]
+    manual: boolean
 }
 
 export type ModalList = {
-    "autofillEmbed": (arg: AutofillArgs) => RequestAutofillMessage,
-    "unknown": (arg: unknown) => unknown
+    autofillEmbed: (arg: AutofillArgs) => RequestAutofillMessage | null
+    unknown: (arg: unknown) => unknown
 }
 
 export type ModalArgs<P extends keyof ModalList> = Parameters<ModalList[P]>[0]
 export type ModalResult<P extends keyof ModalList> = ReturnType<ModalList[P]>
 
 export type ModalProps<P extends keyof ModalList> = {
-    args: ModalArgs<P>,
-    resolve: (result: ModalResult<P>) => void,
-    reject: (error: unknown) => void,
+    args: ModalArgs<P>
+    resolve: (result: ModalResult<P>) => void
+    reject: (error: unknown) => void
 }
 
-export function renderModal<P extends keyof ModalList>(_page: P, Component: ComponentType<ModalProps<P>>) {
+export function renderModal<P extends keyof ModalList>(
+    _page: P,
+    Component: ComponentType<ModalProps<P>>
+) {
     const searchParams = new URL(window.location.href).searchParams
     const uuid = searchParams.get("uuid")
     const parentJson = searchParams.get("parent")
@@ -56,7 +59,10 @@ export function renderModal<P extends keyof ModalList>(_page: P, Component: Comp
         })
     }
 
-    render(<Component args={args} resolve={resolve} reject={reject} />, document.body)
+    render(
+        <Component args={args} resolve={resolve} reject={reject} />,
+        document.body
+    )
 
     let lastWidth: number | null = null
     let lastHeight: number | null = null
@@ -75,5 +81,4 @@ export function renderModal<P extends keyof ModalList>(_page: P, Component: Comp
             })
         }
     }).observe(document.body)
-
 }

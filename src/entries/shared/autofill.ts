@@ -1,4 +1,3 @@
-
 export type AutofillMode = PresetAutofillMode | CustomAutofillMode
 
 export const PRESET_AUTOFILL_VALUES = [
@@ -28,111 +27,113 @@ export const PRESET_AUTOFILL_VALUES = [
     "ccSecurityCode",
     "ccType",
 ] as const
-export type PresetAutofillValue = typeof PRESET_AUTOFILL_VALUES[number]
+export type PresetAutofillValue = (typeof PRESET_AUTOFILL_VALUES)[number]
 
 export type AutofillInfo = {
-    name: string,
-    matcher: (elem: HTMLInputElement) => number,
+    name: string
+    matcher: (elem: HTMLInputElement) => number
 }
 
-export const PRESET_AUTOFILL_MAPPING: { [id in PresetAutofillValue]: AutofillInfo } = {
-    "username": {
+export const PRESET_AUTOFILL_MAPPING: {
+    [id in PresetAutofillValue]: AutofillInfo
+} = {
+    username: {
         name: "Username",
         matcher: usernameMatcher,
     },
-    "email": {
+    email: {
         name: "Email",
         matcher: emailMatcher,
     },
-    "password": {
+    password: {
         name: "Password",
         matcher: passwordMatcher,
     },
-    "note": {
+    note: {
         name: "Note",
         matcher: neverMatch,
     },
-    "passwordNote": {
+    passwordNote: {
         name: "Password Note",
         matcher: neverMatch,
     },
-    "honorificPrefix": {
+    honorificPrefix: {
         name: "Honorific Prefix",
         matcher: genericMatcher("honorific-prefix"),
     },
-    "givenName": {
+    givenName: {
         name: "Given Name",
         matcher: genericMatcher("given-name", "cc-given-name"),
     },
-    "additionalName": {
+    additionalName: {
         name: "Middle Name(s)",
         matcher: genericMatcher("additional-name", "cc-additional-name"),
     },
-    "familyName": {
+    familyName: {
         name: "Family Name",
         matcher: genericMatcher("family-name", "cc-family-name"),
     },
-    "honirificSuffix": {
+    honirificSuffix: {
         name: "Honirific Suffix",
         matcher: genericMatcher("honorific-suffix"),
     },
-    "name": {
+    name: {
         name: "Full Name",
         matcher: genericMatcher("name"),
     },
-    "addressLine1": {
+    addressLine1: {
         name: "Address Line 1",
         matcher: genericMatcher("address-line1", "street-address"),
     },
-    "addressLine2": {
+    addressLine2: {
         name: "Address Line 2",
         matcher: genericMatcher("address-line2", "street-address"),
     },
-    "addressLine3": {
+    addressLine3: {
         name: "Address Line 3",
         matcher: genericMatcher("address-line3", "street-address"),
     },
-    "addressLevel2": {
+    addressLevel2: {
         name: "Address Locality",
         matcher: genericMatcher("address-level2"),
     },
-    "addressLevel1": {
+    addressLevel1: {
         name: "Address State/Province",
         matcher: genericMatcher("address-level1"),
     },
-    "addressCountry": {
+    addressCountry: {
         name: "Address Country",
         matcher: genericMatcher("country", "country-name"),
     },
-    "addressPostalCode": {
+    addressPostalCode: {
         name: "Address Postal Code",
         matcher: genericMatcher("postal-code"),
     },
-    "ccNumber": {
+    ccNumber: {
         name: "Credit Card Number",
         matcher: genericMatcher("cc-number"),
     },
-    "ccExpiry": {
+    ccExpiry: {
         name: "Credit Card Expiry",
         matcher: genericMatcher("cc-exp", "cc-exp-month", "cc-exp-year"),
     },
-    "ccSecurityCode": {
+    ccSecurityCode: {
         name: "Credit Card Security Code",
         matcher: genericMatcher("cc-csc"),
     },
-    "ccType": {
+    ccType: {
         name: "Credit Card Type",
         matcher: genericMatcher("cc-type"),
     },
-    "dob": {
+    dob: {
         name: "Date Of Birth",
         matcher: genericMatcher("bday", "bday-day", "bday-month", "bday-year"),
     },
-    "gender": {
+    gender: {
         name: "Gender",
         matcher: genericMatcher("sex"),
     },
-    "phoneNumber": {
+    phoneNumber: {
         name: "Phone Number",
         matcher: telephoneMatcher,
     },
@@ -142,8 +143,8 @@ export type PresetAutofillMode = {
     id: PresetAutofillValue
 }
 export type CustomAutofillMode = {
-    id: "custom",
-    key: string,
+    id: "custom"
+    key: string
 }
 
 export function defaultName(autofillMode: AutofillMode): string {
@@ -153,11 +154,19 @@ export function defaultName(autofillMode: AutofillMode): string {
     return PRESET_AUTOFILL_MAPPING[autofillMode.id].name
 }
 
-function scoreValue(value: string | undefined, valueScores: { [value: string]: number }, patternScores?: [RegExp, number][]): number {
+function scoreValue(
+    value: string | undefined,
+    valueScores: { [value: string]: number },
+    patternScores?: [RegExp, number][]
+): number {
     if (value === undefined) {
         return 0
     }
-    return valueScores[value] ?? patternScores?.find(p => p[0].test(value))?.[1] ?? 0
+    return (
+        valueScores[value] ??
+        patternScores?.find((p) => p[0].test(value))?.[1] ??
+        0
+    )
 }
 
 function usernameMatcher(elem: HTMLInputElement): number {
@@ -166,31 +175,35 @@ function usernameMatcher(elem: HTMLInputElement): number {
     }
     const label = elem.labels?.[0]
     return Math.max(
-        scoreValue(elem.name.toLowerCase(), {
-            "username": 0.95,
-            "login": 0.5,
-            "ue": 0.5,
-        }, [
-            [/userid$/, 0.5]
-        ]),
+        scoreValue(
+            elem.name.toLowerCase(),
+            {
+                username: 0.95,
+                login: 0.5,
+                ue: 0.5,
+            },
+            [[/userid$/, 0.5]]
+        ),
         scoreValue(elem.autocomplete, {
-            "username": 1.0,
-            "nickname": 0.5,
+            username: 1.0,
+            nickname: 0.5,
         }),
-        scoreValue(elem.placeholder.trim().toLowerCase(), {
-            "username": 0.95,
-            "login": 0.5,
-        }, [
-            [/id$/, 0.5]
-        ]),
+        scoreValue(
+            elem.placeholder.trim().toLowerCase(),
+            {
+                username: 0.95,
+                login: 0.5,
+            },
+            [[/id$/, 0.5]]
+        ),
         scoreValue(elem.dataset["field"], {
-            "username": 0.95,
-            "nickname": 0.5,
+            username: 0.95,
+            nickname: 0.5,
         }),
         scoreValue(label?.innerText?.toLowerCase(), {}, [
             [/\busername\b/, 0.5],
-            [/\bid\b/, 0.5]
-        ]),
+            [/\bid\b/, 0.5],
+        ])
     )
 }
 
@@ -201,23 +214,21 @@ function emailMatcher(elem: HTMLInputElement): number {
     const label = elem.labels?.[0]
     return Math.max(
         scoreValue(elem.name.toLowerCase(), {
-            "email": 0.9,
-            "login": 0.4,
-            "ue": 0.4,
+            email: 0.9,
+            login: 0.4,
+            ue: 0.4,
         }),
         scoreValue(elem.autocomplete, {
-            "email": 1.0,
+            email: 1.0,
         }),
         scoreValue(elem.type, {
-            "email": 0.9,
+            email: 0.9,
         }),
         scoreValue(elem.placeholder.trim().toLowerCase(), {
-            "email": 0.9,
-            "login": 0.4,
+            email: 0.9,
+            login: 0.4,
         }),
-        scoreValue(label?.innerText?.toLowerCase(), {}, [
-            [/\bemail\b/, 0.4],
-        ]),
+        scoreValue(label?.innerText?.toLowerCase(), {}, [[/\bemail\b/, 0.4]])
     )
 }
 
@@ -228,14 +239,14 @@ function passwordMatcher(elem: HTMLInputElement): number {
     return Math.max(
         0.5,
         scoreValue(elem.name.toLowerCase(), {
-            "password": 0.9,
+            password: 0.9,
         }),
         scoreValue(elem.autocomplete, {
             "current-password": 1.0,
         }),
         scoreValue(elem.placeholder.trim().toLowerCase(), {
-            "password": 0.9,
-        }),
+            password: 0.9,
+        })
     )
 }
 
@@ -246,12 +257,12 @@ function telephoneMatcher(elem: HTMLInputElement): number {
     const label = elem.labels?.[0]
     return Math.max(
         scoreValue(elem.name.toLowerCase(), {
-            "tel": 0.9,
-            "phone": 0.4,
-            "telephone": 0.4,
+            tel: 0.9,
+            phone: 0.4,
+            telephone: 0.4,
         }),
         scoreValue(elem.autocomplete, {
-            "tel": 1.0,
+            tel: 1.0,
             "tel-country-code": 1.0,
             "tel-national": 1.0,
             "tel-area-code": 1.0,
@@ -261,19 +272,21 @@ function telephoneMatcher(elem: HTMLInputElement): number {
             "tel-extension": 1.0,
         }),
         scoreValue(elem.placeholder.trim().toLowerCase(), {
-            "telephone": 0.9,
-            "tel": 0.4,
-            "phone": 0.4,
+            telephone: 0.9,
+            tel: 0.4,
+            phone: 0.4,
         }),
         scoreValue(label?.innerText?.toLowerCase(), {}, [
             [/\bphone\b/, 0.4],
             [/\btel\b/, 0.4],
             [/\btelephone\b/, 0.4],
-        ]),
+        ])
     )
 }
 
-function genericMatcher(...autocompleteValues: string[]): (elem: HTMLInputElement) => number {
+function genericMatcher(
+    ...autocompleteValues: string[]
+): (elem: HTMLInputElement) => number {
     return (elem) => {
         if (elem.type === "password") {
             return 0

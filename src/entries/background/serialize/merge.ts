@@ -1,16 +1,16 @@
 export type MergeableItem<T> = {
-    uuid: string,
-    creationTimestamp: number,
-    updateTimestamp: number,
-    payload: T,
+    uuid: string
+    creationTimestamp: number
+    updateTimestamp: number
+    payload: T
 }
 
 export type MergeableFile<T> = {
-    uuid: string,
-    items: MergeableItem<T | null>[],
+    uuid: string
+    items: MergeableItem<T | null>[]
 }
 
-class MergeError extends Error { }
+class MergeError extends Error {}
 
 class MergeContext<T> {
     #latestTimestamps: Map<string, number>
@@ -24,7 +24,10 @@ class MergeContext<T> {
     }
     #addItem(item: MergeableItem<T | null>) {
         const prevTimestamp = this.#latestTimestamps.get(item.uuid)
-        if (prevTimestamp === undefined || prevTimestamp < item.updateTimestamp) {
+        if (
+            prevTimestamp === undefined ||
+            prevTimestamp < item.updateTimestamp
+        ) {
             this.#latestTimestamps.set(item.uuid, item.updateTimestamp)
         }
         this.#allItems.push(item)
@@ -39,29 +42,39 @@ class MergeContext<T> {
     }
     merge(): MergeableFile<T> {
         if (this.#uuids.size > 1) {
-            throw new MergeError("Attempted to merge files with different identities")
+            throw new MergeError(
+                "Attempted to merge files with different identities"
+            )
         }
         let uuid = null
         for (const x of this.#uuids) {
-            uuid = x;
+            uuid = x
         }
         if (uuid === null) {
             throw new MergeError("No input files")
         }
-        const items = this.#allItems.filter(item => {
-            return this.#latestTimestamps.get(item.uuid) === item.updateTimestamp
+        const items = this.#allItems.filter((item) => {
+            return (
+                this.#latestTimestamps.get(item.uuid) === item.updateTimestamp
+            )
         })
         return { uuid, items }
     }
 }
 
-export function mergeFiles<T>(a: MergeableFile<T>, b: MergeableFile<T>): MergeableFile<T> {
+export function mergeFiles<T>(
+    a: MergeableFile<T>,
+    b: MergeableFile<T>
+): MergeableFile<T> {
     const ctx = new MergeContext<T>()
     ctx.add(a, b)
     return ctx.merge()
 }
 
-export function extractItems<T, U extends T>(a: MergeableFile<T>, f: (item: MergeableItem<T>) => item is MergeableItem<U>): MergeableItem<U>[] {
+export function extractItems<T, U extends T>(
+    a: MergeableFile<T>,
+    f: (item: MergeableItem<T>) => item is MergeableItem<U>
+): MergeableItem<U>[] {
     const g = (item: MergeableItem<T | null>): item is MergeableItem<U> => {
         if (item.payload !== null) {
             return f({ ...item, payload: item.payload })
@@ -72,11 +85,13 @@ export function extractItems<T, U extends T>(a: MergeableFile<T>, f: (item: Merg
     return a.items.filter(g)
 }
 
-export function itemPatcher<T>(f: (payload: T | null, uuid: string) => T | null): (file: MergeableFile<T>) => MergeableFile<T> {
+export function itemPatcher<T>(
+    f: (payload: T | null, uuid: string) => T | null
+): (file: MergeableFile<T>) => MergeableFile<T> {
     const updateTimestamp = Date.now()
-    return file => ({
+    return (file) => ({
         ...file,
-        items: file.items.map(item => {
+        items: file.items.map((item) => {
             const payload = f(item.payload, item.uuid)
             if (payload !== item.payload) {
                 item = {
@@ -90,24 +105,33 @@ export function itemPatcher<T>(f: (payload: T | null, uuid: string) => T | null)
     })
 }
 
-export function itemCreator<T, U extends T>(payload: U, uuid?: string): (file: MergeableFile<T>) => MergeableFile<T> {
+export function itemCreator<T, U extends T>(
+    payload: U,
+    uuid?: string
+): (file: MergeableFile<T>) => MergeableFile<T> {
     const timestamp = Date.now()
-    return file => ({
+    return (file) => ({
         ...file,
-        items: [...file.items, {
-            uuid: uuid || crypto.randomUUID(),
-            creationTimestamp: timestamp,
-            updateTimestamp: timestamp,
-            payload,
-        }],
+        items: [
+            ...file.items,
+            {
+                uuid: uuid || crypto.randomUUID(),
+                creationTimestamp: timestamp,
+                updateTimestamp: timestamp,
+                payload,
+            },
+        ],
     })
 }
 
 function computeUpdateTimestamps<T>(a: MergeableFile<T>): string[] {
-    return a.items.map(item => `${item.uuid} ${item.updateTimestamp}`).sort()
+    return a.items.map((item) => `${item.uuid} ${item.updateTimestamp}`).sort()
 }
 
-export function areFilesEqual<T>(a: MergeableFile<T> | null, b: MergeableFile<T> | null): boolean {
+export function areFilesEqual<T>(
+    a: MergeableFile<T> | null,
+    b: MergeableFile<T> | null
+): boolean {
     if (a === null || b === null) {
         return a === null && b === null
     }

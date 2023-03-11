@@ -23,8 +23,10 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
         return new Promise((resolve, reject) => {
             const conn = indexedDB.open(`dpass/${address.folderName}`, 1)
             conn.onupgradeneeded = (e) => {
-                if (e.newVersion === null || e.newVersion === e.oldVersion) { return }
-                const db = conn.result;
+                if (e.newVersion === null || e.newVersion === e.oldVersion) {
+                    return
+                }
+                const db = conn.result
 
                 switch (e.oldVersion) {
                     case 0:
@@ -36,11 +38,15 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
                         }
                 }
             }
-            conn.onsuccess = () => resolve(new LocalStorage(conn.result, address))
+            conn.onsuccess = () =>
+                resolve(new LocalStorage(conn.result, address))
             conn.onerror = reject
         })
     }
-    performTransaction<T>(mode: "readonly" | "readwrite", f: (objectStore: IDBObjectStore) => Promise<T>): Promise<T> {
+    performTransaction<T>(
+        mode: "readonly" | "readwrite",
+        f: (objectStore: IDBObjectStore) => Promise<T>
+    ): Promise<T> {
         return new Promise<T>((resolve, reject) => {
             const tx = this.#db.transaction(OBJECT_STORE_NAME, mode)
             let successFn: (() => void) | null = null
@@ -49,16 +55,22 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
             tx.oncomplete = () => successFn && successFn()
 
             const objectStore = tx.objectStore(OBJECT_STORE_NAME)
-            f(objectStore).then(res => {
-                successFn = () => resolve(res)
-                tx.commit()
-            }, err => {
-                errorValue = err
-                tx.abort()
-            })
+            f(objectStore).then(
+                (res) => {
+                    successFn = () => resolve(res)
+                    tx.commit()
+                },
+                (err) => {
+                    errorValue = err
+                    tx.abort()
+                }
+            )
         })
     }
-    static downloadFileInner(objectStore: IDBObjectStore, fileId: string): Promise<DataAndEtag | undefined> {
+    static downloadFileInner(
+        objectStore: IDBObjectStore,
+        fileId: string
+    ): Promise<DataAndEtag | undefined> {
         return new Promise((resolve, reject) => {
             const req = objectStore.get(fileId)
             req.onerror = reject
@@ -67,14 +79,21 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
             }
         })
     }
-    static uploadFileInner(objectStore: IDBObjectStore, fileId: string, data: DataAndEtag): Promise<void> {
+    static uploadFileInner(
+        objectStore: IDBObjectStore,
+        fileId: string,
+        data: DataAndEtag
+    ): Promise<void> {
         return new Promise((resolve, reject) => {
             const req = objectStore.put(data, fileId)
             req.onerror = reject
             req.onsuccess = () => resolve()
         })
     }
-    static deleteFileInner(objectStore: IDBObjectStore, fileId: string): Promise<void> {
+    static deleteFileInner(
+        objectStore: IDBObjectStore,
+        fileId: string
+    ): Promise<void> {
         return new Promise((resolve, reject) => {
             const req = objectStore.delete(fileId)
             req.onerror = reject
@@ -82,11 +101,20 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
         })
     }
     downloadFile(fileId: string): Promise<DataAndEtag | undefined> {
-        return this.performTransaction("readonly", objectStore => LocalStorage.downloadFileInner(objectStore, fileId))
+        return this.performTransaction("readonly", (objectStore) =>
+            LocalStorage.downloadFileInner(objectStore, fileId)
+        )
     }
-    uploadFile(fileId: string, expectedEtag: string | null, data: Uint8Array): Promise<string> {
-        return this.performTransaction("readwrite", async objectStore => {
-            const fileAndEtag = await LocalStorage.downloadFileInner(objectStore, fileId)
+    uploadFile(
+        fileId: string,
+        expectedEtag: string | null,
+        data: Uint8Array
+    ): Promise<string> {
+        return this.performTransaction("readwrite", async (objectStore) => {
+            const fileAndEtag = await LocalStorage.downloadFileInner(
+                objectStore,
+                fileId
+            )
             if (fileAndEtag?.etag != expectedEtag) {
                 throw new ETagMismatchError()
             }
@@ -99,8 +127,11 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
         })
     }
     deleteFile(fileId: string, expectedEtag: string): Promise<void> {
-        return this.performTransaction("readwrite", async objectStore => {
-            const fileAndEtag = await LocalStorage.downloadFileInner(objectStore, fileId)
+        return this.performTransaction("readwrite", async (objectStore) => {
+            const fileAndEtag = await LocalStorage.downloadFileInner(
+                objectStore,
+                fileId
+            )
             if (fileAndEtag?.etag != expectedEtag) {
                 throw new ETagMismatchError()
             }

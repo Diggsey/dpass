@@ -1,12 +1,11 @@
-import { FunctionalComponent, render } from "preact";
-import { useEffect } from "preact/hooks";
-import { usePrivilegedState } from "../shared/privileged/hooks";
-import "./style.css";
+import { FunctionalComponent, render } from "preact"
+import { useEffect } from "preact/hooks"
+import { usePrivilegedState } from "../shared/privileged/hooks"
+import "./style.css"
 import "bulma/bulma.sass"
 import "@fortawesome/fontawesome-free/css/all.css"
-import { UnlockPanel } from "../shared/components/unlockForm";
-import browser from "webextension-polyfill";
-
+import { UnlockPanel } from "../shared/components/unlockForm"
+import browser from "webextension-polyfill"
 
 const Popup: FunctionalComponent = () => {
     const state = usePrivilegedState()
@@ -20,7 +19,11 @@ const Popup: FunctionalComponent = () => {
         }
     }, [isSuper])
 
-    return <div><UnlockPanel isSetUp={isSetUp} isUnlocked={isUnlocked} /></div>
+    return (
+        <div>
+            <UnlockPanel isSetUp={isSetUp} isUnlocked={isUnlocked} />
+        </div>
+    )
 }
 
 render(<Popup />, document.body)

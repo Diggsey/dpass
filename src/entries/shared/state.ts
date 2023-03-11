@@ -1,35 +1,36 @@
 import { AutofillMode } from "./autofill"
 
 export type UnprivilegedState = {
-    privileged: false,
-    origin: string,
-    isUnlocked: boolean,
-    vaults: UnprivilegedVaultMap,
-    syncState: UnprivilegedSyncState,
+    readonly privileged: false
+    readonly origin: string
+    readonly isUnlocked: boolean
+    readonly defaultVaultId: string | null
+    readonly vaults: UnprivilegedVaultMap
+    readonly syncState: UnprivilegedSyncState
 }
 
 export type UnprivilegedVaultMap = {
-    [id: string]: UnprivilegedVault
+    readonly [id: string]: UnprivilegedVault
 }
 
 export type UnprivilegedSyncState = "idle" | "inProgress" | "warning" | "error"
 
 export type UnprivilegedVault = {
-    name: string,
-    items: VaultItemMap | null,
-    syncState: UnprivilegedSyncState,
+    readonly name: string
+    readonly items: VaultItemMap | null
+    readonly syncState: UnprivilegedSyncState
 }
 
 export type VaultItemMap = {
-    [id: string]: VaultItem
+    readonly [id: string]: VaultItem
 }
 
 export type VaultItem = {
-    origins: string[],
-    name: string,
-    creationTimestamp: number,
-    updateTimestamp: number,
-    data: VaultItemData,
+    readonly origins: string[]
+    readonly name: string
+    readonly creationTimestamp: number
+    readonly updateTimestamp: number
+    readonly data: VaultItemData
 }
 
 export function computeItemDisplayName(item: VaultItem): string {
@@ -39,24 +40,24 @@ export function computeItemDisplayName(item: VaultItem): string {
 export type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
 
 export type PlainVaultItemData = {
-    encrypted: false,
-    payload: VaultItemPayload,
+    readonly encrypted: false
+    readonly payload: VaultItemPayload
 }
 export type EncryptedVaultItemData = {
-    encrypted: true,
+    readonly encrypted: true
 }
 
 export type VaultItemPayload = {
-    login_url?: string,
-    restrict_url?: true,
-    fields: VaultItemField[]
+    readonly login_url?: string
+    readonly restrict_url?: true
+    readonly fields: VaultItemField[]
 }
 
 export type VaultItemField = {
-    uuid: string,
-    name: string,
-    value: string,
-    autofillMode: AutofillMode
+    readonly uuid: string
+    readonly name: string
+    readonly value: string
+    readonly autofillMode: AutofillMode
 }
 
 export const UNPRIVILEGED_PORT_NAME = "unprivilegedState"

@@ -1,92 +1,93 @@
 import { VaultItemMap } from "../state"
 
 export type PrivilegedState = {
-    privileged: true,
-    hasIdentity: boolean,
-    isSetUp: boolean,
-    isUnlocked: boolean,
-    isSuper: boolean,
-    rootInfo: RootInfo | null,
-    rootAddresses: StorageAddress[],
-    vaults: PrivilegedVaultMap,
-    syncState: PrivilegedSyncState,
-    keyPairs: KeyPairMap,
+    readonly privileged: true
+    readonly hasIdentity: boolean
+    readonly isSetUp: boolean
+    readonly isUnlocked: boolean
+    readonly isSuper: boolean
+    readonly rootInfo: RootInfo | null
+    readonly rootAddresses: StorageAddress[]
+    readonly defaultVaultId: string | null
+    readonly vaults: PrivilegedVaultMap
+    readonly syncState: PrivilegedSyncState
+    readonly keyPairs: KeyPairMap
 }
 
 export type RootInfo = {
-    creationTimestamp: number,
-    updateTimestamp: number,
-    name: string,
+    readonly creationTimestamp: number
+    readonly updateTimestamp: number
+    readonly name: string
 }
 
 export type KeyPairMap = {
-    [id: string]: KeyPair
+    readonly [id: string]: KeyPair
 }
 
 export type KeyPair = {
-    creationTimestamp: number,
-    updateTimestamp: number,
-    name?: string,
-    publicKey: Uint8Array,
+    readonly creationTimestamp: number
+    readonly updateTimestamp: number
+    readonly name?: string
+    readonly publicKey: Uint8Array
 }
 
 export type PrivilegedVaultMap = {
-    [id: string]: PrivilegedVault
+    readonly [id: string]: PrivilegedVault
 }
 
 export type PrivilegedVault = {
-    name: string,
-    items: VaultItemMap | null,
-    addresses: StorageAddress[],
-    syncState: PrivilegedSyncState,
+    readonly name: string
+    readonly items: VaultItemMap | null
+    readonly addresses: StorageAddress[]
+    readonly syncState: PrivilegedSyncState
 }
 
 export type PrivilegedSyncState = {
-    [storageAddress: string]: StorageSyncState
+    readonly [storageAddress: string]: StorageSyncState
 }
 
 export type StorageSyncState = {
-    address: StorageAddress,
-    inProgress: boolean,
-    lastWarning?: string,
-    lastError?: string,
+    readonly address: StorageAddress
+    readonly inProgress: boolean
+    readonly lastWarning?: string
+    readonly lastError?: string
 }
 
 export type LocalStorageAddress = {
-    id: "local",
-    folderName: string,
+    readonly id: "local"
+    readonly folderName: string
 }
 export type GDriveStorageAddress = {
-    id: "gdrive",
-    folderId: string,
-    userId: string,
+    readonly id: "gdrive"
+    readonly folderId: string
+    readonly userId: string
 }
 
 export type NoConnectionInfo = {
-    id: "none"
+    readonly id: "none"
 }
 
 export type OauthConnectionInfo = {
-    id: "oauth"
-    serverId: "google",
-    userId: string,
+    readonly id: "oauth"
+    readonly serverId: "google"
+    readonly userId: string
 }
 
 export type StorageAddress = LocalStorageAddress | GDriveStorageAddress
 export type ConnectionInfo = OauthConnectionInfo | NoConnectionInfo
 
 export type OauthTokenPayload = {
-    id: "oauth",
-    accessToken: string,
+    readonly id: "oauth"
+    readonly accessToken: string
 }
 
 export type AuthTokenPayload = OauthTokenPayload
 
 export type AuthToken = {
-    id: "authToken",
-    connectionInfo: ConnectionInfo,
-    expiresAt: number,
-    payload: AuthTokenPayload,
+    readonly id: "authToken"
+    readonly connectionInfo: ConnectionInfo
+    readonly expiresAt: number
+    readonly payload: AuthTokenPayload
 }
 
 export const PRIVILEGED_PORT_NAME = "privilegedState"

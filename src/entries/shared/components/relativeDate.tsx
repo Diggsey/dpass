@@ -1,10 +1,10 @@
-import { FunctionalComponent } from "preact";
-import { useEffect, useState } from "preact/hooks";
-import { ClassName, cn } from "../ui";
+import { FunctionalComponent } from "preact"
+import { useEffect, useState } from "preact/hooks"
+import { ClassName, cn } from "../ui"
 
 type RelativeDateProps = {
-    timestamp: number,
-    class?: ClassName,
+    timestamp: number
+    class?: ClassName
 }
 
 const INTERVALS: [number, string | null][] = [
@@ -34,12 +34,21 @@ function computeInterval(date: Date): [string, number | null] {
     return ["Just now", date.getTime() + 1000]
 }
 
-export const RelativeDate: FunctionalComponent<RelativeDateProps> = ({ timestamp, class: className }) => {
+export const RelativeDate: FunctionalComponent<RelativeDateProps> = ({
+    timestamp,
+    class: className,
+}) => {
     const date = new Date(timestamp)
     const [text, expiry] = computeInterval(date)
     const [_count, setCount] = useState(0)
     useEffect(() => {
-        const timeoutId = expiry !== null ? setTimeout(() => setCount(count => count + 1), expiry - Date.now()) : null
+        const timeoutId =
+            expiry !== null
+                ? setTimeout(
+                      () => setCount((count) => count + 1),
+                      expiry - Date.now()
+                  )
+                : null
         return () => {
             if (timeoutId !== null) {
                 clearTimeout(timeoutId)
@@ -47,5 +56,9 @@ export const RelativeDate: FunctionalComponent<RelativeDateProps> = ({ timestamp
         }
     }, [expiry])
 
-    return <span class={cn(className)} title={date.toLocaleString()}>{text}</span>
+    return (
+        <span class={cn(className)} title={date.toLocaleString()}>
+            {text}
+        </span>
+    )
 }

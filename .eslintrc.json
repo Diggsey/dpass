@@ -101,7 +101,8 @@
                 ],
                 "no-unused-vars": "off",
                 "@typescript-eslint/no-floating-promises": "warn",
-                "@typescript-eslint/no-empty-function": "off"
+                "@typescript-eslint/no-empty-function": "off",
+                "@typescript-eslint/no-extra-semi": "off"
             }
         }
     ],

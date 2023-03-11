@@ -1,10 +1,14 @@
-import { PrivilegedState } from "../shared/privileged/state";
-import { IStatePublisher } from "./pubsub/state";
-import browser, { Action, Tabs } from "webextension-polyfill";
-import { SECURE_CONTEXT } from "./context";
-import { sendMessageToFrame, sendMessageToTab } from "../shared/messages";
+import { PrivilegedState } from "../shared/privileged/state"
+import { IStatePublisher } from "./pubsub/state"
+import browser, { Action, Tabs } from "webextension-polyfill"
+import { SECURE_CONTEXT } from "./context"
+import { sendMessageToFrame, sendMessageToTab } from "../shared/messages"
 
-type BrowserClickAction = "autofill" | "requestPassword" | "showOptions" | "none"
+type BrowserClickAction =
+    | "autofill"
+    | "requestPassword"
+    | "showOptions"
+    | "none"
 
 class BrowserAction extends EventTarget implements IStatePublisher {
     #popup: string | null = null
@@ -15,8 +19,8 @@ class BrowserAction extends EventTarget implements IStatePublisher {
         while (this.#changingPopup) {
             await this.#changingPopup
         }
-        let resolveFn = () => { }
-        this.#changingPopup = new Promise(resolve => {
+        let resolveFn = () => {}
+        this.#changingPopup = new Promise((resolve) => {
             resolveFn = resolve
         })
         try {
@@ -69,19 +73,22 @@ class BrowserAction extends EventTarget implements IStatePublisher {
         switch (clickAction) {
             case "autofill":
                 if (tab.id !== undefined) {
-                    void this.beginAutofillAction(tab.id, info?.modifiers?.includes("Shift") ?? false)
+                    void this.beginAutofillAction(
+                        tab.id,
+                        info?.modifiers?.includes("Shift") ?? false
+                    )
                 } else {
                     throw new Error("Not implemented")
                 }
-                break;
+                break
 
             case "showOptions":
                 void browser.runtime.openOptionsPage()
-                break;
+                break
             case "requestPassword":
             case "none":
                 void browser.browserAction.openPopup()
-                break;
+                break
         }
     }
 
@@ -94,11 +101,14 @@ class BrowserAction extends EventTarget implements IStatePublisher {
                 tabId,
             },
             files: ["/src/entries/content/main.js"],
-            injectImmediately: true
+            injectImmediately: true,
         })
         // We don't know which frame is active, so send a message to all of them.
         // Only the active frame will request auto-fill.
-        const response = await sendMessageToTab(tabId, { id: "pokeActiveFrame", manual })
+        const response = await sendMessageToTab(tabId, {
+            id: "pokeActiveFrame",
+            manual,
+        })
         if (response === undefined) {
             console.warn("No active frame found")
             return
@@ -110,12 +120,15 @@ class BrowserAction extends EventTarget implements IStatePublisher {
                 manual,
             },
         })
-        if (item === undefined) {
+        if (!item) {
             return
         }
-        await sendMessageToTab(tabId, { id: "performAutofill", item, origin: response.origin })
+        await sendMessageToTab(tabId, {
+            id: "performAutofill",
+            item,
+            origin: response.origin,
+        })
     }
-
 }
 
 export const BROWSER_ACTION = new BrowserAction()

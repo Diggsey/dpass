@@ -5,21 +5,21 @@ export type OptionsPageOpenedMessage = {
     id: "optionsPageOpened"
 }
 export type GetFrameDetailsMessage = {
-    id: "getFrameDetails",
+    id: "getFrameDetails"
 }
 export type ContentModalMessage = {
-    id: "contentModal",
-    uuid: string,
-    payload: ContentModalPayload,
+    id: "contentModal"
+    uuid: string
+    payload: ContentModalPayload
 }
 export type ForwardMessage = {
-    id: "forward",
-    tabId: number,
-    frameId: number,
-    message: Message,
+    id: "forward"
+    tabId: number
+    frameId: number
+    message: Message
 }
 export type FrameDetails = {
-    windowId: number,
-    tabId: number,
-    frameId: number,
+    windowId: number
+    tabId: number
+    frameId: number
 }

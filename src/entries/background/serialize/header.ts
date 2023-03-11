@@ -1,13 +1,11 @@
 import { compareUint8Array, SerializationError } from "./utils"
 
 type Header = {
-    version: number,
+    version: number
     body: Uint8Array
 }
 
-const MAGIC: Uint8Array = (new TextEncoder()).encode("dpass")
-
-
+const MAGIC: Uint8Array = new TextEncoder().encode("dpass")
 
 export function decodeHeader(src: Uint8Array): Header {
     if (!compareUint8Array(MAGIC, src.subarray(0, MAGIC.length))) {
@@ -21,7 +19,6 @@ export function decodeHeader(src: Uint8Array): Header {
         version,
         body: src.subarray(MAGIC.length + 1),
     }
-
 }
 
 export function encodeHeader({ version, body }: Header): Uint8Array {

@@ -10,28 +10,38 @@ type StorageButtonsProps = {
     vaultId: string | null
 }
 
-export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({ vaultId }) => {
-    const [addingStorage, addStorage] = usePromiseState(async (storageAddress: StorageAddress) => {
-        await sendMessage({
-            id: "editStorageAddresses",
-            vaultId,
-            action: {
-                id: "add",
-                storageAddress,
-            }
-        })
-    }, [])
-
-    const addStorageError = addingStorage.lastError && <Status level="danger" colorText={true}>{addingStorage.lastError.toString()}</Status>
-
-    const addStorageButtonClass = (id: StorageAddress["id"]) => cn({
-        isLoading: addingStorage.inProgress && addingStorage.lastArgs[0].id === id,
-        isInfo: true,
-    })
-
-    const disabledValue = (id: StorageAddress["id"]) => (
-        addingStorage.inProgress && addingStorage.lastArgs[0].id !== id
+export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({
+    vaultId,
+}) => {
+    const [addingStorage, addStorage] = usePromiseState(
+        async (storageAddress: StorageAddress) => {
+            await sendMessage({
+                id: "editStorageAddresses",
+                vaultId,
+                action: {
+                    id: "add",
+                    storageAddress,
+                },
+            })
+        },
+        []
     )
+
+    const addStorageError = addingStorage.lastError && (
+        <Status level="danger" colorText={true}>
+            {addingStorage.lastError.toString()}
+        </Status>
+    )
+
+    const addStorageButtonClass = (id: StorageAddress["id"]) =>
+        cn({
+            isLoading:
+                addingStorage.inProgress && addingStorage.lastArgs[0].id === id,
+            isInfo: true,
+        })
+
+    const disabledValue = (id: StorageAddress["id"]) =>
+        addingStorage.inProgress && addingStorage.lastArgs[0].id !== id
 
     const addLocalStorage = async () => {
         const folderName = prompt("Enter folder name:", "default")
@@ -45,7 +55,9 @@ export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({ vault
     }
 
     const addGDriveStorage = async () => {
-        const folderUrl = prompt("Enter sharing URL for the GDrive folder to use:")
+        const folderUrl = prompt(
+            "Enter sharing URL for the GDrive folder to use:"
+        )
         if (!folderUrl) {
             return
         }
@@ -57,7 +69,7 @@ export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({ vault
         const [_token, connectionInfo] = await TOKEN_MANAGER.request({
             id: "oauth",
             serverId: "google",
-            userId: ""
+            userId: "",
         })
         if (connectionInfo.id !== "oauth") {
             throw new Error("Expected connection type to be Oauth")
@@ -69,25 +81,27 @@ export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({ vault
         })
     }
 
-    return <>
-        <div class="is-flex is-flex-wrap-wrap gap-1">
-            <IconButton
-                class={addStorageButtonClass("local")}
-                iconClass="fas fa-location-dot"
-                disabled={disabledValue("local")}
-                onClick={addLocalStorage}
-            >
-                Add Local Storage
-            </IconButton>
-            <IconButton
-                class={addStorageButtonClass("gdrive")}
-                iconClass="fab fa-google-drive"
-                disabled={disabledValue("gdrive")}
-                onClick={addGDriveStorage}
-            >
-                Add GDrive Storage
-            </IconButton>
-        </div>
-        {addStorageError}
-    </>
+    return (
+        <>
+            <div class="is-flex is-flex-wrap-wrap gap-1">
+                <IconButton
+                    class={addStorageButtonClass("local")}
+                    iconClass="fas fa-location-dot"
+                    disabled={disabledValue("local")}
+                    onClick={addLocalStorage}
+                >
+                    Add Local Storage
+                </IconButton>
+                <IconButton
+                    class={addStorageButtonClass("gdrive")}
+                    iconClass="fab fa-google-drive"
+                    disabled={disabledValue("gdrive")}
+                    onClick={addGDriveStorage}
+                >
+                    Add GDrive Storage
+                </IconButton>
+            </div>
+            {addStorageError}
+        </>
+    )
 }

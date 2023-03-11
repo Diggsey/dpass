@@ -4,38 +4,40 @@ import { MergeableFile } from "./merge"
 import { SerializationError } from "./utils"
 
 type PlainVaultItemData = {
-    encrypted: false,
-    payload: VaultItemPayload,
+    encrypted: false
+    payload: VaultItemPayload
 }
 type EncryptedVaultItemData = {
-    encrypted: true,
-    salt: Uint8Array,
-    payload: Uint8Array,
+    encrypted: true
+    salt: Uint8Array
+    payload: Uint8Array
 }
 
 export type VaultItemData = PlainVaultItemData | EncryptedVaultItemData
 
 export type NormalItem = {
-    id: "normal",
-    origins: string[],
-    name: string,
+    id: "normal"
+    origins: string[]
+    name: string
     data: VaultItemData
 }
 
 export type VaultInfoItem = {
-    id: "vaultInfo",
-    name: string,
+    id: "vaultInfo"
+    name: string
 }
 
 export type VaultFileItem = NormalItem | VaultInfoItem
 export type DecryptedVaultFile = MergeableFile<VaultFileItem>
 
-export function decodeVaultData(src: Uint8Array, version: number): DecryptedVaultFile {
+export function decodeVaultData(
+    src: Uint8Array,
+    version: number
+): DecryptedVaultFile {
     switch (version) {
-        case 0:
-            {
-                return msgpack.decode(src) as DecryptedVaultFile
-            }
+        case 0: {
+            return msgpack.decode(src) as DecryptedVaultFile
+        }
         default:
             throw new SerializationError("Unknown future version")
     }

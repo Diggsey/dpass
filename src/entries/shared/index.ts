@@ -5,26 +5,43 @@ export function expect<T>(arg: T | undefined, err?: string): T {
     return arg
 }
 
-interface ObjectWithId extends Object {
+interface ObjectWithId {
     id: string
+    [key: string]: string | number | null | boolean
+}
+
+const escapeRegex = /([,\\])/g
+function escapeValue(v: string | number | boolean | null): string {
+    return `${v}`.replaceAll(escapeRegex, "\\$1")
 }
 
 export function objectKey({ id, ...params }: ObjectWithId): string {
     const paramsArray = Object.entries(params)
     paramsArray.sort((a, b) => a[0].localeCompare(b[0]))
-    const paramStr = paramsArray.map(([k, v]) => `${k}=${v}`).join(",")
+    const paramStr = paramsArray
+        .map(([k, v]) => `${k}=${escapeValue(v)}`)
+        .join(",")
     return `${id}:${paramStr}`
 }
 
-export function mapObjectValues<T, U>(obj: { [key: string]: T }, f: (v: T) => U): { [key: string]: U } {
+export function mapObjectValues<T, U>(
+    obj: { [key: string]: T },
+    f: (v: T) => U
+): { [key: string]: U } {
     return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, f(v)]))
 }
 
-export function filterObjectValues<T>(obj: { [key: string]: T }, f: (v: T) => boolean): { [key: string]: T } {
+export function filterObjectValues<T>(
+    obj: { [key: string]: T },
+    f: (v: T) => boolean
+): { [key: string]: T } {
     return Object.fromEntries(Object.entries(obj).filter(([_k, v]) => f(v)))
 }
 
-export function doesLoginUrlMatch(urlStr: string | URL, loginUrlStr: string | URL): boolean {
+export function doesLoginUrlMatch(
+    urlStr: string | URL,
+    loginUrlStr: string | URL
+): boolean {
     const loginUrl = new URL(loginUrlStr)
     const url = new URL(urlStr)
     if (loginUrl.search === "") {

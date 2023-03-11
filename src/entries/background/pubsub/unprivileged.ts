@@ -1,11 +1,22 @@
-import { Runtime } from "webextension-polyfill";
-import { filterObjectValues, mapObjectValues } from "~/entries/shared";
-import { PrivilegedState, PrivilegedSyncState, PrivilegedVault } from "~/entries/shared/privileged/state";
-import { Publisher } from "~/entries/shared/pubsub";
-import { UnprivilegedState, UnprivilegedSyncState, UnprivilegedVault } from "~/entries/shared/state";
-import { IStatePublisher } from "./state";
+import { Runtime } from "webextension-polyfill"
+import { filterObjectValues, mapObjectValues } from "~/entries/shared"
+import {
+    PrivilegedState,
+    PrivilegedSyncState,
+    PrivilegedVault,
+} from "~/entries/shared/privileged/state"
+import { Publisher } from "~/entries/shared/pubsub"
+import {
+    UnprivilegedState,
+    UnprivilegedSyncState,
+    UnprivilegedVault,
+} from "~/entries/shared/state"
+import { IStatePublisher } from "./state"
 
-export class UnprivilegedPublisher extends Publisher<UnprivilegedState> implements IStatePublisher {
+export class UnprivilegedPublisher
+    extends Publisher<UnprivilegedState>
+    implements IStatePublisher
+{
     #origin: string
     constructor(origin: string, port: Runtime.Port) {
         super(port)
@@ -20,16 +31,17 @@ export class UnprivilegedPublisher extends Publisher<UnprivilegedState> implemen
             origin: this.#origin,
             isUnlocked: state.isUnlocked,
             syncState: this.convertSyncState(state.syncState),
-            vaults: mapObjectValues(state.vaults, v => this.convertVault(v)),
+            vaults: mapObjectValues(state.vaults, (v) => this.convertVault(v)),
+            defaultVaultId: state.defaultVaultId,
         }
     }
     convertSyncState(syncState: PrivilegedSyncState): UnprivilegedSyncState {
         const syncValues = Object.values(syncState)
-        if (syncValues.some(v => v.lastError)) {
+        if (syncValues.some((v) => v.lastError)) {
             return "error"
-        } else if (syncValues.some(v => v.lastWarning)) {
+        } else if (syncValues.some((v) => v.lastWarning)) {
             return "warning"
-        } else if (syncValues.some(v => v.inProgress)) {
+        } else if (syncValues.some((v) => v.inProgress)) {
             return "inProgress"
         } else {
             return "idle"
@@ -38,8 +50,12 @@ export class UnprivilegedPublisher extends Publisher<UnprivilegedState> implemen
     convertVault(vault: PrivilegedVault): UnprivilegedVault {
         return {
             name: vault.name,
-            items: vault.items && filterObjectValues(vault.items, item => item.origins.includes(this.#origin)),
-            syncState: this.convertSyncState(vault.syncState)
+            items:
+                vault.items &&
+                filterObjectValues(vault.items, (item) =>
+                    item.origins.includes(this.#origin)
+                ),
+            syncState: this.convertSyncState(vault.syncState),
         }
     }
 }

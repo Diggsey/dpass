@@ -40,7 +40,7 @@ export class Actor extends Traceable(ObjectId(Disposable(EventTarget))) {
     }
     async #drain() {
         try {
-            let action;
+            let action
             while ((action = this.#inbox.shift())) {
                 await action()
                 this.dispatchEvent(new CustomEvent("update"))

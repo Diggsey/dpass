@@ -1,13 +1,15 @@
 import browser from "webextension-polyfill"
-import { sendMessage } from "../shared/messages";
-import { ContentModalMessage } from "../shared/messages/misc";
-import { ModalArgs, ModalList, ModalResult } from "../shared/modal";
+import { sendMessage } from "../shared/messages"
+import { ContentModalMessage } from "../shared/messages/misc"
+import { ModalArgs, ModalList, ModalResult } from "../shared/modal"
 
 type OpenModal = {
-    resolve: (arg: never) => void,
-    reject: (arg: unknown) => void,
-    iframe: HTMLIFrameElement,
+    resolve: (arg: never) => void
+    reject: (arg: unknown) => void
+    iframe: HTMLIFrameElement
 }
+
+class ModalError extends Error {}
 
 const openModals: Map<string, OpenModal> = new Map()
 
@@ -33,13 +35,15 @@ function styleModal(style: CSSStyleDeclaration) {
 
 export async function openModal<P extends keyof ModalList>(
     page: P,
-    args: ModalArgs<P>,
+    args: ModalArgs<P>
 ): Promise<ModalResult<P>> {
     const frameDetails = await sendMessage({ id: "getFrameDetails" })
     if (!frameDetails) {
         throw new Error("Failed to obtain frame details")
     }
-    const iframeUrl = new URL(browser.runtime.getURL(`src/entries/${page}/index.html`))
+    const iframeUrl = new URL(
+        browser.runtime.getURL(`src/entries/${page}/index.html`)
+    )
     console.log(iframeUrl)
     const requestId = crypto.randomUUID()
     iframeUrl.searchParams.set("args", JSON.stringify(args))
@@ -80,10 +84,10 @@ export function handleModalMessage(message: ContentModalMessage): undefined {
     if (modal) {
         switch (message.payload.id) {
             case "close":
-                if (message.payload.resolve) {
+                if (message.payload.resolve !== undefined) {
                     modal.resolve(message.payload.resolve as never)
                 } else {
-                    modal.reject(new Error(message.payload.reject))
+                    modal.reject(new ModalError(message.payload.reject))
                 }
                 break
             case "resize":

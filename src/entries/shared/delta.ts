@@ -2,23 +2,36 @@ type Patch<T> = {
     [Property in keyof T]?: Delta<T[Property]> | false
 }
 
-type ArrayElement<ArrayType> =
-    ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
+type ArrayElement<ArrayType> = ArrayType extends readonly (infer ElementType)[]
+    ? ElementType
+    : never
 
-export type Delta<T> = {
-    replace: T,
-} | {
-    patch: Patch<T>
-} | Delta<ArrayElement<T>>[] | null
+export type Delta<T> =
+    | {
+          replace: T
+      }
+    | {
+          patch: Patch<T>
+      }
+    | Delta<ArrayElement<T>>[]
+    | null
 
 export function computeDelta<T>(a: T, b: T): Delta<T> {
     if (a === b) {
         return null
     }
-    if (typeof a === "object" && typeof b === "object" && a !== null && b !== null) {
+    if (
+        typeof a === "object" &&
+        typeof b === "object" &&
+        a !== null &&
+        b !== null
+    ) {
         if (Array.isArray(a) && Array.isArray(b)) {
             return computeArrayDelta(a, b)
-        } else if (Object.getPrototypeOf(a) === Object.prototype && Object.getPrototypeOf(b) === Object.prototype) {
+        } else if (
+            Object.getPrototypeOf(a) === Object.prototype &&
+            Object.getPrototypeOf(b) === Object.prototype
+        ) {
             return computeObjectDelta(a, b)
         }
     }

@@ -2,12 +2,12 @@ import browser from "webextension-polyfill"
 
 const pendingResolvers: ((arg: void) => void)[] = []
 let unlockPopupInfo: {
-    windowId: number,
-    tabId: number,
+    windowId: number
+    tabId: number
 } | null = null
 
 export const requestUnlock = async () => {
-    const promise = new Promise(resolve => {
+    const promise = new Promise((resolve) => {
         pendingResolvers.push(resolve)
     })
     if (unlockPopupInfo === null) {
@@ -26,12 +26,17 @@ export const requestUnlock = async () => {
         }
     } else {
         await browser.tabs.update(unlockPopupInfo.tabId, { active: true })
-        await browser.windows.update(unlockPopupInfo.windowId, { focused: true })
+        await browser.windows.update(unlockPopupInfo.windowId, {
+            focused: true,
+        })
     }
     await promise
 }
 
-function handleTabRemoved(tabId: number, _removeInfo: browser.Tabs.OnRemovedRemoveInfoType) {
+function handleTabRemoved(
+    tabId: number,
+    _removeInfo: browser.Tabs.OnRemovedRemoveInfoType
+) {
     if (unlockPopupInfo && tabId === unlockPopupInfo.tabId) {
         unlockPopupInfo = null
         let resolve = null
