@@ -4,9 +4,8 @@ import "@fortawesome/fontawesome-free/css/all.css"
 import "./style.css"
 import { ModalProps, renderModal } from "../shared/modal"
 import { useUnprivilegedState } from "../shared/unprivileged"
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks"
+import { useCallback, useEffect, useState } from "preact/hooks"
 import {
-    computeItemDisplayName,
     UnprivilegedState,
     VaultItem,
     VaultItemField,
@@ -18,7 +17,12 @@ import { Field } from "../shared/components/field"
 import { IconButton } from "../shared/components/iconButton"
 import { sendMessage } from "../shared/messages"
 import { objectKey } from "../shared"
-import { cn, usePromiseState, useSharedPromiseState } from "../shared/ui"
+import {
+    cn,
+    useFilteredVaultItems,
+    usePromiseState,
+    useSharedPromiseState,
+} from "../shared/ui"
 import { VaultSelector } from "../shared/components/vaultSelector"
 
 type AutofillInnerProps = {
@@ -32,28 +36,13 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
 }) => {
     const sharedPromiseState = useSharedPromiseState()
     const [selectedVaultId, selectVault] = useState<string | null>(null)
+    const [searchTerm, setSearchTerm] = useState("")
 
-    const allItems = useMemo(() => {
-        const vaults = selectedVaultId
-            ? [[selectedVaultId, state.vaults[selectedVaultId]] as const]
-            : Object.entries(state.vaults)
-        const allItems = vaults.flatMap(([vaultId, vault]) =>
-            Object.entries(vault.items || {}).map(([itemId, item]) => ({
-                displayName: computeItemDisplayName(item),
-                vaultName: state.vaults[vaultId].name,
-                vaultId,
-                itemId,
-                item,
-            }))
-        )
-        allItems.sort(
-            (a, b) =>
-                a.displayName.localeCompare(b.displayName) ||
-                a.vaultName.localeCompare(b.vaultName) ||
-                a.itemId.localeCompare(b.itemId)
-        )
-        return allItems
-    }, [state.vaults, selectedVaultId])
+    const { allItems, filteredItems } = useFilteredVaultItems(
+        state.vaults,
+        selectedVaultId,
+        searchTerm
+    )
     const [fields, setFields] = useState<VaultItemField[]>(() =>
         args.fields.map((f) => ({
             uuid: crypto.randomUUID(),
@@ -145,11 +134,11 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
             if (!chosenVaultId) {
                 throw new Error("No default vault")
             }
-            await sendMessage({
+            const itemId = await sendMessage({
                 id: "createVaultItem",
                 vaultId: chosenVaultId,
                 details: {
-                    name: args.origin,
+                    name: args.title,
                     origins: [args.origin],
                     encrypted: false,
                     payload: {
@@ -158,6 +147,15 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                     },
                 },
             })
+            if (itemId) {
+                await sendMessage({
+                    id: "openOptionsPage",
+                    target: {
+                        id: "item",
+                        itemId,
+                    },
+                })
+            }
             resolve(null)
         },
         [fields],
@@ -180,7 +178,14 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                     defaultVaultId={state.defaultVaultId}
                     allowAll
                 />
-                {allItems.map((item) => (
+                <div>
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onInput={(e) => setSearchTerm(e.currentTarget.value)}
+                    />
+                </div>
+                {filteredItems.map((item) => (
                     <AutofillItem
                         item={item}
                         autofillItem={autofillItem}
@@ -188,10 +193,10 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                         sharedPromiseState={sharedPromiseState}
                     />
                 ))}
-                {allItems.length === 0 ? (
+                {filteredItems.length === 0 ? (
                     <div>No applicable vault items</div>
                 ) : null}
-                <div>
+                <div class="is-flex is-flex-wrap-wrap gap-1">
                     <IconButton
                         class={cn({ isLoading: creatingItem.inProgress })}
                         iconClass="fas fa-plus"

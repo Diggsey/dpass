@@ -23,6 +23,7 @@ export type PerformAutofillMessage = {
 export type PokeFrameResponse = {
     origin: string
     url: string
+    title: string
     fields: DetectedField[]
 }
 

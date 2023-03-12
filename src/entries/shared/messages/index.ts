@@ -13,6 +13,7 @@ import {
     ForwardMessage,
     FrameDetails,
     GetFrameDetailsMessage,
+    OpenOptionsPage,
     OptionsPageOpenedMessage,
 } from "./misc"
 import {
@@ -22,6 +23,7 @@ import {
     EditRootNameMessage,
     LockMessage,
     RemoveVaultMessage,
+    SetVaultAsDefault,
     UnlockMessage,
 } from "./root"
 import { EditStorageAddressesMessage } from "./storage"
@@ -46,6 +48,7 @@ export type Message =
     | ChangeRootPasswordMessage
     | CreateVaultMessage
     | RemoveVaultMessage
+    | SetVaultAsDefault
     | CreateVaultItemMessage
     | DeleteVaultItemMessage
     | UpdateVaultItemMessage
@@ -53,6 +56,7 @@ export type Message =
     | GetFrameDetailsMessage
     | ContentModalMessage
     | ForwardMessage
+    | OpenOptionsPage
 
 type MessageResponses = {
     requestAutofill: AutofillPayload
@@ -68,6 +72,7 @@ type MessageResponses = {
     changeRootPassword: undefined
     createVault: string
     removeVault: undefined
+    setVaultAsDefault: undefined
     createVaultItem: string
     deleteVaultItem: undefined
     updateVaultItem: undefined
@@ -75,6 +80,7 @@ type MessageResponses = {
     getFrameDetails: FrameDetails
     contentModal: undefined
     forward: unknown
+    openOptionsPage: undefined
 }
 export type MessageResponse<M extends Message = Message> =
     MessageResponses[M["id"]]

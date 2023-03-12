@@ -18,7 +18,7 @@ import { AutofillPayload } from "../shared/messages/autofill"
 import { doesLoginUrlMatch, objectKey } from "../shared"
 import { StorageAddressAction } from "../shared/messages/storage"
 import { ItemDetails } from "../shared/messages/vault"
-import { FrameDetails } from "../shared/messages/misc"
+import { FrameDetails, OptionsPageTarget } from "../shared/messages/misc"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -95,6 +95,8 @@ function handleMessage(
             return createVault(senderType, message.name)
         case "removeVault":
             return removeVault(senderType, message.vaultId)
+        case "setVaultAsDefault":
+            return setVaultAsDefault(senderType, message.vaultId)
         case "createVaultItem":
             return createVaultItem(senderType, message.vaultId, message.details)
         case "updateVaultItem":
@@ -117,6 +119,8 @@ function handleMessage(
                 message.frameId,
                 message.message
             )
+        case "openOptionsPage":
+            return openOptionsPage(message.target)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -331,6 +335,17 @@ async function removeVault(
     return
 }
 
+async function setVaultAsDefault(
+    senderType: SenderType,
+    vaultId: string
+): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.setVaultAsDefault(vaultId)
+    return
+}
+
 async function createVaultItem(
     senderType: SenderType,
     vaultId: string,
@@ -405,6 +420,24 @@ async function forward(
         return
     }
     return await sendMessageToFrame(tabId, frameId, message)
+}
+
+export async function openOptionsPage(target: OptionsPageTarget) {
+    switch (target.id) {
+        case "identity":
+            localStorage.setItem("activeTab", JSON.stringify(0))
+            break
+        case "item":
+            localStorage.setItem("activeTab", JSON.stringify(2))
+            localStorage.setItem("itemSearchTerm", JSON.stringify(""))
+            localStorage.setItem("selectedVaultId", JSON.stringify(null))
+            localStorage.setItem(
+                "selectedItemId",
+                JSON.stringify(target.itemId)
+            )
+            break
+    }
+    await browser.runtime.openOptionsPage()
 }
 
 addMessageListener(handleMessage)

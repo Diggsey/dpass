@@ -14,7 +14,7 @@ const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({
 }) => {
     return (
         <>
-            <Tabs class="is-large">
+            <Tabs class="is-large" storageKey="activeTab">
                 <Tab title="Identity">
                     <IdentityPage state={state} />
                 </Tab>

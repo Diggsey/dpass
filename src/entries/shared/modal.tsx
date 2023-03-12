@@ -7,6 +7,7 @@ import { ContentModalPayload } from "./messages/modal"
 export type AutofillArgs = {
     origin: string
     url: string
+    title: string
     fields: DetectedField[]
     manual: boolean
 }

@@ -164,6 +164,7 @@ function respondIfWeAreActive(): Promise<PokeFrameResponse> | undefined {
     return Promise.resolve({
         url: window.location.href,
         origin: window.origin,
+        title: document.title,
         fields,
     })
 }

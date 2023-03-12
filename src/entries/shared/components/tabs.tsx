@@ -4,11 +4,12 @@ import {
     toChildArray,
     VNode,
 } from "preact"
-import { useEffect, useState } from "preact/hooks"
-import { ClassName, cn } from "../ui"
+import { useEffect } from "preact/hooks"
+import { ClassName, cn, useLocalState } from "../ui"
 
 type TabsProps = {
     class?: ClassName
+    storageKey: string
 }
 
 type TabProps = {
@@ -18,9 +19,10 @@ type TabProps = {
 
 export const Tabs: FunctionComponent<TabsProps> = ({
     class: className,
+    storageKey,
     children,
 }) => {
-    const [activeTabKey, setActiveTabKey] = useState(null)
+    const [activeTabKey, setActiveTabKey] = useLocalState(storageKey, null)
     const tabs = toChildArray(children).map((child) => {
         if (typeof child !== "object" || child.type !== Tab)
             throw new Error("Child of `Tabs` component must be a `Tab`")

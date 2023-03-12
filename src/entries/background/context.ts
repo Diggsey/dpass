@@ -1160,6 +1160,21 @@ class SecureContext extends Actor implements IIntegrator {
         const buffer = await decrypt(itemKey, payload.data.payload)
         return msgpack.decode(buffer) as VaultItemPayload
     }
+    async setVaultAsDefault(vaultId: string): Promise<void> {
+        const setAsDefaultOn = Date.now()
+        await this.#patchRoot(
+            itemPatcher((item, _uuid) => {
+                if (item?.id !== "vault" || item.fileId !== vaultId) {
+                    return item
+                } else {
+                    return {
+                        ...item,
+                        setAsDefaultOn,
+                    }
+                }
+            })
+        )
+    }
 }
 
 export const SECURE_CONTEXT = new SecureContext()

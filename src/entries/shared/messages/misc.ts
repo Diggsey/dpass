@@ -23,3 +23,18 @@ export type FrameDetails = {
     tabId: number
     frameId: number
 }
+export type OpenOptionsPage = {
+    id: "openOptionsPage"
+    target: OptionsPageTarget
+}
+
+export type OptionsPageTarget = OptionsPageItem | OptionsPageIdentity
+
+export type OptionsPageItem = {
+    id: "item"
+    itemId: string
+}
+
+export type OptionsPageIdentity = {
+    id: "identity"
+}

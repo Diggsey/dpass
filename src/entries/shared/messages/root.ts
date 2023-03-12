@@ -29,3 +29,7 @@ export type LockMessage = {
     id: "lock"
     unenroll: boolean
 }
+export type SetVaultAsDefault = {
+    id: "setVaultAsDefault"
+    vaultId: string
+}

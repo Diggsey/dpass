@@ -12,7 +12,12 @@ export const VaultsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
     const allVaults = Object.entries(state.vaults)
     allVaults.sort((a, b) => a[1].name.localeCompare(b[1].name))
     const vaultPanels = allVaults.map(([vaultId, vault]) => (
-        <VaultPanel key={vaultId} vaultId={vaultId} vault={vault} />
+        <VaultPanel
+            key={vaultId}
+            vaultId={vaultId}
+            vault={vault}
+            isDefault={vaultId === state.defaultVaultId}
+        />
     ))
 
     const [creatingVault, createVault] = usePromiseState(async () => {
