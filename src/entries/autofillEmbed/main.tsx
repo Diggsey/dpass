@@ -1,10 +1,8 @@
-import { FunctionalComponent } from "preact"
-import "bulma/bulma.sass"
+import { FC, useCallback, useEffect, useState } from "react"
 import "@fortawesome/fontawesome-free/css/all.css"
 import "./style.css"
 import { ModalProps, renderModal } from "../shared/modal"
 import { useUnprivilegedState } from "../shared/unprivileged"
-import { useCallback, useEffect, useState } from "preact/hooks"
 import {
     UnprivilegedState,
     VaultItem,
@@ -29,11 +27,7 @@ type AutofillInnerProps = {
     state: UnprivilegedState
 } & ModalProps<"autofillEmbed">
 
-const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
-    state,
-    args,
-    resolve,
-}) => {
+const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
     const sharedPromiseState = useSharedPromiseState()
     const [selectedVaultId, selectVault] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState("")
@@ -169,8 +163,8 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
     }, [allItems.length, args.manual])
 
     return (
-        <div class="columns is-mobile">
-            <div class="column">
+        <div className="columns is-mobile">
+            <div className="column">
                 <VaultSelector
                     vaults={state.vaults}
                     value={selectedVaultId}
@@ -182,7 +176,7 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                     <input
                         type="text"
                         value={searchTerm}
-                        onInput={(e) => setSearchTerm(e.currentTarget.value)}
+                        onChange={(e) => setSearchTerm(e.currentTarget.value)}
                     />
                 </div>
                 {filteredItems.map((item) => (
@@ -196,9 +190,9 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                 {filteredItems.length === 0 ? (
                     <div>No applicable vault items</div>
                 ) : null}
-                <div class="is-flex is-flex-wrap-wrap gap-1">
+                <div className="is-flex is-flex-wrap-wrap gap-1">
                     <IconButton
-                        class={cn({ isLoading: creatingItem.inProgress })}
+                        className={cn({ isLoading: creatingItem.inProgress })}
                         iconClass="fas fa-plus"
                         disabled={sharedPromiseState.inProgress}
                         onClick={createItem}
@@ -207,7 +201,7 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                     </IconButton>
                     <button
                         type="button"
-                        class="button"
+                        className="button"
                         disabled={sharedPromiseState.inProgress}
                         onClick={() => resolve(null)}
                     >
@@ -215,7 +209,7 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                     </button>
                 </div>
             </div>
-            <div class="column">
+            <div className="column">
                 {fields.map((f, i) => (
                     <Field
                         field={f}
@@ -234,8 +228,8 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
                         }
                     />
                 ))}
-                <div class="field">
-                    <div class="control">
+                <div className="field">
+                    <div className="control">
                         <IconButton
                             iconClass="fas fa-plus"
                             disabled={sharedPromiseState.inProgress}
@@ -250,23 +244,23 @@ const AutofillInner: FunctionalComponent<AutofillInnerProps> = ({
     )
 }
 
-const AutofillEmbed: FunctionalComponent<ModalProps<"autofillEmbed">> = ({
+const AutofillEmbed: FC<ModalProps<"autofillEmbed">> = ({
     args,
     resolve,
     reject,
 }) => {
     const state = useUnprivilegedState(args.origin)
     return (
-        <article class="panel is-primary">
-            <p class="panel-heading">
-                <div class="icon-text">
-                    <span class="icon">
-                        <i class="fas fa-pen-to-square"></i>
+        <article className="panel is-primary">
+            <p className="panel-heading">
+                <div className="icon-text">
+                    <span className="icon">
+                        <i className="fas fa-pen-to-square"></i>
                     </span>
                     <span>dpass: Auto-fill</span>
                 </div>
             </p>
-            <div class="panel-block">
+            <div className="panel-block">
                 {state ? (
                     <AutofillInner
                         state={state}
@@ -275,7 +269,7 @@ const AutofillEmbed: FunctionalComponent<ModalProps<"autofillEmbed">> = ({
                         reject={reject}
                     />
                 ) : (
-                    <div class="loader" />
+                    <div className="loader" />
                 )}
             </div>
         </article>

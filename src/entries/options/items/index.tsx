@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC } from "react"
 import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
@@ -11,9 +11,7 @@ import {
 import { Item } from "./item"
 import { VaultSelector } from "~/entries/shared/components/vaultSelector"
 
-export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
-    state,
-}) => {
+export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     const [selectedVaultId, selectVault] = useLocalState<string | null>(
         "selectedVaultId",
         null
@@ -39,15 +37,18 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
     const itemHeaders = filteredItems.map((itemInfo) => (
         <div
             key={itemInfo.itemId}
-            class={cn("box is-clickable is-flex is-flex-direction-row gap-1", {
-                hasBackgroundLight: itemInfo.itemId !== selectedItemId,
-            })}
+            className={cn(
+                "box is-clickable is-flex is-flex-direction-row gap-1",
+                {
+                    hasBackgroundLight: itemInfo.itemId !== selectedItemId,
+                }
+            )}
             onClick={() => selectItem(itemInfo.itemId)}
         >
             {itemInfo.logoUrl && (
                 <img
                     src={itemInfo.logoUrl}
-                    class="is-align-self-center"
+                    className="is-align-self-center"
                     alt="logo"
                     width="32"
                     height="32"
@@ -93,8 +94,8 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
     }, [state.vaults])
 
     return (
-        <div class="is-flex is-flex-direction-row">
-            <div class="is-flex is-flex-direction-column gap-1">
+        <div className="is-flex is-flex-direction-row">
+            <div className="is-flex is-flex-direction-column gap-1">
                 <div>
                     <VaultSelector
                         vaults={state.vaults}
@@ -106,7 +107,7 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
                 </div>
                 <div>
                     <IconButton
-                        class={cn({ isLoading: creatingItem.inProgress })}
+                        className={cn({ isLoading: creatingItem.inProgress })}
                         iconClass="fas fa-location-dot"
                         disabled={creatingItem.inProgress}
                         onClick={createItem}
@@ -118,12 +119,12 @@ export const ItemsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
                     <input
                         type="text"
                         value={searchTerm}
-                        onInput={(e) => setSearchTerm(e.currentTarget.value)}
+                        onChange={(e) => setSearchTerm(e.currentTarget.value)}
                     />
                 </div>
                 <div>{itemHeaders}</div>
             </div>
-            <div class="is-flex-grow-1">{itemView}</div>
+            <div className="is-flex-grow-1">{itemView}</div>
         </div>
     )
 }

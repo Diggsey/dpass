@@ -50,5 +50,6 @@ export function decodeRootData(
 }
 
 export function encodeRootData(data: DecryptedRootFile): Uint8Array {
+    console.dir(data)
     return msgpack.encode(data)
 }

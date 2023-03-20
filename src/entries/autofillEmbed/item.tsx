@@ -1,5 +1,4 @@
-import { FunctionalComponent } from "preact"
-import { useCallback } from "preact/hooks"
+import { FC, useCallback } from "react"
 import { IconButton } from "../shared/components/iconButton"
 import { sendMessage } from "../shared/messages"
 import { VaultItem } from "../shared/state"
@@ -20,7 +19,7 @@ type AutofillItemProps = {
     sharedPromiseState: SharedPromiseState
 }
 
-export const AutofillItem: FunctionalComponent<AutofillItemProps> = ({
+export const AutofillItem: FC<AutofillItemProps> = ({
     item,
     autofillItem,
     updateItem,
@@ -41,12 +40,12 @@ export const AutofillItem: FunctionalComponent<AutofillItemProps> = ({
         })
     }, [item.itemId])
     return (
-        <div class="box">
+        <div className="box">
             <h4>{item.displayName}</h4>
             <h5>{item.vaultName}</h5>
-            <div class="is-flex is-flex-direction-row gap-1">
+            <div className="is-flex is-flex-direction-row gap-1">
                 <IconButton
-                    class={cn({ isLoading: updatingItem.inProgress })}
+                    className={cn({ isLoading: updatingItem.inProgress })}
                     iconClass="fas fa-eye"
                     disabled={sharedPromiseState.inProgress}
                     onClick={viewItem}
@@ -61,7 +60,7 @@ export const AutofillItem: FunctionalComponent<AutofillItemProps> = ({
                     Auto-fill
                 </IconButton>
                 <IconButton
-                    class={cn({ isLoading: updatingItem.inProgress })}
+                    className={cn({ isLoading: updatingItem.inProgress })}
                     iconClass="fas fa-arrow-left"
                     iconSide="right"
                     disabled={sharedPromiseState.inProgress}

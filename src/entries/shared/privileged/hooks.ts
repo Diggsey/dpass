@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks"
+import { useEffect, useState } from "react"
 import { Subscriber } from "../pubsub"
 import { PrivilegedState, PRIVILEGED_PORT_NAME } from "./state"
 

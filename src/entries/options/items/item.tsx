@@ -1,5 +1,4 @@
-import { FunctionalComponent } from "preact"
-import { useEffect, useState } from "preact/hooks"
+import { FC, useEffect, useState } from "react"
 import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
@@ -18,11 +17,7 @@ type ItemProps = {
     item: VaultItem
 }
 
-export const Item: FunctionalComponent<ItemProps> = ({
-    vaultId,
-    itemId,
-    item,
-}) => {
+export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
     const itemAction = useSharedPromiseState()
 
     // Not-null if there are local (unsaved) changes to the item.
@@ -123,8 +118,8 @@ export const Item: FunctionalComponent<ItemProps> = ({
     )
 
     return (
-        <div class="box">
-            <div class="is-flex is-flex-direction-row is-justify-content-end gap-1">
+        <div className="box">
+            <div className="is-flex is-flex-direction-row is-justify-content-end gap-1">
                 <IconButton
                     iconClass={cn("fas fa-trash-can", {
                         isLoading: deletingItem.inProgress,
@@ -135,14 +130,14 @@ export const Item: FunctionalComponent<ItemProps> = ({
                     Delete
                 </IconButton>
             </div>
-            <div class="field">
-                <label class="label">Name</label>
-                <div class="control">
+            <div className="field">
+                <label className="label">Name</label>
+                <div className="control">
                     <input
-                        class="input"
+                        className="input"
                         type="text"
                         value={itemDetails.name}
-                        onInput={(e) =>
+                        onChange={(e) =>
                             updateItem({
                                 ...itemDetails,
                                 name: e.currentTarget.value,
@@ -151,19 +146,19 @@ export const Item: FunctionalComponent<ItemProps> = ({
                     />
                 </div>
             </div>
-            <div class="field">
-                <label class="label">Origins</label>
+            <div className="field">
+                <label className="label">Origins</label>
             </div>
 
             {itemDetails.origins.map((origin, i) => (
-                <div class="field is-grouped">
-                    <div key={i} class="control is-expanded">
+                <div className="field is-grouped">
+                    <div key={i} className="control is-expanded">
                         <input
-                            class="input"
+                            className="input"
                             type="text"
                             placeholder="example.com"
                             value={origin}
-                            onInput={(e) =>
+                            onChange={(e) =>
                                 updateItem({
                                     ...itemDetails,
                                     origins: itemDetails.origins.map((o, j) =>
@@ -174,7 +169,7 @@ export const Item: FunctionalComponent<ItemProps> = ({
                         />
                     </div>
                     <button
-                        class="delete is-large is-align-self-center"
+                        className="delete is-large is-align-self-center"
                         onClick={() =>
                             updateItem({
                                 ...itemDetails,
@@ -187,8 +182,8 @@ export const Item: FunctionalComponent<ItemProps> = ({
                     />
                 </div>
             ))}
-            <div class="field">
-                <div class="control">
+            <div className="field">
+                <div className="control">
                     <IconButton
                         iconClass="fas fa-plus"
                         onClick={() =>
@@ -202,9 +197,9 @@ export const Item: FunctionalComponent<ItemProps> = ({
                     </IconButton>
                 </div>
             </div>
-            <div class="field">
-                <div class="control">
-                    <label class="checkbox">
+            <div className="field">
+                <div className="control">
+                    <label className="checkbox">
                         <input
                             type="checkbox"
                             disabled={!payload}
@@ -233,10 +228,7 @@ type ItemPayloadProps = {
     onUpdate: (payload: VaultItemPayload) => void
 }
 
-const ItemPayload: FunctionalComponent<ItemPayloadProps> = ({
-    payload,
-    onUpdate,
-}) => {
+const ItemPayload: FC<ItemPayloadProps> = ({ payload, onUpdate }) => {
     const updateField = (newField: VaultItemField) => {
         onUpdate({
             ...payload,
@@ -275,14 +267,14 @@ const ItemPayload: FunctionalComponent<ItemPayloadProps> = ({
     ))
     return (
         <>
-            <div class="field">
-                <label class="label">Login URL</label>
-                <div class="control">
+            <div className="field">
+                <label className="label">Login URL</label>
+                <div className="control">
                     <input
-                        class="input"
+                        className="input"
                         type="text"
                         value={payload.login_url || ""}
-                        onInput={(e) => {
+                        onChange={(e) => {
                             const login_url = e.currentTarget.value || undefined
                             const restrict_url = login_url
                                 ? payload.restrict_url
@@ -292,9 +284,9 @@ const ItemPayload: FunctionalComponent<ItemPayloadProps> = ({
                     />
                 </div>
             </div>
-            <div class="field">
-                <div class="control">
-                    <label class="checkbox">
+            <div className="field">
+                <div className="control">
+                    <label className="checkbox">
                         <input
                             type="checkbox"
                             disabled={!payload.login_url}
@@ -311,8 +303,8 @@ const ItemPayload: FunctionalComponent<ItemPayloadProps> = ({
             </div>
             <hr />
             {fieldViews}
-            <div class="field">
-                <div class="control">
+            <div className="field">
+                <div className="control">
                     <IconButton iconClass="fas fa-plus" onClick={addField}>
                         Add new field
                     </IconButton>
@@ -328,11 +320,7 @@ type LockedItemProps = {
     onUnlock: (payload: VaultItemPayload) => void
 }
 
-const LockedItem: FunctionalComponent<LockedItemProps> = ({
-    vaultId,
-    itemId,
-    onUnlock,
-}) => {
+const LockedItem: FC<LockedItemProps> = ({ vaultId, itemId, onUnlock }) => {
     const [decryptingItem, decryptItem] = usePromiseState(async () => {
         const decryptedPayload = await sendMessage({
             id: "decryptVaultItem",
@@ -344,11 +332,11 @@ const LockedItem: FunctionalComponent<LockedItemProps> = ({
         }
         onUnlock(decryptedPayload)
     }, [])
-    const decryptItemError = decryptingItem.lastError && (
+    const decryptItemError = decryptingItem.lastError ? (
         <Status level="danger" colorText={true}>
             {decryptingItem.lastError.toString()}
         </Status>
-    )
+    ) : null
     const decryptButtonClass = cn({
         isLoading: decryptingItem.inProgress,
     })
@@ -356,7 +344,7 @@ const LockedItem: FunctionalComponent<LockedItemProps> = ({
         <div>
             {decryptItemError}
             <IconButton
-                class={decryptButtonClass}
+                className={decryptButtonClass}
                 iconClass="fas fa-unlock"
                 onClick={decryptItem}
             >

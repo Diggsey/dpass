@@ -11,3 +11,7 @@ body {
 input[type="text"] {
     min-width: 200px;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

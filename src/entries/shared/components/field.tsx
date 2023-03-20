@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC } from "react"
 import {
     AutofillMode,
     defaultName,
@@ -14,11 +14,7 @@ type FieldProps = {
     onDelete: (field: VaultItemField) => void
 }
 
-export const Field: FunctionalComponent<FieldProps> = ({
-    field,
-    onUpdate,
-    onDelete,
-}) => {
+export const Field: FC<FieldProps> = ({ field, onUpdate, onDelete }) => {
     const setAutofillMode = (mode: string) => {
         let autofillMode: AutofillMode
         const id = PRESET_AUTOFILL_VALUES.find((x) => x === mode)
@@ -53,10 +49,10 @@ export const Field: FunctionalComponent<FieldProps> = ({
         case "passwordNote":
             valueView = (
                 <PasswordInput
-                    class="is-expanded"
+                    className="is-expanded"
                     placeholder="Password"
                     value={field.value}
-                    onInput={(e) =>
+                    onChange={(e) =>
                         onUpdate({ ...field, value: e.currentTarget.value })
                     }
                 />
@@ -64,13 +60,13 @@ export const Field: FunctionalComponent<FieldProps> = ({
             break
         default:
             valueView = (
-                <div class="control is-expanded">
+                <div className="control is-expanded">
                     <input
-                        class="input"
+                        className="input"
                         type="text"
                         placeholder="Value"
                         value={field.value}
-                        onInput={(e) =>
+                        onChange={(e) =>
                             onUpdate({ ...field, value: e.currentTarget.value })
                         }
                     />
@@ -78,21 +74,21 @@ export const Field: FunctionalComponent<FieldProps> = ({
             )
     }
     return (
-        <div class="my-3 p-3 has-background-light">
-            <div class="field has-addons">
-                <div class="control is-expanded">
+        <div className="my-3 p-3 has-background-light">
+            <div className="field has-addons">
+                <div className="control is-expanded">
                     <input
-                        class="input"
+                        className="input"
                         type="text"
                         placeholder="Name"
                         value={field.name}
-                        onInput={(e) =>
+                        onChange={(e) =>
                             onUpdate({ ...field, name: e.currentTarget.value })
                         }
                     />
                 </div>
-                <div class="control">
-                    <div class="select">
+                <div className="control">
+                    <div className="select">
                         <select
                             value={field.autofillMode.id}
                             onChange={(e) =>
@@ -110,14 +106,14 @@ export const Field: FunctionalComponent<FieldProps> = ({
                 </div>
             </div>
             {field.autofillMode.id === "custom" ? (
-                <div class="field">
-                    <div class="control">
+                <div className="field">
+                    <div className="control">
                         <input
-                            class="input"
+                            className="input"
                             type="text"
                             placeholder="Custom type"
                             value={field.autofillMode.key}
-                            onInput={(e) =>
+                            onChange={(e) =>
                                 onUpdate({
                                     ...field,
                                     autofillMode: {
@@ -130,10 +126,10 @@ export const Field: FunctionalComponent<FieldProps> = ({
                     </div>
                 </div>
             ) : null}
-            <div class="field is-grouped">
+            <div className="field is-grouped">
                 {valueView}
                 <button
-                    class="delete is-large is-align-self-center"
+                    className="delete is-large is-align-self-center"
                     onClick={() => onDelete(field)}
                 />
             </div>

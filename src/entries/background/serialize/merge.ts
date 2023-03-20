@@ -30,7 +30,9 @@ class MergeContext<T> {
         ) {
             this.#latestTimestamps.set(item.uuid, item.updateTimestamp)
         }
-        this.#allItems.push(item)
+        if (item.updateTimestamp !== prevTimestamp) {
+            this.#allItems.push(item)
+        }
     }
     add(...files: MergeableFile<T>[]) {
         for (const file of files) {

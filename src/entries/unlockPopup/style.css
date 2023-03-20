@@ -1,16 +1,20 @@
 html {
-  height: 100%;
-  overflow: hidden !important;
-  scrollbar-width: none;
+    height: 100%;
+    overflow: hidden !important;
+    scrollbar-width: none;
 }
 
 body {
-  overflow: hidden !important;
-  scrollbar-width: none;
-  transition: height 0.3s;
-  min-width: 300px;
+    overflow: hidden !important;
+    scrollbar-width: none;
+    transition: height 0.3s;
+    min-width: 300px;
 }
 
-body>div {
-  width: 300px;
+body > div {
+    width: 300px;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

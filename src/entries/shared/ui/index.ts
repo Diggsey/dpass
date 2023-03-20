@@ -1,13 +1,14 @@
 import {
-    Inputs,
-    StateUpdater,
+    DependencyList,
+    Dispatch,
+    SetStateAction,
     useCallback,
     useEffect,
     useMemo,
     useRef,
     useState,
-} from "preact/hooks"
-import { computeItemDisplayName, VaultItem, VaultItemMap } from "./state"
+} from "react"
+import { computeItemDisplayName, VaultItem, VaultItemMap } from "../state"
 
 export type ClassName =
     | { [className: string]: boolean | null | undefined }
@@ -111,7 +112,7 @@ export function useSharedPromiseState(): SharedPromiseState {
 
 export function usePromiseState<R, F extends AsyncFunction<R>>(
     cb: F,
-    inputs: Inputs,
+    inputs: DependencyList,
     parent?: SharedPromiseState
 ): PromiseStateResult<R, F> {
     const [state, setState] = useState<PromiseState<R, Parameters<F>>>({
@@ -167,7 +168,7 @@ export type Json =
 export function useLocalState<T extends Json>(
     key: string,
     defaultValue: T | (() => T)
-): [T, StateUpdater<T>] {
+): [T, Dispatch<SetStateAction<T>>] {
     const parseOrDefault = (stateStr: string | null): T => {
         if (stateStr) {
             try {

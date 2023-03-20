@@ -1,4 +1,5 @@
-import { ComponentType, render } from "preact"
+import { ComponentType } from "react"
+import { createRoot } from "react-dom/client"
 import { sendMessageToFrame } from "./messages"
 import { DetectedField, RequestAutofillMessage } from "./messages/autofill"
 import { FrameDetails } from "./messages/misc"
@@ -60,10 +61,8 @@ export function renderModal<P extends keyof ModalList>(
         })
     }
 
-    render(
-        <Component args={args} resolve={resolve} reject={reject} />,
-        document.body
-    )
+    const root = createRoot(document.body)
+    root.render(<Component args={args} resolve={resolve} reject={reject} />)
 
     let lastWidth: number | null = null
     let lastHeight: number | null = null

@@ -1,52 +1,41 @@
-import { FunctionalComponent, render } from "preact"
+import { FC } from "react"
+import { createRoot } from "react-dom/client"
 import { usePrivilegedState } from "../shared/privileged/hooks"
 import "./style.css"
-import "bulma/bulma.sass"
 import "@fortawesome/fontawesome-free/css/all.css"
-import { Tab, Tabs } from "../shared/components/tabs"
 import { IdentityPage } from "./identity"
 import { PrivilegedState } from "../shared/privileged/state"
 import { VaultsPage } from "./vaults"
 import { ItemsPage } from "./items"
+import { AppShell } from "../shared/components/appShell"
 
-const AppBody: FunctionalComponent<{ state: PrivilegedState }> = ({
-    state,
-}) => {
-    return (
-        <>
-            <Tabs class="is-large" storageKey="activeTab">
-                <Tab title="Identity">
-                    <IdentityPage state={state} />
-                </Tab>
-                <Tab title="Vaults" isDisabled={!state?.isUnlocked}>
-                    <VaultsPage state={state} />
-                </Tab>
-                <Tab
-                    title="Items"
-                    isDisabled={Object.keys(state.vaults).length === 0}
-                >
-                    <ItemsPage state={state} />
-                </Tab>
-            </Tabs>
-        </>
-    )
+const AppBody: FC<{ state: PrivilegedState }> = ({ state }) => {
+    const navigation = [
+        {
+            key: "identity",
+            title: "Identity",
+            body: <IdentityPage state={state} />,
+        },
+        {
+            key: "Vaults",
+            title: "Vaults",
+            body: <VaultsPage state={state} />,
+            disabled: !state?.isUnlocked,
+        },
+        {
+            key: "items",
+            title: "Items",
+            body: <ItemsPage state={state} />,
+            disabled: Object.keys(state.vaults).length === 0,
+        },
+    ]
+    return <AppShell navigation={navigation} />
 }
 
-const App: FunctionalComponent = () => {
+const App: FC = () => {
     const state = usePrivilegedState()
-    return (
-        <div>
-            <section class="hero is-primary">
-                <div class="hero-body">
-                    <p class="title">dpass</p>
-                    <p class="subtitle">Diggsey's Password Manager</p>
-                </div>
-            </section>
-            <div class="column">
-                {state ? <AppBody state={state} /> : <div class="loader" />}
-            </div>
-        </div>
-    )
+    return state ? <AppBody state={state} /> : <div className="loader" />
 }
 
-render(<App />, document.body)
+const appRoot = createRoot(document.body)
+appRoot.render(<App />)

@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC } from "react"
 import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
@@ -7,7 +7,7 @@ import { cn, usePromiseState, useSharedPromiseState } from "~/entries/shared/ui"
 import { StorageAddresses } from "../storage/addresses"
 import { StorageButtons } from "../storage/buttons"
 
-export const VaultPanel: FunctionalComponent<{
+export const VaultPanel: FC<{
     vaultId: string
     vault: PrivilegedVault
     isDefault: boolean
@@ -40,27 +40,27 @@ export const VaultPanel: FunctionalComponent<{
         vaultAction
     )
 
-    const vaultActionError = vaultAction.lastError && (
+    const vaultActionError = vaultAction.lastError ? (
         <Status level="danger" colorText={true}>
             {vaultAction.lastError.toString()}
         </Status>
-    )
+    ) : null
     const titleSuffix = isDefault ? " [Default]" : ""
 
     return (
-        <article class={panelClass}>
-            <p class="panel-heading">{vault.name + titleSuffix}</p>
+        <article className={panelClass}>
+            <p className="panel-heading">{vault.name + titleSuffix}</p>
             <StorageAddresses
                 vaultId={vaultId}
                 addresses={vault.addresses}
                 syncState={vault.syncState}
             />
-            <div class="panel-block is-flex-direction-column is-align-items-start gap-1">
+            <div className="panel-block is-flex-direction-column is-align-items-start gap-1">
                 <StorageButtons vaultId={vaultId} />
                 {vaultActionError}
-                <div class="is-flex is-flex-wrap-wrap gap-1">
+                <div className="is-flex is-flex-wrap-wrap gap-1">
                     <IconButton
-                        class={cn({
+                        className={cn({
                             isLoading: settingVaultAsDefault.inProgress,
                         })}
                         iconClass="fas fa-xmark"
@@ -70,7 +70,7 @@ export const VaultPanel: FunctionalComponent<{
                         Set As Default
                     </IconButton>
                     <IconButton
-                        class={cn({
+                        className={cn({
                             isDanger: true,
                             isLoading: removingVault.inProgress,
                         })}

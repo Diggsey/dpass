@@ -1,10 +1,9 @@
-import { FunctionalComponent } from "preact"
-import { useEffect, useState } from "preact/hooks"
+import { FC, useEffect, useState } from "react"
 import { ClassName, cn } from "../ui"
 
 type RelativeDateProps = {
     timestamp: number
-    class?: ClassName
+    className?: ClassName
 }
 
 const INTERVALS: [number, string | null][] = [
@@ -34,9 +33,9 @@ function computeInterval(date: Date): [string, number | null] {
     return ["Just now", date.getTime() + 1000]
 }
 
-export const RelativeDate: FunctionalComponent<RelativeDateProps> = ({
+export const RelativeDate: FC<RelativeDateProps> = ({
     timestamp,
-    class: className,
+    className,
 }) => {
     const date = new Date(timestamp)
     const [text, expiry] = computeInterval(date)
@@ -57,7 +56,7 @@ export const RelativeDate: FunctionalComponent<RelativeDateProps> = ({
     }, [expiry])
 
     return (
-        <span class={cn(className)} title={date.toLocaleString()}>
+        <span className={cn(className)} title={date.toLocaleString()}>
             {text}
         </span>
     )

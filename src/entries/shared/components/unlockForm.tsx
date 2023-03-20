@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC, FormEvent } from "react"
 import { sendMessage } from "../messages"
 import { cn, usePromiseState } from "../ui"
 import { LockButtons } from "./lockForm"
@@ -9,22 +9,25 @@ type UnlockFormProps = {
     isSetUp: boolean
 }
 
-export const UnlockForm: FunctionalComponent<UnlockFormProps> = ({
-    isSetUp,
-}) => {
-    const [unlocking, unlock] = usePromiseState(async (e: Event) => {
-        e.preventDefault()
-        const formData = new FormData(e.target as HTMLFormElement)
-        const secretSentence = formData.get("secretSentence") as string | null
-        const masterPassword = formData.get("masterPassword") as string
-        if (masterPassword) {
-            await sendMessage({
-                id: "unlock",
-                masterPassword,
-                secretSentence,
-            })
-        }
-    }, [])
+export const UnlockForm: FC<UnlockFormProps> = ({ isSetUp }) => {
+    const [unlocking, unlock] = usePromiseState(
+        async (e: FormEvent<HTMLFormElement>) => {
+            e.preventDefault()
+            const formData = new FormData(e.currentTarget)
+            const secretSentence = formData.get("secretSentence") as
+                | string
+                | null
+            const masterPassword = formData.get("masterPassword") as string
+            if (masterPassword) {
+                await sendMessage({
+                    id: "unlock",
+                    masterPassword,
+                    secretSentence,
+                })
+            }
+        },
+        []
+    )
     const unlockError = unlocking.lastError ? (
         <Status level="danger" colorText={true}>
             {unlocking.lastError.toString()}
@@ -38,33 +41,33 @@ export const UnlockForm: FunctionalComponent<UnlockFormProps> = ({
     })
     return (
         <form onSubmit={unlock}>
-            <div class="field">
-                <label class="label">Master password</label>
+            <div className="field">
+                <label className="label">Master password</label>
                 <PasswordInput
                     name="masterPassword"
                     inputClass="is-danger"
-                    autofocus
+                    autoFocus
                 />
                 {unlockError}
             </div>
             {!isSetUp ? (
-                <div class="field">
-                    <label class="label">Secret sentence</label>
-                    <div class="control has-icons-right">
+                <div className="field">
+                    <label className="label">Secret sentence</label>
+                    <div className="control has-icons-right">
                         <input
-                            class="input is-danger"
+                            className="input is-danger"
                             type="text"
                             name="secretSentence"
                         />
-                        <span class="icon is-right">
-                            <i class="fas fa-key" />
+                        <span className="icon is-right">
+                            <i className="fas fa-key" />
                         </span>
                     </div>
                 </div>
             ) : null}
-            <div class="field">
-                <div class="control">
-                    <button type="submit" class={buttonClass}>
+            <div className="field">
+                <div className="control">
+                    <button type="submit" className={buttonClass}>
                         Unlock
                     </button>
                 </div>
@@ -79,22 +82,19 @@ type UnlockPanelProps = {
     isUnlocked: boolean
 }
 
-export const UnlockPanel: FunctionalComponent<UnlockPanelProps> = ({
-    isSetUp,
-    isUnlocked,
-}) => {
+export const UnlockPanel: FC<UnlockPanelProps> = ({ isSetUp, isUnlocked }) => {
     const title = isUnlocked ? "Protected" : "Locked"
     return (
-        <article class="panel is-danger">
-            <p class="panel-heading">
-                <div class="icon-text">
-                    <span class="icon">
-                        <i class="fas fa-lock"></i>
+        <article className="panel is-danger">
+            <p className="panel-heading">
+                <div className="icon-text">
+                    <span className="icon">
+                        <i className="fas fa-lock"></i>
                     </span>
                     <span>{title}</span>
                 </div>
             </p>
-            <div class="panel-block">
+            <div className="panel-block">
                 <UnlockForm isSetUp={isSetUp} />
             </div>
         </article>

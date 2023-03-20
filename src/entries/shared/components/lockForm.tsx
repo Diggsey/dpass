@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC } from "react"
 import { sendMessage } from "../messages"
 import { RootInfo } from "../privileged/state"
 import { cn, usePromiseState } from "../ui"
@@ -6,15 +6,13 @@ import { IconButton } from "./iconButton"
 import { RelativeDate } from "./relativeDate"
 import { Status } from "./status"
 
-export const LockButtons: FunctionalComponent<{ isUnlocked: boolean }> = ({
-    isUnlocked,
-}) => {
+export const LockButtons: FC<{ isUnlocked: boolean }> = ({ isUnlocked }) => {
     const [locking, lock] = usePromiseState(
         (unenroll: boolean) => sendMessage({ id: "lock", unenroll }),
         []
     )
     const lockError = locking.lastError ? (
-        <div class="field">
+        <div className="field">
             <Status level="danger" colorText={true}>
                 {locking.lastError.toString()}
             </Status>
@@ -33,12 +31,12 @@ export const LockButtons: FunctionalComponent<{ isUnlocked: boolean }> = ({
     })
 
     return (
-        <div class="field">
+        <div className="field">
             {lockError}
-            <div class="is-flex is-flex-wrap-wrap gap-1">
+            <div className="is-flex is-flex-wrap-wrap gap-1">
                 {isUnlocked ? (
                     <IconButton
-                        class={lockButtonClass}
+                        className={lockButtonClass}
                         iconClass="fas fa-lock"
                         onClick={() => lock(false)}
                         disabled={locking.inProgress}
@@ -47,7 +45,7 @@ export const LockButtons: FunctionalComponent<{ isUnlocked: boolean }> = ({
                     </IconButton>
                 ) : null}
                 <IconButton
-                    class={unenrollButtonClass}
+                    className={unenrollButtonClass}
                     iconClass="fas fa-eraser"
                     onClick={() => lock(true)}
                     disabled={locking.inProgress}
@@ -59,9 +57,7 @@ export const LockButtons: FunctionalComponent<{ isUnlocked: boolean }> = ({
     )
 }
 
-export const LockPanel: FunctionalComponent<{ rootInfo: RootInfo }> = ({
-    rootInfo,
-}) => {
+export const LockPanel: FC<{ rootInfo: RootInfo }> = ({ rootInfo }) => {
     const [changingPassword, changePassword] = usePromiseState(async () => {
         const oldPassword = prompt("Enter current password:")
         if (!oldPassword) {
@@ -102,31 +98,34 @@ export const LockPanel: FunctionalComponent<{ rootInfo: RootInfo }> = ({
         isStatic: disabled,
     })
     return (
-        <article class="panel is-success">
-            <p class="panel-heading">
-                <div class="icon-text">
-                    <span class="icon">
-                        <i class="fas fa-unlock" />
+        <article className="panel is-success">
+            <p className="panel-heading">
+                <div className="icon-text">
+                    <span className="icon">
+                        <i className="fas fa-unlock" />
                     </span>
                     <span>Unlocked: {rootInfo.name}</span>
-                    <span class="icon">
-                        <a class={changeNameButtonClass} onClick={changeName}>
-                            <i class="fas fa-pen" />
+                    <span className="icon">
+                        <a
+                            className={changeNameButtonClass}
+                            onClick={changeName}
+                        >
+                            <i className="fas fa-pen" />
                         </a>
                     </span>
-                    <span class="is-flex-grow-1 has-text-right is-size-6">
+                    <span className="is-flex-grow-1 has-text-right is-size-6">
                         <span>Created: </span>
                         <RelativeDate timestamp={rootInfo.creationTimestamp} />
                     </span>
                 </div>
             </p>
-            <div class="panel-block">
+            <div className="panel-block">
                 <form>
                     <LockButtons isUnlocked={true} />
-                    <div class="field">
-                        <div class="is-flex is-flex-wrap-wrap gap-1">
+                    <div className="field">
+                        <div className="is-flex is-flex-wrap-wrap gap-1">
                             <IconButton
-                                class={changePasswordButtonClass}
+                                className={changePasswordButtonClass}
                                 iconClass="fas fa-key"
                                 onClick={changePassword}
                                 disabled={disabled}

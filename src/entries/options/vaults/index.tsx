@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC } from "react"
 import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
@@ -6,9 +6,7 @@ import { PrivilegedState } from "~/entries/shared/privileged/state"
 import { cn, usePromiseState } from "~/entries/shared/ui"
 import { VaultPanel } from "./vault"
 
-export const VaultsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
-    state,
-}) => {
+export const VaultsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     const allVaults = Object.entries(state.vaults)
     allVaults.sort((a, b) => a[1].name.localeCompare(b[1].name))
     const vaultPanels = allVaults.map(([vaultId, vault]) => (
@@ -31,20 +29,20 @@ export const VaultsPage: FunctionalComponent<{ state: PrivilegedState }> = ({
         })
     }, [])
 
-    const createVaultError = creatingVault.lastError && (
+    const createVaultError = creatingVault.lastError ? (
         <Status level="danger" colorText={true}>
             {creatingVault.lastError.toString()}
         </Status>
-    )
+    ) : null
 
     return (
         <>
-            <article class="panel is-info">
-                <p class="panel-heading">Vault Management</p>
-                <div class="panel-block is-flex-direction-column is-align-items-start gap-1">
+            <article className="panel is-info">
+                <p className="panel-heading">Vault Management</p>
+                <div className="panel-block is-flex-direction-column is-align-items-start gap-1">
                     {createVaultError}
                     <IconButton
-                        class={cn({
+                        className={cn({
                             isLoading: creatingVault.inProgress,
                             isPrimary: true,
                         })}

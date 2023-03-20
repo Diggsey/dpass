@@ -1,13 +1,12 @@
-import { FunctionalComponent, render } from "preact"
-import { useEffect } from "preact/hooks"
+import { FC, useEffect } from "react"
+import { createRoot } from "react-dom/client"
 import { usePrivilegedState } from "../shared/privileged/hooks"
 import "./style.css"
-import "bulma/bulma.sass"
 import "@fortawesome/fontawesome-free/css/all.css"
 import { UnlockPanel } from "../shared/components/unlockForm"
 import browser from "webextension-polyfill"
 
-const Popup: FunctionalComponent = () => {
+const Popup: FC = () => {
     const state = usePrivilegedState()
     const isSuper = state?.isSuper
     const isUnlocked = !!state?.isUnlocked
@@ -26,7 +25,8 @@ const Popup: FunctionalComponent = () => {
     )
 }
 
-render(<Popup />, document.body)
+const root = createRoot(document.body)
+root.render(<Popup />)
 
 const rootElem = document.body.firstElementChild as HTMLElement
 

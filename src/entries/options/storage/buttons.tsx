@@ -1,4 +1,4 @@
-import { FunctionalComponent } from "preact"
+import { FC } from "react"
 import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
@@ -10,9 +10,7 @@ type StorageButtonsProps = {
     vaultId: string | null
 }
 
-export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({
-    vaultId,
-}) => {
+export const StorageButtons: FC<StorageButtonsProps> = ({ vaultId }) => {
     const [addingStorage, addStorage] = usePromiseState(
         async (storageAddress: StorageAddress) => {
             await sendMessage({
@@ -83,9 +81,9 @@ export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({
 
     return (
         <>
-            <div class="is-flex is-flex-wrap-wrap gap-1">
+            <div className="is-flex is-flex-wrap-wrap gap-1">
                 <IconButton
-                    class={addStorageButtonClass("local")}
+                    className={addStorageButtonClass("local")}
                     iconClass="fas fa-location-dot"
                     disabled={disabledValue("local")}
                     onClick={addLocalStorage}
@@ -93,7 +91,7 @@ export const StorageButtons: FunctionalComponent<StorageButtonsProps> = ({
                     Add Local Storage
                 </IconButton>
                 <IconButton
-                    class={addStorageButtonClass("gdrive")}
+                    className={addStorageButtonClass("gdrive")}
                     iconClass="fab fa-google-drive"
                     disabled={disabledValue("gdrive")}
                     onClick={addGDriveStorage}

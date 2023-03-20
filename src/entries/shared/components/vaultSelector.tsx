@@ -1,7 +1,5 @@
-import { FunctionalComponent } from "preact"
-import { useMemo } from "preact/hooks"
+import { FC, useMemo } from "react"
 import { cn } from "../ui"
-import "./vaultSelector.css"
 
 type VaultMap = {
     readonly [vaultId: string]: {
@@ -17,7 +15,7 @@ type VaultSelectorProps = {
     onChange: (value: string | null) => void
 }
 
-export const VaultSelector: FunctionalComponent<VaultSelectorProps> = ({
+export const VaultSelector: FC<VaultSelectorProps> = ({
     vaults,
     defaultVaultId,
     allowAll,
@@ -37,14 +35,14 @@ export const VaultSelector: FunctionalComponent<VaultSelectorProps> = ({
             hasTextWeightBold: vaultId === defaultVaultId,
         })
     return (
-        <div class="select">
+        <div className="select">
             <select
-                class={classForItem(value)}
+                className={classForItem(value)}
                 value={value ?? ""}
                 onChange={(e) => onChange(e.currentTarget.value || null)}
             >
                 {allowAll && (
-                    <option value="" class={classForItem(null)}>
+                    <option value="" className={classForItem(null)}>
                         All vaults
                     </option>
                 )}
@@ -52,7 +50,7 @@ export const VaultSelector: FunctionalComponent<VaultSelectorProps> = ({
                     <option
                         key={vaultId}
                         value={vaultId}
-                        class={classForItem(vaultId)}
+                        className={classForItem(vaultId)}
                     >
                         {vault.name}
                     </option>

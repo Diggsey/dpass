@@ -1,40 +1,39 @@
-import { FunctionalComponent, JSX } from "preact"
-import { useRef, useState } from "preact/hooks"
+import { FC, ChangeEventHandler, useRef, useState } from "react"
 import { ClassName, cn } from "../ui"
 
 type PasswordInputProps = {
     name?: string
     value?: string
-    onInput?: JSX.GenericEventHandler<HTMLInputElement>
+    onChange?: ChangeEventHandler<HTMLInputElement>
     placeholder?: string
-    class?: ClassName
+    className?: ClassName
     inputClass?: ClassName
-    autofocus?: boolean
+    autoFocus?: boolean
 }
 
-export const PasswordInput: FunctionalComponent<PasswordInputProps> = ({
+export const PasswordInput: FC<PasswordInputProps> = ({
     name,
     value,
-    onInput,
+    onChange,
     placeholder,
-    class: className,
+    className,
     inputClass,
-    autofocus,
+    autoFocus,
 }) => {
     const [passwordVisible, setPasswordVisible] = useState(false)
     const input = useRef<HTMLInputElement | null>(null)
     const eye = useRef<HTMLSpanElement | null>(null)
     return (
-        <div class={cn("control has-icons-right", className)}>
+        <div className={cn("control has-icons-right", className)}>
             <input
                 ref={input}
                 name={name}
-                class={cn("input is-family-monospace", inputClass)}
+                className={cn("input is-family-monospace", inputClass)}
                 type={passwordVisible ? "text" : "password"}
                 placeholder={placeholder}
                 value={value}
-                onInput={onInput}
-                autofocus={autofocus}
+                onChange={onChange}
+                autoFocus={autoFocus}
                 onBlur={(e) => {
                     if (e.relatedTarget === eye.current) {
                         e.preventDefault()
@@ -46,7 +45,7 @@ export const PasswordInput: FunctionalComponent<PasswordInputProps> = ({
             />
             <span
                 ref={eye}
-                class="icon is-right is-clickable"
+                className="icon is-right is-clickable"
                 tabIndex={0}
                 onClick={() => {
                     setPasswordVisible(!passwordVisible)
@@ -56,7 +55,7 @@ export const PasswordInput: FunctionalComponent<PasswordInputProps> = ({
                 }}
             >
                 <i
-                    class={cn(
+                    className={cn(
                         "fas",
                         passwordVisible ? "fa-eye" : "fa-eye-slash"
                     )}

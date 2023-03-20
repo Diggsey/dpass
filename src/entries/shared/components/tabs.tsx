@@ -1,33 +1,24 @@
-import {
-    ComponentChildren,
-    FunctionComponent,
-    toChildArray,
-    VNode,
-} from "preact"
-import { useEffect } from "preact/hooks"
+import { FC, ReactNode, useEffect, ReactElement, Key } from "react"
 import { ClassName, cn, useLocalState } from "../ui"
 
 type TabsProps = {
-    class?: ClassName
+    className?: ClassName
     storageKey: string
+    children: ReactElement<TabProps, typeof Tab>[]
 }
 
 type TabProps = {
-    title: ComponentChildren
+    title: ReactNode
     isDisabled?: boolean
+    children?: ReactNode
 }
 
-export const Tabs: FunctionComponent<TabsProps> = ({
-    class: className,
-    storageKey,
-    children,
-}) => {
-    const [activeTabKey, setActiveTabKey] = useLocalState(storageKey, null)
-    const tabs = toChildArray(children).map((child) => {
-        if (typeof child !== "object" || child.type !== Tab)
-            throw new Error("Child of `Tabs` component must be a `Tab`")
-        return child as VNode<TabProps>
-    })
+export const Tabs: FC<TabsProps> = ({ className, storageKey, children }) => {
+    const [activeTabKey, setActiveTabKey] = useLocalState<Key | null>(
+        storageKey,
+        null
+    )
+    const tabs = children
     const activeTab =
         tabs.find((tab, i) => {
             return !tab.props.isDisabled && (tab.key ?? i) === activeTabKey
@@ -42,13 +33,16 @@ export const Tabs: FunctionComponent<TabsProps> = ({
         }
     }, [activeTabKey, effectiveTabKey])
 
-    const renderTitle = (tab: VNode<TabProps>, i: number) => {
+    const renderTitle = (
+        tab: ReactElement<TabProps, typeof Tab>,
+        i: number
+    ) => {
         const tabClass = cn({
             isActive: tab === activeTab,
             isDisabled: tab.props.isDisabled,
         })
         return (
-            <li key={tab.key} class={tabClass}>
+            <li key={tab.key} className={tabClass}>
                 <a
                     onClick={() =>
                         !tab.props.isDisabled && setActiveTabKey(tab.key ?? i)
@@ -62,7 +56,7 @@ export const Tabs: FunctionComponent<TabsProps> = ({
 
     return (
         <>
-            <div class={cn("tabs", className)}>
+            <div className={cn("tabs", className)}>
                 <ul>{tabs.map(renderTitle)}</ul>
             </div>
             {activeTab ? activeTab.props.children : null}
@@ -70,6 +64,6 @@ export const Tabs: FunctionComponent<TabsProps> = ({
     )
 }
 
-export const Tab: FunctionComponent<TabProps> = () => {
+export const Tab: FC<TabProps> = () => {
     throw new Error("Must be used in a `Tabs` component")
 }

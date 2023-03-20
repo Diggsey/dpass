@@ -1,6 +1,6 @@
 import { Subscriber } from "./pubsub"
 import { UnprivilegedState, UNPRIVILEGED_PORT_NAME } from "./state"
-import { useEffect, useState } from "preact/hooks"
+import { useEffect, useState } from "react"
 
 class UnprivilegedSubscriber extends Subscriber<UnprivilegedState> {
     constructor(origin?: string) {

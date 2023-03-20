@@ -1,16 +1,13 @@
-import { FunctionalComponent } from "preact"
+import { FC, ReactNode } from "react"
 import { cn } from "../ui"
 
 type StatusProps = {
     level: "loading" | "info" | "success" | "warning" | "danger"
     colorText?: boolean
+    children?: ReactNode
 }
 
-export const Status: FunctionalComponent<StatusProps> = ({
-    level,
-    colorText,
-    children,
-}) => {
+export const Status: FC<StatusProps> = ({ level, colorText, children }) => {
     const colorClass = cn({
         hasTextInfo: level === "info",
         hasTextSuccess: level === "success",
@@ -26,9 +23,9 @@ export const Status: FunctionalComponent<StatusProps> = ({
         faBan: level === "danger",
     })
     return (
-        <div class={cn("icon-text", colorText && colorClass)}>
-            <span class={cn("icon", !colorText && colorClass)}>
-                <i class={iconClass}></i>
+        <div className={cn("icon-text", colorText && colorClass)}>
+            <span className={cn("icon", !colorText && colorClass)}>
+                <i className={iconClass}></i>
             </span>
             <span>{children}</span>
         </div>
