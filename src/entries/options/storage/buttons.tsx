@@ -4,7 +4,8 @@ import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import { StorageAddress } from "~/entries/shared/privileged/state"
 import { TOKEN_MANAGER } from "~/entries/shared/tokens"
-import { cn, usePromiseState } from "~/entries/shared/ui"
+import { cn } from "~/entries/shared/ui"
+import { usePromiseState } from "~/entries/shared/ui/hooks"
 
 type StorageButtonsProps = {
     vaultId: string | null

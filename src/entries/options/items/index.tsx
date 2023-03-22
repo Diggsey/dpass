@@ -2,14 +2,14 @@ import { FC } from "react"
 import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
+import { cn } from "~/entries/shared/ui"
+import { Item } from "./item"
+import { VaultSelector } from "~/entries/shared/components/vaultSelector"
 import {
-    cn,
     useFilteredVaultItems,
     useLocalState,
     usePromiseState,
-} from "~/entries/shared/ui"
-import { Item } from "./item"
-import { VaultSelector } from "~/entries/shared/components/vaultSelector"
+} from "~/entries/shared/ui/hooks"
 
 export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     const [selectedVaultId, selectVault] = useLocalState<string | null>(

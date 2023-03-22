@@ -3,8 +3,9 @@ import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
-import { cn, usePromiseState } from "~/entries/shared/ui"
+import { cn } from "~/entries/shared/ui"
 import { VaultPanel } from "./vault"
+import { usePromiseState } from "~/entries/shared/ui/hooks"
 
 export const VaultsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     const allVaults = Object.entries(state.vaults)

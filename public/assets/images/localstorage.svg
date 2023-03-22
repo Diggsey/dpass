@@ -1,1 +1,44 @@
-<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 122.88 113.15"><defs><style>.cls-1{fill-rule:evenodd;}</style></defs><title>download-to-storage</title><path class="cls-1" d="M4.07,75H118.81a4.09,4.09,0,0,1,4.07,4.07v30a4.09,4.09,0,0,1-4.07,4.07H4.07A4.09,4.09,0,0,1,0,109.08v-30A4.08,4.08,0,0,1,4.07,75Zm101,13.85a5.21,5.21,0,1,1-5.21,5.21,5.21,5.21,0,0,1,5.21-5.21Zm-92.51.06H60.73v10.3H12.58V88.94ZM84,88.88a5.21,5.21,0,1,1-5.21,5.21A5.21,5.21,0,0,1,84,88.88ZM61.44,65.16,96.22,24.79H74.63V0H48.25V24.79H26.65L61.44,65.16Z"/></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   id="Layer_1"
+   data-name="Layer 1"
+   viewBox="0 0 122.88 113.15"
+   version="1.1"
+   sodipodi:docname="localstorage.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview11"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="7.3972602"
+     inkscape:cx="61.374075"
+     inkscape:cy="56.642593"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="Layer_1" />
+  <defs
+     id="defs4">
+    <style
+       id="style2">.cls-1{fill-rule:evenodd;}</style>
+  </defs>
+  <title
+     id="title6">download-to-storage</title>
+  <path
+     class="cls-1"
+     d="M4.07,75H118.81a4.09,4.09,0,0,1,4.07,4.07v30a4.09,4.09,0,0,1-4.07,4.07H4.07A4.09,4.09,0,0,1,0,109.08v-30A4.08,4.08,0,0,1,4.07,75Zm101,13.85a5.21,5.21,0,1,1-5.21,5.21,5.21,5.21,0,0,1,5.21-5.21Zm-92.51.06H60.73v10.3H12.58V88.94ZM84,88.88a5.21,5.21,0,1,1-5.21,5.21A5.21,5.21,0,0,1,84,88.88ZM61.44,65.16,96.22,24.79H74.63V0H48.25V24.79H26.65L61.44,65.16Z"
+     id="path8"
+     style="fill:#9274b1;fill-opacity:1" />
+</svg>

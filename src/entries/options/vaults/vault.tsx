@@ -3,9 +3,13 @@ import { sendMessage } from "~/entries/shared/messages"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import { PrivilegedVault } from "~/entries/shared/privileged/state"
-import { cn, usePromiseState, useSharedPromiseState } from "~/entries/shared/ui"
+import { cn } from "~/entries/shared/ui"
 import { StorageAddresses } from "../storage/addresses"
 import { StorageButtons } from "../storage/buttons"
+import {
+    usePromiseState,
+    useSharedPromiseState,
+} from "~/entries/shared/ui/hooks"
 
 export const VaultPanel: FC<{
     vaultId: string

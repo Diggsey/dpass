@@ -2,7 +2,8 @@ import { FC, useCallback } from "react"
 import { IconButton } from "../shared/components/iconButton"
 import { sendMessage } from "../shared/messages"
 import { VaultItem } from "../shared/state"
-import { cn, SharedPromiseState, usePromiseState } from "../shared/ui"
+import { cn } from "../shared/ui"
+import { SharedPromiseState, usePromiseState } from "../shared/ui/hooks"
 
 type ItemInfo = {
     displayName: string

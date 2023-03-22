@@ -52,3 +52,11 @@ export function doesLoginUrlMatch(
     }
     return url.href === loginUrl.href
 }
+
+export type Json =
+    | null
+    | boolean
+    | number
+    | string
+    | ReadonlyArray<Json>
+    | { readonly [key: string]: Json }

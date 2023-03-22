@@ -1,5 +1,12 @@
+import {
+    CheckCircleIcon,
+    ExclamationCircleIcon,
+    ExclamationTriangleIcon,
+    InformationCircleIcon,
+} from "@heroicons/react/24/outline"
 import { FC, ReactNode } from "react"
 import { cn } from "../ui"
+import { Loader } from "./loader"
 
 type StatusProps = {
     level: "loading" | "info" | "success" | "warning" | "danger"
@@ -7,27 +14,38 @@ type StatusProps = {
     children?: ReactNode
 }
 
+const iconComponents = {
+    loading: Loader,
+    info: InformationCircleIcon,
+    success: CheckCircleIcon,
+    warning: ExclamationTriangleIcon,
+    danger: ExclamationCircleIcon,
+}
+
+const iconColors = {
+    loading: "text-gray-400",
+    info: "text-blue-400",
+    success: "text-green-400",
+    warning: "text-yellow-400",
+    danger: "text-red-400",
+}
+
+const textColors = {
+    loading: "text-gray-700",
+    info: "text-blue-700",
+    success: "text-green-700",
+    warning: "text-yellow-700",
+    danger: "text-red-700",
+}
+
 export const Status: FC<StatusProps> = ({ level, colorText, children }) => {
-    const colorClass = cn({
-        hasTextInfo: level === "info",
-        hasTextSuccess: level === "success",
-        hasTextWarning: level === "warning",
-        hasTextDanger: level === "danger",
-    })
-    const iconClass = cn({
-        fas: level !== "loading",
-        loader: level === "loading",
-        faInfoCircle: level === "info",
-        faCheckSquare: level === "success",
-        faExclamationTriangle: level === "warning",
-        faBan: level === "danger",
-    })
+    const iconColor = iconColors[level]
+    const textColor = colorText ? textColors[level] : ""
+    const IconComponent = iconComponents[level]
     return (
-        <div className={cn("icon-text", colorText && colorClass)}>
-            <span className={cn("icon", !colorText && colorClass)}>
-                <i className={iconClass}></i>
-            </span>
-            <span>{children}</span>
-        </div>
+        <span className="flex items-center gap-1">
+            <IconComponent className={cn("w-5 h-5", iconColor)} />
+            <span className={textColor}>{children}</span>
+        </span>
     )
 }

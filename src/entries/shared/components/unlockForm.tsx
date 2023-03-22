@@ -1,6 +1,7 @@
 import { FC, FormEvent } from "react"
 import { sendMessage } from "../messages"
-import { cn, usePromiseState } from "../ui"
+import { cn } from "../ui"
+import { usePromiseState } from "../ui/hooks"
 import { LockButtons } from "./lockForm"
 import { PasswordInput } from "./passwordInput"
 import { Status } from "./status"

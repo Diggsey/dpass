@@ -7,9 +7,13 @@ import {
     VaultItemField,
     VaultItemPayload,
 } from "~/entries/shared/state"
-import { cn, usePromiseState, useSharedPromiseState } from "~/entries/shared/ui"
+import { cn } from "~/entries/shared/ui"
 import { Field } from "../../shared/components/field"
 import { ItemDetails } from "~/entries/shared/messages/vault"
+import {
+    usePromiseState,
+    useSharedPromiseState,
+} from "~/entries/shared/ui/hooks"
 
 type ItemProps = {
     vaultId: string

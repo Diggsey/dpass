@@ -6,18 +6,14 @@ import {
     PrivilegedSyncState,
     StorageAddress,
 } from "~/entries/shared/privileged/state"
-import { usePromiseState } from "~/entries/shared/ui"
 import { Slide } from "~/entries/shared/components/slide"
-import {
-    ArrowsUpDownIcon,
-    ChevronLeftIcon,
-    ChevronRightIcon,
-} from "@heroicons/react/24/outline"
+import { ArrowsUpDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline"
 import { useEventCallback } from "~/entries/shared/ui/hooks"
 import {
     ReorderableItem,
     ReorderableList,
 } from "~/entries/shared/components/reorderableList"
+import { StorageAddressEditor } from "./editor"
 
 function storageAddressName(address: StorageAddress): string {
     switch (address.id) {
@@ -89,7 +85,7 @@ export const StorageAddressRow: FC<StorageAddressRowProps> = ({
                         </p>
                     </div>
                     <div className="hidden md:block flex-1">
-                        <p className="text-sm text-gray-900">Applied on</p>
+                        {/* <p className="text-sm text-gray-900">Applied on</p> */}
                         <p className="mt-2 flex items-center text-sm text-gray-500">
                             {status}
                         </p>
@@ -103,55 +99,6 @@ export const StorageAddressRow: FC<StorageAddressRowProps> = ({
                 </button>
             )}
         </ReorderableItem>
-    )
-}
-
-type StorageAddressEditorProps = {
-    isNew: boolean
-    address: StorageAddress
-    vaultId: string | null
-    onClose: () => void
-}
-
-const StorageAddressEditor = ({
-    address,
-    vaultId,
-    onClose,
-}: StorageAddressEditorProps) => {
-    const [deletingAddress, deleteAddress] = usePromiseState(async () => {
-        await sendMessage({
-            id: "editStorageAddresses",
-            vaultId,
-            action: {
-                id: "remove",
-                storageAddress: address,
-            },
-        })
-    }, [address])
-
-    const deleteButton = deletingAddress.inProgress ? (
-        <span className="loader" />
-    ) : (
-        <button onClick={deleteAddress} className="delete" />
-    )
-
-    return (
-        <div className="px-4 py-4 sm:px-6">
-            <button
-                onClick={onClose}
-                className="flex items-center text-sm text-gray-500"
-            >
-                <ChevronLeftIcon
-                    className="h-4 w-4 mr-1 text-gray-400"
-                    aria-hidden="true"
-                />
-                <span>Cancel</span>
-            </button>
-            <div>Editing...</div>
-            <div>
-                <button onClick={onClose}>Save</button>
-            </div>
-        </div>
     )
 }
 

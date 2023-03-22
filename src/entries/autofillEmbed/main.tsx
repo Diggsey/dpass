@@ -15,13 +15,13 @@ import { Field } from "../shared/components/field"
 import { IconButton } from "../shared/components/iconButton"
 import { sendMessage } from "../shared/messages"
 import { objectKey } from "../shared"
+import { cn } from "../shared/ui"
+import { VaultSelector } from "../shared/components/vaultSelector"
 import {
-    cn,
     useFilteredVaultItems,
     usePromiseState,
     useSharedPromiseState,
-} from "../shared/ui"
-import { VaultSelector } from "../shared/components/vaultSelector"
+} from "../shared/ui/hooks"
 
 type AutofillInnerProps = {
     state: UnprivilegedState
