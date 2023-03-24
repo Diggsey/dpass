@@ -14,24 +14,7 @@ import {
     ReorderableList,
 } from "~/entries/shared/components/reorderableList"
 import { StorageAddressEditor } from "./editor"
-
-function storageAddressName(address: StorageAddress): string {
-    switch (address.id) {
-        case "local":
-            return "Local Storage"
-        case "gdrive":
-            return "Google Drive"
-    }
-}
-
-function storageAddressIcon(address: StorageAddress): string {
-    switch (address.id) {
-        case "local":
-            return "/assets/images/localstorage.svg"
-        case "gdrive":
-            return "/assets/images/gdrive.png"
-    }
-}
+import { STORAGE_PROVIDER_MAP } from "."
 
 type StorageAddressRowProps = {
     index: number
@@ -46,6 +29,7 @@ export const StorageAddressRow: FC<StorageAddressRowProps> = ({
     syncStates,
     onClick,
 }) => {
+    const storageProvider = STORAGE_PROVIDER_MAP[address.id]
     const storageKey = objectKey(address)
     const syncState = syncStates[storageKey] ?? { address, inProgress: true }
     let status: ReactNode = null
@@ -68,12 +52,12 @@ export const StorageAddressRow: FC<StorageAddressRowProps> = ({
                 >
                     <img
                         className="h-12 w-12"
-                        src={storageAddressIcon(address)}
+                        src={storageProvider.icon}
                         alt=""
                     />
                     <div className="flex flex-col items-start flex-1">
                         <p className="truncate text-sm font-medium text-indigo-600">
-                            {storageAddressName(address)}
+                            {storageProvider.name}
                         </p>
                         <p
                             className="mt-2 p-1 flex items-center text-sm text-gray-500 hover:bg-gray-200"
