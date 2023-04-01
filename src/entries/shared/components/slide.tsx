@@ -21,9 +21,11 @@ const SlideContext = createContext<SlideContextType>({
 })
 
 export const Slide = ({ children, open, onTransitionEnd }: SlideProps) => {
-    const [wasOpen, setWasOpen] = useState(open)
+    const [state, setState] = useState({ open, transitioning: false })
+    if (state.open !== open) {
+        setState({ open, transitioning: true })
+    }
     const [sizeRef, { height }] = useElementSize()
-    const transitioning = wasOpen != open
     return (
         <div
             tabIndex={-1}
@@ -39,13 +41,13 @@ export const Slide = ({ children, open, onTransitionEnd }: SlideProps) => {
                     open ? "-left-full" : "left-0"
                 )}
                 onTransitionEnd={() => {
-                    setWasOpen(open)
+                    setState((s) => ({ ...s, transitioning: false }))
                     if (onTransitionEnd) {
                         onTransitionEnd(open)
                     }
                 }}
             >
-                <SlideContext.Provider value={{ open, transitioning, sizeRef }}>
+                <SlideContext.Provider value={{ ...state, sizeRef }}>
                     {children}
                 </SlideContext.Provider>
             </div>

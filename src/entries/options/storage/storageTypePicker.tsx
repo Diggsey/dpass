@@ -6,14 +6,16 @@ import { StorageAddressType, STORAGE_PROVIDERS } from "."
 type StorageTypePickerProps = {
     value: StorageAddressType
     onChange: (newValue: StorageAddressType) => void
+    disabled?: boolean
 }
 
 export const StorageTypePicker = ({
     value,
     onChange,
+    disabled,
 }: StorageTypePickerProps) => {
     return (
-        <RadioGroup value={value} onChange={onChange}>
+        <RadioGroup value={value} onChange={onChange} disabled={disabled}>
             <RadioGroup.Label className="text-base font-semibold leading-6 text-gray-900">
                 Select a storage provider
             </RadioGroup.Label>

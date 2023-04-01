@@ -1,9 +1,11 @@
-import { ChevronLeftIcon } from "@heroicons/react/24/outline"
 import { useState } from "react"
+import { Loader } from "~/entries/shared/components/loader"
 import { sendMessage } from "~/entries/shared/messages"
 import { StorageAddress } from "~/entries/shared/privileged/state"
-import { usePromiseState } from "~/entries/shared/ui/hooks"
-import { STORAGE_PROVIDER_MAP } from "."
+import { SharedPromiseState, usePromiseState } from "~/entries/shared/ui/hooks"
+import { StorageEditorProps, STORAGE_PROVIDER_MAP } from "."
+import { GDriveStorageEditor } from "./gDriveStorageEditor"
+import { LocalStorageEditor } from "./localStorageEditor"
 import { StorageTypePicker } from "./storageTypePicker"
 
 type StorageAddressEditorProps = {
@@ -11,52 +13,113 @@ type StorageAddressEditorProps = {
     address: StorageAddress
     vaultId: string | null
     onClose: () => void
+    parentState: SharedPromiseState
+}
+
+const GenericStorageEditor = ({
+    value: { address, canSave },
+    ...other
+}: StorageEditorProps<StorageAddress>) => {
+    switch (address.id) {
+        case "local":
+            return (
+                <LocalStorageEditor value={{ address, canSave }} {...other} />
+            )
+        case "gdrive":
+            return (
+                <GDriveStorageEditor value={{ address, canSave }} {...other} />
+            )
+    }
 }
 
 export const StorageAddressEditor = ({
+    isNew,
     address,
     vaultId,
     onClose,
+    parentState,
 }: StorageAddressEditorProps) => {
-    const [editedAddress, setEditedAddress] = useState(address)
-    const [deletingAddress, deleteAddress] = usePromiseState(async () => {
-        await sendMessage({
-            id: "editStorageAddresses",
-            vaultId,
-            action: {
-                id: "remove",
-                storageAddress: address,
-            },
-        })
-    }, [address])
+    const [edited, setEdited] = useState({
+        address,
+        canSave: isNew,
+    })
 
-    const deleteButton = deletingAddress.inProgress ? (
-        <span className="loader" />
-    ) : (
-        <button onClick={deleteAddress} className="delete" />
+    const currentProvider = STORAGE_PROVIDER_MAP[edited.address.id]
+
+    const [savingAddress, saveAddress] = usePromiseState(
+        async () => {
+            if (isNew) {
+                await sendMessage({
+                    id: "editStorageAddresses",
+                    vaultId,
+                    action: {
+                        id: "add",
+                        storageAddress: edited.address,
+                    },
+                })
+            } else {
+                await sendMessage({
+                    id: "editStorageAddresses",
+                    vaultId,
+                    action: {
+                        id: "edit",
+                        storageAddress: address,
+                        newStorageAddress: edited.address,
+                    },
+                })
+            }
+            onClose()
+        },
+        [isNew, address, edited.address, onClose],
+        parentState
     )
 
     return (
-        <div className="px-4 py-4 sm:px-6">
-            <button
-                onClick={onClose}
-                className="flex items-center text-sm text-gray-500 my-4"
-            >
-                <ChevronLeftIcon
-                    className="h-4 w-4 mr-1 text-gray-400"
-                    aria-hidden="true"
-                />
-                <span>Cancel</span>
-            </button>
+        <div className="px-4 py-4 sm:px-6 gap-8 grid">
             <StorageTypePicker
-                value={editedAddress.id}
-                onChange={(v) =>
-                    setEditedAddress(STORAGE_PROVIDER_MAP[v].initial)
-                }
+                value={edited.address.id}
+                onChange={(v) => {
+                    const newProvider = STORAGE_PROVIDER_MAP[v]
+                    setEdited({
+                        address: newProvider.initial,
+                        canSave: newProvider.initialValid,
+                    })
+                }}
+                disabled={parentState.inProgress}
             />
-            <div>Editing...</div>
-            <div>
-                <button onClick={onClose}>Save</button>
+            <div className="gap-4 grid">
+                <div className="text-base font-semibold leading-6 text-gray-900">
+                    Configure{" "}
+                    <span className="text-indigo-600 cursor-default">
+                        {currentProvider.name}
+                    </span>
+                </div>
+                <GenericStorageEditor
+                    value={edited}
+                    onChange={setEdited}
+                    disabled={parentState.inProgress}
+                />
+            </div>
+            <div className="flex items-center justify-end gap-x-6">
+                <button
+                    type="button"
+                    className="text-sm font-semibold leading-6 text-gray-900"
+                    onClick={onClose}
+                    disabled={parentState.inProgress}
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    className="rounded-md bg-indigo-600 disabled:bg-indigo-300 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                    onClick={saveAddress}
+                    disabled={parentState.inProgress || !edited.canSave}
+                >
+                    {savingAddress.inProgress && (
+                        <Loader className="-ml-0.5 mr-1.5 h-5 w-5" />
+                    )}
+                    <span>Save</span>
+                </button>
             </div>
         </div>
     )

@@ -9,3 +9,8 @@ export type StorageAddressAction =
     | { id: "add"; storageAddress: StorageAddress }
     | { id: "remove"; storageAddress: StorageAddress }
     | { id: "move"; storageAddress: StorageAddress; priority: number }
+    | {
+          id: "edit"
+          storageAddress: StorageAddress
+          newStorageAddress: StorageAddress
+      }

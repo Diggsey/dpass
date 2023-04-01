@@ -55,6 +55,7 @@ export const VaultPanel: FC<{
         <article className={panelClass}>
             <p className="panel-heading">{vault.name + titleSuffix}</p>
             <StorageAddresses
+                name={vault.name}
                 vaultId={vaultId}
                 addresses={vault.addresses}
                 syncState={vault.syncState}

@@ -31,7 +31,10 @@ export type SharedPromiseState = {
     readonly clearError: () => void
 }
 
-export function useSharedPromiseState(): SharedPromiseState {
+export function useSharedPromiseState(inheritState?: {
+    inProgress?: boolean
+    lastError?: unknown
+}): SharedPromiseState {
     const inProgress = useRef(false)
     const wrap = useCallback(
         <R, P extends never[]>(
@@ -69,7 +72,11 @@ export function useSharedPromiseState(): SharedPromiseState {
         wrap,
         clearError,
     })
-    return state
+    return {
+        ...state,
+        inProgress: inheritState?.inProgress || state.inProgress,
+        lastError: state.lastError || inheritState?.lastError,
+    }
 }
 
 export function usePromiseState<R, F extends AsyncFunction<R>>(

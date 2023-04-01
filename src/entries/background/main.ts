@@ -262,6 +262,22 @@ async function editStorageAddresses(
                 }
                 copiedAddresses.splice(addressIndex, 1)
                 break
+            case "edit":
+                if (addressIndex === -1) {
+                    throw new Error("Storage does not exist")
+                }
+                {
+                    const newAddressKey = objectKey(action.newStorageAddress)
+                    const newAddressIndex = addressKeys.indexOf(newAddressKey)
+                    if (
+                        newAddressKey !== addressKey &&
+                        newAddressIndex !== -1
+                    ) {
+                        throw new Error("Storage already exists")
+                    }
+                    copiedAddresses[addressIndex] = action.newStorageAddress
+                }
+                break
             case "move":
                 if (addressIndex === -1) {
                     throw new Error("Storage does not exist")

@@ -14,7 +14,11 @@
                     "url": "moz-extension://*/",
                     "path": "${workspaceFolder}/dist"
                 }
-            ]
+            ],
+            "preferences": {
+                "browser.link.open_newwindow": 3,
+                "browser.link.open_external": 3
+            }
         }
     ]
 }

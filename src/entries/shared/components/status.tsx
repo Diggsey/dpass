@@ -44,7 +44,7 @@ export const Status: FC<StatusProps> = ({ level, colorText, children }) => {
     const IconComponent = iconComponents[level]
     return (
         <span className="flex items-center gap-1">
-            <IconComponent className={cn("w-5 h-5", iconColor)} />
+            <IconComponent className={cn("w-5 h-5 shrink-0", iconColor)} />
             <span className={textColor}>{children}</span>
         </span>
     )

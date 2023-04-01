@@ -11,12 +11,14 @@ type ReorderableListProps = {
     className?: string
     children?: ReactNode
     onReorder: (sourceIndex: number, destIndex: number) => void
+    disabled?: boolean
 }
 
 export const ReorderableList = ({
     className,
     children,
     onReorder,
+    disabled,
 }: ReorderableListProps) => {
     const droppableId = useId()
     const onDragEnd = useCallback(
@@ -30,7 +32,7 @@ export const ReorderableList = ({
     )
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId={droppableId}>
+            <Droppable droppableId={droppableId} isDropDisabled={disabled}>
                 {(provided) => (
                     <ul
                         role="list"
