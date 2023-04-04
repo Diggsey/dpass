@@ -26,6 +26,12 @@ import {
 import { StorageAddressEditor } from "./editor"
 import { STORAGE_PROVIDERS, STORAGE_PROVIDER_MAP } from "."
 import { Loader } from "~/entries/shared/components/loader"
+import {
+    Card,
+    PrimaryButton,
+    OutlineButton,
+} from "~/entries/shared/components/styledElem"
+import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 
 type StorageAddressRowProps = {
     index: number
@@ -206,8 +212,8 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
     )
 
     return (
-        <div className="divide-y divide-gray-200 overflow-hidden sm:rounded-lg bg-white shadow">
-            <div className="px-4 py-5 sm:px-6">
+        <Card>
+            <Card.Header>
                 <div className="-ml-4 -mt-2 flex flex-wrap items-center justify-between sm:flex-nowrap">
                     <div className="ml-4 mt-2">
                         <h3 className="text-base font-semibold leading-6 text-gray-900">
@@ -220,45 +226,37 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
                     </div>
                     <div className="ml-4 mt-2 flex-shrink-0">
                         {editingExisting ? (
-                            <button
+                            <OutlineButton
                                 type="button"
-                                className="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-300"
                                 onClick={deleteAddress}
                                 disabled={sharedPromiseState.inProgress}
                             >
-                                {deletingAddress.inProgress ? (
-                                    <Loader
-                                        className="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400"
-                                        aria-hidden="true"
-                                    />
-                                ) : (
-                                    <TrashIcon
-                                        className="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400"
-                                        aria-hidden="true"
-                                    />
-                                )}
+                                <ButtonIcon
+                                    icon={
+                                        deletingAddress.inProgress
+                                            ? Loader
+                                            : TrashIcon
+                                    }
+                                    className="text-gray-400"
+                                />
                                 <span>Delete storage</span>
-                            </button>
+                            </OutlineButton>
                         ) : (
-                            <button
+                            <PrimaryButton
                                 type="button"
-                                className="relative inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                                 onClick={addStorage}
                                 disabled={
                                     !!editingAddress ||
                                     sharedPromiseState.inProgress
                                 }
                             >
-                                <PlusIcon
-                                    className="-ml-0.5 mr-1.5 h-5 w-5"
-                                    aria-hidden="true"
-                                />
+                                <ButtonIcon icon={PlusIcon} />
                                 <span>Add storage</span>
-                            </button>
+                            </PrimaryButton>
                         )}
                     </div>
                 </div>
-            </div>
+            </Card.Header>
 
             <Slide
                 open={editingAddress?.isClosing === false}
@@ -301,6 +299,6 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
                     )}
                 </Slide.Right>
             </Slide>
-        </div>
+        </Card>
     )
 }

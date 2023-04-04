@@ -100,8 +100,12 @@ type LockedSyncedRoot = {
 }
 
 class IncorrectPasswordError extends Error {
-    constructor() {
-        super("Incorrect password")
+    constructor(wasEnrolling: boolean) {
+        super(
+            wasEnrolling
+                ? "Incorrect password or secret sentence."
+                : "Incorrect password."
+        )
     }
 }
 
@@ -800,7 +804,7 @@ class SecureContext extends Actor implements IIntegrator {
             await decrypt(key, canaryData)
         } catch (err) {
             if (err instanceof DOMException && err.name === "OperationError") {
-                throw new IncorrectPasswordError()
+                throw new IncorrectPasswordError(secretSentence !== null)
             } else {
                 throw err
             }
@@ -820,7 +824,11 @@ class SecureContext extends Actor implements IIntegrator {
             this.#unlockInner(masterPassword, secretSentence)
         )
     }
-    createRoot(masterPassword: string, secretSentence: string): Promise<void> {
+    createRoot(
+        name: string,
+        masterPassword: string,
+        secretSentence: string
+    ): Promise<void> {
         return this._post("createRoot(<redacted>)", async () => {
             if (this.#lockedSyncedRoot) {
                 throw new Error("Root already exists")
@@ -867,7 +875,7 @@ class SecureContext extends Actor implements IIntegrator {
                         updateTimestamp: currentTs,
                         payload: {
                             id: "rootInfo",
-                            name: "Unnamed",
+                            name,
                             secretSentence,
                         },
                     },

@@ -16,6 +16,7 @@
   "devDependencies": {
     "@samrum/vite-plugin-web-extension": "file:../vite-plugin-web-extension",
     "@tailwindcss/forms": "^0.5.3",
+    "@thoughtbot/tailwindcss-aria-attributes": "^0.2.0",
     "@types/chrome": "^0.0.206",
     "@types/react": "^18.0.28",
     "@types/react-beautiful-dnd": "^13.1.3",

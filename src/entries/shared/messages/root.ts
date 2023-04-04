@@ -1,5 +1,6 @@
 export type CreateRootMessage = {
     id: "createRoot"
+    name: string
     masterPassword: string
     secretSentence: string
 }

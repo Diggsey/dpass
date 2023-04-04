@@ -1,22 +1,34 @@
 import { FC } from "react"
-import { LockPanel } from "~/entries/shared/components/lockForm"
+import { DetailsPanel } from "~/entries/options/identity/details"
 import { UnlockPanel } from "~/entries/shared/components/unlockForm"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
-import { IdentityStoragePanel } from "./storage"
+import { StorageAddresses } from "../storage/addresses"
+import { SetupPanel } from "./setup"
 
 export const IdentityPage: FC<{ state: PrivilegedState }> = ({ state }) => {
-    const storagePanel = <IdentityStoragePanel state={state} />
+    const storagePanel = (
+        <StorageAddresses
+            name="identity"
+            vaultId={null}
+            addresses={state.rootAddresses}
+            syncState={state.syncState}
+        />
+    )
     const unlockPanel = state.hasIdentity && !state.isUnlocked && (
         <UnlockPanel isSetUp={state.isSetUp} isUnlocked={false} />
     )
     const lockPanel = state.hasIdentity &&
         state.isUnlocked &&
-        state.rootInfo && <LockPanel rootInfo={state.rootInfo} />
+        state.rootInfo && <DetailsPanel rootInfo={state.rootInfo} />
+    const setupPanel = state.rootAddresses.length > 0 && !state.hasIdentity && (
+        <SetupPanel />
+    )
     return (
-        <div className="container mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 gap-10">
             {storagePanel}
             {unlockPanel}
             {lockPanel}
+            {setupPanel}
         </div>
     )
 }

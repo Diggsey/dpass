@@ -18,6 +18,7 @@ export type RootInfo = {
     readonly creationTimestamp: number
     readonly updateTimestamp: number
     readonly name: string
+    readonly secretSentence: string
 }
 
 export type KeyPairMap = {

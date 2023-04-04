@@ -66,6 +66,7 @@ function handleMessage(
         case "createRoot":
             return createRoot(
                 senderType,
+                message.name,
                 message.masterPassword,
                 message.secretSentence
             )
@@ -202,13 +203,14 @@ async function requestAutoFill(
 
 async function createRoot(
     senderType: SenderType,
+    name: string,
     masterPassword: string,
     secretSentence: string
 ): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    await SECURE_CONTEXT.createRoot(masterPassword, secretSentence)
+    await SECURE_CONTEXT.createRoot(name, masterPassword, secretSentence)
     return
 }
 

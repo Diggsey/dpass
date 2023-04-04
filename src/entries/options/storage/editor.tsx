@@ -1,5 +1,10 @@
 import { useState } from "react"
+import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { Loader } from "~/entries/shared/components/loader"
+import {
+    PrimaryButton,
+    SecondaryButton,
+} from "~/entries/shared/components/styledElem"
 import { sendMessage } from "~/entries/shared/messages"
 import { StorageAddress } from "~/entries/shared/privileged/state"
 import { SharedPromiseState, usePromiseState } from "~/entries/shared/ui/hooks"
@@ -100,26 +105,22 @@ export const StorageAddressEditor = ({
                     disabled={parentState.inProgress}
                 />
             </div>
-            <div className="flex items-center justify-end gap-x-6">
-                <button
+            <div className="flex items-center justify-end gap-3">
+                <SecondaryButton
                     type="button"
-                    className="text-sm font-semibold leading-6 text-gray-900"
                     onClick={onClose}
                     disabled={parentState.inProgress}
                 >
                     Cancel
-                </button>
-                <button
+                </SecondaryButton>
+                <PrimaryButton
                     type="submit"
-                    className="rounded-md bg-indigo-600 disabled:bg-indigo-300 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                     onClick={saveAddress}
                     disabled={parentState.inProgress || !edited.canSave}
                 >
-                    {savingAddress.inProgress && (
-                        <Loader className="-ml-0.5 mr-1.5 h-5 w-5" />
-                    )}
+                    {savingAddress.inProgress && <ButtonIcon icon={Loader} />}
                     <span>Save</span>
-                </button>
+                </PrimaryButton>
             </div>
         </div>
     )

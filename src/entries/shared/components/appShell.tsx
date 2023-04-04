@@ -51,7 +51,7 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
                                                     : item.disabled
                                                     ? "border-transparent text-gray-300"
                                                     : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                                                "inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium"
+                                                "relative inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium"
                                             )}
                                             aria-current={
                                                 item === currentItem
@@ -70,7 +70,7 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
                             </div>
                             <div className="-mr-2 flex items-center sm:hidden">
                                 {/* Mobile menu button */}
-                                <Disclosure.Button className="inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                <Disclosure.Button className="relative inline-flex items-center justify-center rounded-md bg-white p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                                     <span className="sr-only">
                                         Open main menu
                                     </span>

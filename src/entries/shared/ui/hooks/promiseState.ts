@@ -14,18 +14,16 @@ export type PromiseState<R, P> =
           readonly lastResult?: R
       }
 
-type AsyncFunction<R> = (...args: never[]) => Promise<R>
-
-type PromiseStateResult<R, F extends AsyncFunction<R>> = [
-    PromiseState<R, Parameters<F>>,
-    (...args: Parameters<F>) => Promise<R>,
+type PromiseStateResult<R, P extends unknown[]> = [
+    PromiseState<R, P>,
+    (...args: P) => Promise<R>,
     () => void
 ]
 
 export type SharedPromiseState = {
     readonly inProgress: boolean
     readonly lastError?: unknown
-    readonly wrap: <R, P extends never[]>(
+    readonly wrap: <R, P extends unknown[]>(
         f: (...args: P) => Promise<R>
     ) => (...args: P) => Promise<R>
     readonly clearError: () => void
@@ -37,7 +35,7 @@ export function useSharedPromiseState(inheritState?: {
 }): SharedPromiseState {
     const inProgress = useRef(false)
     const wrap = useCallback(
-        <R, P extends never[]>(
+        <R, P extends unknown[]>(
                 f: (...args: P) => Promise<R>
             ): ((...args: P) => Promise<R>) =>
             async (...args: P) => {
@@ -79,16 +77,16 @@ export function useSharedPromiseState(inheritState?: {
     }
 }
 
-export function usePromiseState<R, F extends AsyncFunction<R>>(
-    cb: F,
+export function usePromiseState<R, P extends unknown[]>(
+    cb: (...args: P) => Promise<R>,
     inputs: DependencyList,
     parent?: SharedPromiseState
-): PromiseStateResult<R, F> {
-    const [state, setState] = useState<PromiseState<R, Parameters<F>>>({
+): PromiseStateResult<R, P> {
+    const [state, setState] = useState<PromiseState<R, P>>({
         inProgress: false,
     })
     const inProgress = useRef(false)
-    const fnImpl = async (...args: Parameters<F>) => {
+    const fnImpl = async (...args: P) => {
         if (inProgress.current) {
             throw new Error("Operation already in progress")
         }

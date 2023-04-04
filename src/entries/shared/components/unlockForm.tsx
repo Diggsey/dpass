@@ -3,9 +3,11 @@ import { FC, FormEvent, useId } from "react"
 import { sendMessage } from "../messages"
 import { cn } from "../ui"
 import { usePromiseState } from "../ui/hooks"
-import { LockButtons } from "./lockForm"
+import { ButtonIcon } from "./buttonIcon"
+import { Loader } from "./loader"
+import { LockButtons } from "./lockButtons"
 import { PasswordInput } from "./passwordInput"
-import { Status } from "./status"
+import { Card, PrimaryButton } from "./styledElem"
 
 type UnlockFormProps = {
     isSetUp: boolean
@@ -33,22 +35,15 @@ export const UnlockForm: FC<UnlockFormProps> = ({ isSetUp }) => {
         []
     )
     const unlockError = unlocking.lastError ? (
-        <Status level="danger" colorText={true}>
-            {unlocking.lastError.toString()}
-        </Status>
+        <p className="text-sm text-red-600">{unlocking.lastError.toString()}</p>
     ) : null
 
-    const buttonClass = cn({
-        button: true,
-        isPrimary: true,
-        isLoading: unlocking.inProgress,
-    })
     return (
         <form
             onSubmit={unlock}
-            className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-6"
+            className="grid max-w-lg grid-cols-1 gap-x-6 gap-y-4 mx-auto"
         >
-            <div className="max-w-md">
+            <div>
                 <label
                     htmlFor={passwordId}
                     className="block text-sm font-medium leading-6 text-gray-900"
@@ -56,15 +51,14 @@ export const UnlockForm: FC<UnlockFormProps> = ({ isSetUp }) => {
                     Master password
                 </label>
                 <PasswordInput
-                    className="mt-2"
                     name="masterPassword"
                     inputId={passwordId}
+                    aria-invalid={!!unlockError}
                     autoFocus
                 />
-                {unlockError}
             </div>
             {!isSetUp ? (
-                <div className="max-w-md">
+                <div>
                     <label
                         htmlFor={secretSentenceId}
                         className="block text-sm font-medium leading-6 text-gray-900"
@@ -73,7 +67,12 @@ export const UnlockForm: FC<UnlockFormProps> = ({ isSetUp }) => {
                     </label>
                     <div className="relative mt-2 rounded-md shadow-sm">
                         <input
-                            className="block w-full rounded-md border-0 py-1.5 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                            className={cn(
+                                "block w-full rounded-md border-0 py-1.5 pr-10 ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
+                                unlockError
+                                    ? "text-red-900 ring-red-300 focus:ring-red-500"
+                                    : "text-gray-900 ring-gray-300 focus:ring-indigo-600"
+                            )}
                             type="text"
                             name="secretSentence"
                         />
@@ -86,14 +85,16 @@ export const UnlockForm: FC<UnlockFormProps> = ({ isSetUp }) => {
                     </div>
                 </div>
             ) : null}
-            <div className="field">
-                <div className="control">
-                    <button type="submit" className={buttonClass}>
-                        Unlock
-                    </button>
-                </div>
+            {unlockError}
+            <div className="flex items-center justify-end gap-3">
+                {unlockError && isSetUp ? (
+                    <LockButtons isUnlocked={false} />
+                ) : null}
+                <PrimaryButton type="submit">
+                    {unlocking.inProgress && <ButtonIcon icon={Loader} />}
+                    <span>{isSetUp ? "Unlock" : "Enroll device"}</span>
+                </PrimaryButton>
             </div>
-            {unlockError && isSetUp ? <LockButtons isUnlocked={false} /> : null}
         </form>
     )
 }
@@ -110,17 +111,15 @@ export const UnlockPanel: FC<UnlockPanelProps> = ({ isSetUp, isUnlocked }) => {
         ? "locked"
         : "device not enrolled"
     return (
-        <div className="divide-y divide-gray-200 overflow-hidden sm:rounded-lg bg-white shadow">
-            <div className="px-4 py-5 sm:px-6">
-                <div className="icon-text">
-                    <h3 className="text-base font-semibold leading-6 text-gray-900">
-                        Identity status: {status}
-                    </h3>
-                </div>
-            </div>
-            <div className="px-4 py-5 sm:p-6">
+        <Card>
+            <Card.Header>
+                <h3 className="text-base font-semibold leading-6 text-gray-900">
+                    Identity status: {status}
+                </h3>
+            </Card.Header>
+            <Card.Body>
                 <UnlockForm isSetUp={isSetUp} />
-            </div>
-        </div>
+            </Card.Body>
+        </Card>
     )
 }

@@ -1,9 +1,10 @@
-import {
-    CheckCircleIcon,
-    ExclamationCircleIcon,
-} from "@heroicons/react/24/outline"
 import { ChangeEvent, useCallback, useId, useState } from "react"
-import { Loader } from "~/entries/shared/components/loader"
+import { InputValidationIcon } from "~/entries/shared/components/inputValidationIcon"
+import {
+    HelpText,
+    Label,
+    ValidationError,
+} from "~/entries/shared/components/styledElem"
 import { GDriveStorageAddress } from "~/entries/shared/privileged/state"
 import { TOKEN_MANAGER } from "~/entries/shared/tokens"
 import { cn } from "~/entries/shared/ui"
@@ -67,16 +68,13 @@ export const GDriveStorageEditor = ({
             })
         }, [sharingUrl, address, onChange])
     const isValid =
-        address.folderId && address.userId && !committingSharingUrl.lastError
+        address.folderId.length > 0 &&
+        address.userId.length > 0 &&
+        !committingSharingUrl.lastError
 
     return (
         <div>
-            <label
-                htmlFor={id}
-                className="block text-sm font-medium leading-6 text-gray-900"
-            >
-                Folder Sharing URL
-            </label>
+            <Label htmlFor={id}>Folder Sharing URL</Label>
             <div className="relative mt-2 rounded-md shadow-sm">
                 <input
                     type="text"
@@ -102,26 +100,12 @@ export const GDriveStorageEditor = ({
                     disabled={disabled}
                     aria-invalid={!isValid}
                 />
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                    {!isValid ? (
-                        <ExclamationCircleIcon
-                            className="h-5 w-5 text-red-500"
-                            aria-hidden="true"
-                        />
-                    ) : committingSharingUrl.inProgress ? (
-                        <Loader
-                            className="h-5 w-5 text-gray-500"
-                            aria-hidden="true"
-                        />
-                    ) : (
-                        <CheckCircleIcon
-                            className="h-5 w-5 text-green-500"
-                            aria-hidden="true"
-                        />
-                    )}
-                </div>
+                <InputValidationIcon
+                    valid={isValid}
+                    validating={committingSharingUrl.inProgress}
+                />
             </div>
-            <p className="mt-2 text-sm text-gray-500">
+            <HelpText>
                 Sharing URL for a{" "}
                 <a
                     href="https://drive.google.com"
@@ -132,11 +116,9 @@ export const GDriveStorageEditor = ({
                     Google Drive
                 </a>{" "}
                 folder where data will be stored.
-            </p>
+            </HelpText>
             {committingSharingUrl.lastError ? (
-                <p className="mt-2 text-sm text-red-600" id="email-error">
-                    Not a valid sharing URL.
-                </p>
+                <ValidationError>Not a valid sharing URL.</ValidationError>
             ) : null}
         </div>
     )
