@@ -1,5 +1,10 @@
 import { VaultItemPayload } from "../state"
 
+export type EditVaultNameMessage = {
+    id: "editVaultName"
+    vaultId: string
+    name: string
+}
 export type CreateVaultItemMessage = {
     id: "createVaultItem"
     vaultId: string

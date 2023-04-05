@@ -162,7 +162,6 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
         setEditingAddress((a) => a && { ...a, isClosing: true })
     }, [])
     const closed = useCallback(() => {
-        console.log("closed")
         setEditingAddress((a) => (a?.isClosing ? null : a))
     }, [])
     const addStorage = useCallback(() => {

@@ -7,7 +7,7 @@ import {
 } from "react"
 import { Json } from "../.."
 
-function useLocalState<T extends Json>(
+export function useLocalState<T extends Json>(
     key: string,
     defaultValue: T | (() => T)
 ): [T, Dispatch<SetStateAction<T>>] {
@@ -57,4 +57,19 @@ function useLocalState<T extends Json>(
     return [state, setLocalState]
 }
 
-export default useLocalState
+export function setLocalState<T extends Json>(key: string, newState: T) {
+    const oldValue = localStorage.getItem(key)
+    const newValue = JSON.stringify(newState)
+    if (newValue === oldValue) {
+        return
+    }
+    localStorage.setItem(key, newValue)
+    dispatchEvent(
+        new StorageEvent("storage", {
+            storageArea: localStorage,
+            key,
+            oldValue,
+            newValue,
+        })
+    )
+}

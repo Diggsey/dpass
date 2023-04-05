@@ -118,7 +118,7 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
                     </>
                 )}
             </Disclosure>
-            <div className="py-10">{currentItem?.body}</div>
+            {currentItem?.body}
         </div>
     )
 }

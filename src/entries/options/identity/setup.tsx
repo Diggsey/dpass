@@ -189,17 +189,6 @@ export const SetupPanel = () => {
 
     const [quicklySettingUp, quickSetup] = usePromiseState(async () => {
         await sendMessage({
-            id: "editStorageAddresses",
-            vaultId: null,
-            action: {
-                id: "add",
-                storageAddress: {
-                    id: "local",
-                    folderName: "default",
-                },
-            },
-        })
-        await sendMessage({
             id: "createRoot",
             name: "Unnamed",
             masterPassword: "password",

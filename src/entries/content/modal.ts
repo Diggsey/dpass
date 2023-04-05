@@ -44,7 +44,6 @@ export async function openModal<P extends keyof ModalList>(
     const iframeUrl = new URL(
         browser.runtime.getURL(`src/entries/${page}/index.html`)
     )
-    console.log(iframeUrl)
     const requestId = crypto.randomUUID()
     iframeUrl.searchParams.set("args", JSON.stringify(args))
     iframeUrl.searchParams.set("parent", JSON.stringify(frameDetails))

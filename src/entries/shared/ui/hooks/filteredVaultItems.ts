@@ -82,7 +82,7 @@ function useFilteredVaultItems(
             ? [[selectedVaultId, vaultMap[selectedVaultId]] as const]
             : Object.entries(vaultMap)
         const allItems = vaults.flatMap(([vaultId, vault]) =>
-            Object.entries(vault.items || {}).map(([itemId, item]) => ({
+            Object.entries(vault?.items || {}).map(([itemId, item]) => ({
                 displayName: computeItemDisplayName(item),
                 vaultName: vaultMap[vaultId].name,
                 logoUrl: computeLogoUrl(item),

@@ -31,6 +31,7 @@ import {
     CreateVaultItemMessage,
     DecryptVaultItemMessage,
     DeleteVaultItemMessage,
+    EditVaultNameMessage,
     UpdateVaultItemMessage,
 } from "./vault"
 
@@ -49,6 +50,7 @@ export type Message =
     | CreateVaultMessage
     | RemoveVaultMessage
     | SetVaultAsDefault
+    | EditVaultNameMessage
     | CreateVaultItemMessage
     | DeleteVaultItemMessage
     | UpdateVaultItemMessage
@@ -73,6 +75,7 @@ type MessageResponses = {
     createVault: string
     removeVault: undefined
     setVaultAsDefault: undefined
+    editVaultName: undefined
     createVaultItem: string
     deleteVaultItem: undefined
     updateVaultItem: undefined

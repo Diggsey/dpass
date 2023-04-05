@@ -45,7 +45,7 @@ export const CreateVaultForm = ({ close }: { close: () => void }) => {
     )
 
     return (
-        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 auto-rows-max">
             <Card>
                 <Card.Body>
                     <form className="grid gap-4" onSubmit={createVault}>

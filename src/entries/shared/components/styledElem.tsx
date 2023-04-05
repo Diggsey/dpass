@@ -72,7 +72,7 @@ export const OutlineButton = styledElem(
 
 export const TextButton = styledElem(
     BaseButton,
-    "rounded-md px-0.5 bg-white font-medium text-indigo-600 hover:text-indigo-500 disabled:text-gray-600 focus-visible:outline focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+    "rounded-md px-0.5 font-medium text-indigo-600 hover:text-indigo-500 disabled:text-gray-600 focus-visible:outline focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
 )
 
 export const FlatButton = styledElem(

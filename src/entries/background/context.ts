@@ -439,11 +439,14 @@ class SecureContext extends Actor implements IIntegrator {
         this.#updatePrivilegedState({
             ...this.#privilegedState,
             isUnlocked: this.#root !== null,
-            rootInfo: rootInfo && {
-                ...rootInfo.payload,
-                creationTimestamp: rootInfo.creationTimestamp,
-                updateTimestamp: rootInfo.updateTimestamp,
-            },
+            rootInfo: rootInfo &&
+                this.#root && {
+                    ...rootInfo.payload,
+                    creationTimestamp: rootInfo.creationTimestamp,
+                    updateTimestamp: Math.max(
+                        ...this.#root.items.map((item) => item.updateTimestamp)
+                    ),
+                },
             vaults,
             keyPairs,
             defaultVaultId,
@@ -524,6 +527,8 @@ class SecureContext extends Actor implements IIntegrator {
     ): PrivilegedVault {
         if (!vault) {
             return {
+                creationTimestamp: 0,
+                updateTimestamp: 0,
                 name: "<Unknown>",
                 items: {},
                 addresses: [],
@@ -549,6 +554,10 @@ class SecureContext extends Actor implements IIntegrator {
         )
 
         return {
+            creationTimestamp: vaultInfo.creationTimestamp,
+            updateTimestamp: Math.max(
+                ...vault.items.map((item) => item.updateTimestamp)
+            ),
             name: vaultInfo.payload.name,
             items: Object.fromEntries(
                 normalItems.map((normalItem) => [
@@ -976,6 +985,20 @@ class SecureContext extends Actor implements IIntegrator {
         return this.#patchRoot(
             itemPatcher((payload) => {
                 if (payload?.id === "rootInfo") {
+                    return {
+                        ...payload,
+                        name,
+                    }
+                }
+                return payload
+            })
+        )
+    }
+    updateVaultName(vaultId: string, name: string): Promise<void> {
+        return this.#patchVault(
+            vaultId,
+            itemPatcher((payload) => {
+                if (payload?.id === "vaultInfo") {
                     return {
                         ...payload,
                         name,

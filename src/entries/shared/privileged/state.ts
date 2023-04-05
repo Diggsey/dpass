@@ -37,6 +37,8 @@ export type PrivilegedVaultMap = {
 }
 
 export type PrivilegedVault = {
+    readonly creationTimestamp: number
+    readonly updateTimestamp: number
     readonly name: string
     readonly items: VaultItemMap | null
     readonly addresses: StorageAddress[]

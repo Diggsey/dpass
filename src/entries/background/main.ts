@@ -19,6 +19,7 @@ import { doesLoginUrlMatch, objectKey } from "../shared"
 import { StorageAddressAction } from "../shared/messages/storage"
 import { ItemDetails } from "../shared/messages/vault"
 import { FrameDetails, OptionsPageTarget } from "../shared/messages/misc"
+import { setLocalState } from "../shared/ui/hooks"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -99,6 +100,8 @@ function handleMessage(
             return removeVault(senderType, message.vaultId)
         case "setVaultAsDefault":
             return setVaultAsDefault(senderType, message.vaultId)
+        case "editVaultName":
+            return editVaultName(senderType, message.vaultId, message.name)
         case "createVaultItem":
             return createVaultItem(senderType, message.vaultId, message.details)
         case "updateVaultItem":
@@ -366,6 +369,18 @@ async function setVaultAsDefault(
     return
 }
 
+async function editVaultName(
+    senderType: SenderType,
+    vaultId: string,
+    name: string
+): Promise<undefined> {
+    if (senderType.id !== "privileged") {
+        return
+    }
+    await SECURE_CONTEXT.updateVaultName(vaultId, name)
+    return
+}
+
 async function createVaultItem(
     senderType: SenderType,
     vaultId: string,
@@ -445,16 +460,13 @@ async function forward(
 export async function openOptionsPage(target: OptionsPageTarget) {
     switch (target.id) {
         case "identity":
-            localStorage.setItem("activeTab", JSON.stringify(0))
+            setLocalState("activeTab", "identity")
             break
         case "item":
-            localStorage.setItem("activeTab", JSON.stringify(2))
-            localStorage.setItem("itemSearchTerm", JSON.stringify(""))
-            localStorage.setItem("selectedVaultId", JSON.stringify(null))
-            localStorage.setItem(
-                "selectedItemId",
-                JSON.stringify(target.itemId)
-            )
+            setLocalState("activeTab", "items")
+            setLocalState("itemSearchTerm", "")
+            setLocalState("selectedVaultId", null)
+            setLocalState("selectedItemId", target.itemId)
             break
     }
     await browser.runtime.openOptionsPage()

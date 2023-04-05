@@ -24,7 +24,7 @@ export const IdentityPage: FC<{ state: PrivilegedState }> = ({ state }) => {
         <SetupPanel />
     )
     return (
-        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 gap-10">
+        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 gap-10 auto-rows-max">
             {storagePanel}
             {unlockPanel}
             {lockPanel}

@@ -4,7 +4,7 @@ import {
     PrivilegedState,
     PrivilegedVault,
 } from "~/entries/shared/privileged/state"
-import { useLocalState } from "~/entries/shared/ui/hooks"
+import { setLocalState, useLocalState } from "~/entries/shared/ui/hooks"
 import { Card, FlatButton } from "~/entries/shared/components/styledElem"
 import {
     ListBulletIcon,
@@ -14,12 +14,22 @@ import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { VaultPlusIcon } from "~/entries/shared/components/icons/vaultPlus"
 import { Slide } from "~/entries/shared/components/slide"
 import { CreateVaultForm } from "./createVault"
+import { ManageVault } from "./manageVault"
 
 const VaultPanel: FC<{
     vaultId: string
     vault: PrivilegedVault
     isDefault: boolean
-}> = ({ vault, isDefault }) => {
+}> = ({ vault, vaultId, isDefault }) => {
+    const manageVault = useCallback(() => {
+        setLocalState("activeVaultId", vaultId)
+    }, [vaultId])
+    const viewVaultItems = useCallback(() => {
+        setLocalState("activeTab", "items")
+        setLocalState("itemSearchTerm", "")
+        setLocalState("selectedVaultId", vaultId)
+        setLocalState("selectedItemId", null)
+    }, [vaultId])
     const numItems = vault.items && Object.keys(vault.items).length
     const description =
         numItems === null
@@ -65,11 +75,17 @@ const VaultPanel: FC<{
                 </div>
             </Card.Body>
             <div className="flex divide-x divide-gray-200">
-                <FlatButton className="flex-1 sm:rounded-bl-lg">
+                <FlatButton
+                    className="flex-1 sm:rounded-bl-lg"
+                    onClick={manageVault}
+                >
                     <ButtonIcon icon={WrenchScrewdriverIcon} />
                     <span>Manage vault</span>
                 </FlatButton>
-                <FlatButton className="flex-1 sm:rounded-br-lg">
+                <FlatButton
+                    className="flex-1 sm:rounded-br-lg"
+                    onClick={viewVaultItems}
+                >
                     <ButtonIcon icon={ListBulletIcon} />
                     <span>View items</span>
                 </FlatButton>
@@ -79,17 +95,17 @@ const VaultPanel: FC<{
 }
 
 export const VaultsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
-    const [activeVault, setActiveVault] = useLocalState<string | null>(
-        "activeVault",
+    const [activeVaultId, setActiveVaultId] = useLocalState<string | null>(
+        "activeVaultId",
         null
     )
-    const [visibleVault, setVisibleVault] = useState<string | null>(null)
+    const [visibleVaultId, setVisibleVaultId] = useState<string | null>(null)
     // We want the "visible vault" to lag behind the active vault when the active
     // vault is reset to null.
-    if (activeVault !== visibleVault && activeVault !== null) {
-        setVisibleVault(activeVault)
+    if (activeVaultId !== visibleVaultId && activeVaultId !== null) {
+        setVisibleVaultId(activeVaultId)
     }
-    const closeForm = useCallback(() => setActiveVault(null), [])
+    const closeForm = useCallback(() => setActiveVaultId(null), [])
 
     const allVaults = Object.entries(state.vaults)
     allVaults.sort((a, b) => a[1].name.localeCompare(b[1].name))
@@ -105,20 +121,32 @@ export const VaultsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     ))
 
     let renderedForm = null
-    if (visibleVault === "<new>") {
+    if (visibleVaultId === "<new>") {
         renderedForm = <CreateVaultForm close={closeForm} />
-    } else if (visibleVault !== null) {
-        renderedForm = <div>Manage vault</div>
+    } else if (visibleVaultId !== null) {
+        const vault = state.vaults[visibleVaultId]
+        if (vault) {
+            renderedForm = (
+                <ManageVault
+                    vaultId={visibleVaultId}
+                    vault={vault}
+                    isDefault={visibleVaultId === state.defaultVaultId}
+                    close={closeForm}
+                />
+            )
+        } else if (activeVaultId === visibleVaultId) {
+            setActiveVaultId(null)
+        }
     }
 
     return (
         <Slide
-            open={activeVault !== null}
-            onTransitionEnd={() => setVisibleVault(activeVault)}
+            open={activeVaultId !== null}
+            onTransitionEnd={() => setVisibleVaultId(activeVaultId)}
             className="h-full"
         >
             <Slide.Left>
-                <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 auto-rows-max">
                     <ul
                         role="list"
                         className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
@@ -128,7 +156,7 @@ export const VaultsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
                             <button
                                 type="button"
                                 className="relative block w-full h-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                onClick={() => setActiveVault("<new>")}
+                                onClick={() => setActiveVaultId("<new>")}
                             >
                                 <VaultPlusIcon className="mx-auto h-12 w-12 text-gray-400" />
                                 <span className="mt-2 block text-sm font-semibold text-gray-900">
