@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
-import { Loader } from "~/entries/shared/components/loader"
+import { Loader } from "~/entries/shared/components/icons/loader"
 import {
+    Card,
     PrimaryButton,
     SecondaryButton,
 } from "~/entries/shared/components/styledElem"
@@ -80,7 +81,7 @@ export const StorageAddressEditor = ({
     )
 
     return (
-        <div className="px-4 py-4 sm:px-6 gap-8 grid">
+        <Card.Body className="gap-8 grid">
             <StorageTypePicker
                 value={edited.address.id}
                 onChange={(v) => {
@@ -122,6 +123,6 @@ export const StorageAddressEditor = ({
                     <span>Save</span>
                 </PrimaryButton>
             </div>
-        </div>
+        </Card.Body>
     )
 }

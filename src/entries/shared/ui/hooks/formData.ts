@@ -99,17 +99,19 @@ function useFormData<D extends object>(
         return { data, validity, errors, allValid } as FormHookState<D>
     }
     const [state, setState] = useState(() => {
-        const data = Object.fromEntries(
+        return Object.fromEntries(
             Object.keys(options).map((k) => [k, options[k as keyof D].initial])
         ) as D
-        return validateData(data)
     })
 
     const setData = useCallback(<K extends keyof D>(name: K, value: D[K]) => {
-        setState(({ data }) => validateData({ ...data, [name]: value }))
+        setState((data) => ({ ...data, [name]: value }))
     }, inputs)
 
-    return { ...state, setData, ids }
+    return useMemo(() => {
+        const res = validateData(state)
+        return { ...res, setData, ids }
+    }, [state, setData, ids, ...inputs])
 }
 
 export default useFormData

@@ -11,7 +11,8 @@ export type EditRootNameMessage = {
 export type ChangeRootPasswordMessage = {
     id: "changeRootPassword"
     oldPassword: string
-    newPassword: string
+    newPassword?: string
+    newSentence?: string
 }
 export type CreateVaultMessage = {
     id: "createVault"

@@ -25,7 +25,7 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
         (item) => item.key === effectiveKey && !item.disabled
     )
     return (
-        <div className="min-h-full bg-gray-100">
+        <div className="min-h-full bg-gray-100 grid grid-rows-[max-content]">
             <Disclosure as="nav" className="border-b border-gray-200 bg-white">
                 {({ open }) => (
                     <>

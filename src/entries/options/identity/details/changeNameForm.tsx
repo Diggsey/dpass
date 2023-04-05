@@ -2,7 +2,7 @@ import { FormEvent } from "react"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { FormInput } from "~/entries/shared/components/formInput"
 import { InputValidationIcon } from "~/entries/shared/components/inputValidationIcon"
-import { Loader } from "~/entries/shared/components/loader"
+import { Loader } from "~/entries/shared/components/icons/loader"
 import {
     Label,
     PrimaryButton,
@@ -42,7 +42,7 @@ export const ChangeNameForm = ({
             })
             close()
         },
-        [close, data]
+        [close, data, allValid]
     )
 
     return (

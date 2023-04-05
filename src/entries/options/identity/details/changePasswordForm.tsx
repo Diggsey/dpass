@@ -1,6 +1,6 @@
 import { FormEvent } from "react"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
-import { Loader } from "~/entries/shared/components/loader"
+import { Loader } from "~/entries/shared/components/icons/loader"
 import { PasswordInput } from "~/entries/shared/components/passwordInput"
 import {
     HelpText,
@@ -49,7 +49,7 @@ export const ChangePasswordForm = ({ close }: { close: () => void }) => {
             })
             close()
         },
-        [close, data]
+        [close, data, allValid]
     )
 
     return (

@@ -4,6 +4,7 @@ import {
     DecryptedRootFile,
     encodeRootData,
     KeyPair,
+    RootFileItem,
     RootInfo,
     Vault,
 } from "./serialize/rootData"
@@ -75,6 +76,7 @@ type NewVaultHint = {
 
 type UpdateRootHint = {
     newVaults?: { [vaultId: string]: NewVaultHint }
+    forceSave?: boolean
 }
 
 type TimerId = ReturnType<typeof setTimeout>
@@ -323,7 +325,7 @@ class SecureContext extends Actor implements IIntegrator {
         hint?: UpdateRootHint
     ) {
         // Do nothing if there are no changes
-        if (areFilesEqual(this.#root, newRoot)) {
+        if (areFilesEqual(this.#root, newRoot) && !hint?.forceSave) {
             return
         }
         this.#root = newRoot
@@ -883,41 +885,79 @@ class SecureContext extends Actor implements IIntegrator {
             })
         })
     }
-    changePassword(oldPassword: string, newPassword: string): Promise<void> {
+    changePassword(
+        oldPassword: string,
+        newPassword: string | null,
+        newSentence: string | null
+    ): Promise<void> {
         return this._post(
-            "changePassword(<redacted>, <redacted>)",
+            "changePassword(<redacted>, <redacted>, <redacted>)",
             async () => {
                 // Check that old password is valid
                 await this.#unlockInner(oldPassword, null)
-                const setupKey = this.#setupKey
-                if (!setupKey) {
-                    throw new Error("Secret sentence is required to unlock!")
+
+                const oldSentence =
+                    this.#privilegedState.rootInfo?.secretSentence
+                if (oldSentence === undefined) {
+                    throw new Error("Secret sentence not set")
                 }
 
                 // Re-derive all of our salts and keys
                 const passwordSalt = generateSalt()
+                const sentenceSalt = generateSalt()
                 const keySalt = generateSalt()
                 const keyFromPassword = await deriveKeyFromPassword(
-                    newPassword,
+                    newPassword ?? oldPassword,
                     passwordSalt
                 )
+                const keyFromSentence = await deriveKeyFromPassword(
+                    newSentence ?? oldSentence,
+                    sentenceSalt
+                )
+                const setupKey = await combineKeys(
+                    keyFromSentence,
+                    keyFromPassword
+                )
+
+                this.#updateSetupKey(setupKey)
+
                 const superKey = await combineKeys(setupKey, keyFromPassword)
                 const key = await deriveKeyFromSuperKey(
                     superKey,
                     keySalt,
                     KeyApplication.rootKey
                 )
+
                 const canaryData = await encrypt(key, new Uint8Array(1))
                 this._lockedSyncedRoot = {
                     ...this._lockedSyncedRoot,
                     passwordSalt,
+                    sentenceSalt,
                     keySalt,
                     canaryData,
                 }
                 this.#saveKey(key)
+                this.#saveSuperKey(superKey)
 
-                // Save changes to storage
-                await this.#saveRootChanges()
+                if (newSentence !== null && this.#root !== null) {
+                    const rootInfoPatcher = itemPatcher<RootFileItem>(
+                        (payload) => {
+                            if (payload?.id === "rootInfo") {
+                                return {
+                                    ...payload,
+                                    secretSentence: newSentence,
+                                }
+                            }
+                            return payload
+                        }
+                    )
+                    await this.#updateRoot(rootInfoPatcher(this.#root), {
+                        forceSave: true,
+                    })
+                } else {
+                    // Save changes to storage
+                    await this.#saveRootChanges()
+                }
             }
         )
     }

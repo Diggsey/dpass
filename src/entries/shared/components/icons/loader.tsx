@@ -1,5 +1,5 @@
 import { forwardRef } from "react"
-import { cn } from "../ui"
+import { cn } from "../../ui"
 
 export const Loader = forwardRef<
     SVGSVGElement,

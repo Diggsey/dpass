@@ -2,7 +2,7 @@ import { FC } from "react"
 import { sendMessage } from "../messages"
 import { usePromiseState } from "../ui/hooks"
 import { ButtonIcon } from "./buttonIcon"
-import { Loader } from "./loader"
+import { Loader } from "./icons/loader"
 import { OutlineButton, PrimaryButton } from "./styledElem"
 
 export const LockButtons: FC<{ isUnlocked: boolean }> = ({ isUnlocked }) => {

@@ -25,7 +25,7 @@ import {
 } from "~/entries/shared/components/reorderableList"
 import { StorageAddressEditor } from "./editor"
 import { STORAGE_PROVIDERS, STORAGE_PROVIDER_MAP } from "."
-import { Loader } from "~/entries/shared/components/loader"
+import { Loader } from "~/entries/shared/components/icons/loader"
 import {
     Card,
     PrimaryButton,

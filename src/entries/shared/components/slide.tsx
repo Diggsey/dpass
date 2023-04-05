@@ -1,11 +1,12 @@
 import { ReactNode, useState, useContext, createContext, Ref } from "react"
-import { cn } from "../ui"
+import { ClassName, cn } from "../ui"
 import { useElementSize } from "../ui/hooks"
 
 type SlideProps = {
     open: boolean
     onTransitionEnd?: (open: boolean) => void
     children: ReactNode
+    className?: ClassName
 }
 
 type SlideContextType = {
@@ -20,7 +21,12 @@ const SlideContext = createContext<SlideContextType>({
     sizeRef: () => {},
 })
 
-export const Slide = ({ children, open, onTransitionEnd }: SlideProps) => {
+export const Slide = ({
+    children,
+    open,
+    onTransitionEnd,
+    className,
+}: SlideProps) => {
     const [state, setState] = useState({ open, transitioning: false })
     if (state.open !== open) {
         setState({ open, transitioning: true })
@@ -29,11 +35,15 @@ export const Slide = ({ children, open, onTransitionEnd }: SlideProps) => {
     return (
         <div
             tabIndex={-1}
-            className="overflow-hidden transition-[height]"
+            className={cn("transition-[height] overflow-hidden", className)}
             onScrollCapture={(e) => {
                 e.currentTarget.scrollLeft = 0
             }}
-            style={height !== null ? { height: `${height}px` } : undefined}
+            style={
+                height !== null && state.transitioning
+                    ? { height: `${height}px` }
+                    : undefined
+            }
         >
             <div
                 className={cn(

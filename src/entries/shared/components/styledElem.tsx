@@ -42,7 +42,7 @@ export function styledElem<
 
 export const Card = styledElem(
     "div",
-    "divide-y divide-gray-200 overflow-hidden sm:rounded-lg bg-white shadow",
+    "divide-y divide-gray-200 overflow-hidden sm:rounded-lg bg-white shadow grid",
     {
         Header: styledElem("div", "px-4 py-5 sm:px-6"),
         Body: styledElem("div", "px-4 py-5 sm:p-6"),
@@ -52,27 +52,32 @@ export const Card = styledElem(
 
 export const BaseButton = styledElem(
     "button",
-    "relative inline-flex items-center gap-x-1.5 rounded-md text-sm font-semibold"
+    "relative inline-flex items-center gap-x-1.5 text-sm font-semibold"
 )
 
 export const PrimaryButton = styledElem(
     BaseButton,
-    "px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 shadow-sm"
+    "rounded-md px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-500 disabled:bg-indigo-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 shadow-sm"
 )
 
 export const SecondaryButton = styledElem(
     BaseButton,
-    "text-gray-900 disabled:text-gray-600"
+    "rounded-md text-gray-900 disabled:text-gray-600"
 )
 
 export const OutlineButton = styledElem(
     BaseButton,
-    "px-3 py-2 bg-white text-gray-900 ring-1 ring-inset ring-gray-600 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-300"
+    "rounded-md px-3 py-2 bg-white text-gray-900 ring-1 ring-inset ring-gray-600 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-300"
 )
 
 export const TextButton = styledElem(
     BaseButton,
-    "px-0.5 bg-white font-medium text-indigo-600 hover:text-indigo-500 disabled:text-gray-600 focus-visible:outline focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+    "rounded-md px-0.5 bg-white font-medium text-indigo-600 hover:text-indigo-500 disabled:text-gray-600 focus-visible:outline focus-visible:outline-indigo-500 focus-visible:outline-offset-2"
+)
+
+export const FlatButton = styledElem(
+    BaseButton,
+    "justify-center py-4 text-sm font-semibold text-gray-900 -outline-offset-2 bg-white hover:bg-gray-50 disabled:bg-white disabled:text-gray-600"
 )
 
 export const Input = styledElem(

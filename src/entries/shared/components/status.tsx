@@ -6,7 +6,7 @@ import {
 } from "@heroicons/react/24/outline"
 import { FC, ReactNode } from "react"
 import { cn } from "../ui"
-import { Loader } from "./loader"
+import { Loader } from "./icons/loader"
 
 type StatusProps = {
     level: "loading" | "info" | "success" | "warning" | "danger"

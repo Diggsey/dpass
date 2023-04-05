@@ -3,7 +3,7 @@ import { FormEvent, useState } from "react"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { FormInput } from "~/entries/shared/components/formInput"
 import { InputValidationIcon } from "~/entries/shared/components/inputValidationIcon"
-import { Loader } from "~/entries/shared/components/loader"
+import { Loader } from "~/entries/shared/components/icons/loader"
 import { PasswordInput } from "~/entries/shared/components/passwordInput"
 import { Slide } from "~/entries/shared/components/slide"
 import {
@@ -86,7 +86,7 @@ export const SetupForm = ({ close }: SetupFormProps) => {
 
             close()
         },
-        [close, data]
+        [close, data, allValid]
     )
     return (
         <form className="grid gap-4" onSubmit={createIdentity}>

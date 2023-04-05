@@ -6,6 +6,7 @@ import { Slide } from "~/entries/shared/components/slide"
 import { LockButtons } from "~/entries/shared/components/lockButtons"
 import { ChangeNameForm } from "./details/changeNameForm"
 import { ChangePasswordForm } from "./details/changePasswordForm"
+import { ChangeSecretSentenceForm } from "./details/changeSecretSentence"
 
 type DetailsListProps = {
     rootInfo: RootInfo
@@ -130,6 +131,9 @@ export const DetailsPanel: FC<{ rootInfo: RootInfo }> = ({ rootInfo }) => {
         case ActiveForm.ChangeMasterPassword:
             renderedForm = <ChangePasswordForm close={closeForm} />
             break
+        case ActiveForm.ChangeSecretSentence:
+            renderedForm = <ChangeSecretSentenceForm close={closeForm} />
+            break
     }
 
     return (
@@ -139,14 +143,16 @@ export const DetailsPanel: FC<{ rootInfo: RootInfo }> = ({ rootInfo }) => {
                     Identity status: unlocked
                 </h3>
             </Card.Header>
-            <Card.Body>
-                <Slide open={formOpen}>
-                    <Slide.Left>
+            <Slide open={formOpen}>
+                <Slide.Left>
+                    <Card.Body>
                         <DetailsList rootInfo={rootInfo} openForm={openForm} />
-                    </Slide.Left>
-                    <Slide.Right>{renderedForm}</Slide.Right>
-                </Slide>
-            </Card.Body>
+                    </Card.Body>
+                </Slide.Left>
+                <Slide.Right>
+                    <Card.Body>{renderedForm}</Card.Body>
+                </Slide.Right>
+            </Slide>
         </Card>
     )
 }

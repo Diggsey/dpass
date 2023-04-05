@@ -2,7 +2,7 @@ import {
     CheckCircleIcon,
     ExclamationCircleIcon,
 } from "@heroicons/react/24/outline"
-import { Loader } from "./loader"
+import { Loader } from "./icons/loader"
 
 type InputValidationIconProps = {
     valid?: boolean | null

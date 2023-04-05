@@ -90,7 +90,8 @@ function handleMessage(
             return changeRootPassword(
                 senderType,
                 message.oldPassword,
-                message.newPassword
+                message.newPassword ?? null,
+                message.newSentence ?? null
             )
         case "createVault":
             return createVault(senderType, message.name)
@@ -228,12 +229,13 @@ async function editRootName(
 async function changeRootPassword(
     senderType: SenderType,
     oldPassword: string,
-    newPassword: string
+    newPassword: string | null,
+    newSentence: string | null
 ): Promise<undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    await SECURE_CONTEXT.changePassword(oldPassword, newPassword)
+    await SECURE_CONTEXT.changePassword(oldPassword, newPassword, newSentence)
     return
 }
 
