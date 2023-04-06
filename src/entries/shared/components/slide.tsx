@@ -7,6 +7,7 @@ type SlideProps = {
     onTransitionEnd?: (open: boolean) => void
     children: ReactNode
     className?: ClassName
+    slideClass?: ClassName
 }
 
 type SlideContextType = {
@@ -26,6 +27,7 @@ export const Slide = ({
     open,
     onTransitionEnd,
     className,
+    slideClass,
 }: SlideProps) => {
     const [state, setState] = useState({ open, transitioning: false })
     if (state.open !== open) {
@@ -48,7 +50,8 @@ export const Slide = ({
             <div
                 className={cn(
                     "flex flex-row items-start w-[200%] relative transition-[left]",
-                    open ? "-left-full" : "left-0"
+                    open ? "-left-full" : "left-0",
+                    slideClass
                 )}
                 onTransitionEnd={() => {
                     setState((s) => ({ ...s, transitioning: false }))
@@ -67,22 +70,30 @@ export const Slide = ({
 
 type SlideSideProps = {
     children: ReactNode
+    className?: ClassName
+    persistent?: boolean
 }
 
-Slide.Left = ({ children }: SlideSideProps) => {
+Slide.Left = ({ children, className, persistent }: SlideSideProps) => {
     const { open, transitioning, sizeRef } = useContext(SlideContext)
     return (
-        <div className="flex-[0.5]" ref={open ? null : sizeRef}>
-            {!open || transitioning ? children : null}
+        <div
+            className={cn("flex-[0.5]", className)}
+            ref={open ? null : sizeRef}
+        >
+            {!open || transitioning || persistent ? children : null}
         </div>
     )
 }
 
-Slide.Right = ({ children }: SlideSideProps) => {
+Slide.Right = ({ children, className, persistent }: SlideSideProps) => {
     const { open, transitioning, sizeRef } = useContext(SlideContext)
     return (
-        <div className="flex-[0.5]" ref={open ? sizeRef : null}>
-            {open || transitioning ? children : null}
+        <div
+            className={cn("flex-[0.5]", className)}
+            ref={open ? sizeRef : null}
+        >
+            {open || transitioning || persistent ? children : null}
         </div>
     )
 }

@@ -24,11 +24,15 @@ export const IdentityPage: FC<{ state: PrivilegedState }> = ({ state }) => {
         <SetupPanel />
     )
     return (
-        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 gap-10 auto-rows-max">
-            {storagePanel}
-            {unlockPanel}
-            {lockPanel}
-            {setupPanel}
+        <div className="overflow-y-auto overflow-x-hidden [container-type:size]">
+            <div className="sm:mr-[calc(100%_-_100cqw)]">
+                <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 gap-10 auto-rows-max">
+                    {storagePanel}
+                    {unlockPanel}
+                    {lockPanel}
+                    {setupPanel}
+                </div>
+            </div>
         </div>
     )
 }

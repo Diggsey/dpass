@@ -140,34 +140,40 @@ export const VaultsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     }
 
     return (
-        <Slide
-            open={activeVaultId !== null}
-            onTransitionEnd={() => setVisibleVaultId(activeVaultId)}
-            className="h-full"
-        >
-            <Slide.Left>
-                <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 auto-rows-max">
-                    <ul
-                        role="list"
-                        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
-                    >
-                        {vaultPanels}
-                        <li>
-                            <button
-                                type="button"
-                                className="relative block w-full h-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                                onClick={() => setActiveVaultId("<new>")}
+        <div className="overflow-y-auto overflow-x-hidden [container-type:size]">
+            <div className="sm:mr-[calc(100%_-_100cqw)]">
+                <Slide
+                    open={activeVaultId !== null}
+                    onTransitionEnd={() => setVisibleVaultId(activeVaultId)}
+                    className="min-h-full"
+                >
+                    <Slide.Left>
+                        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 auto-rows-max">
+                            <ul
+                                role="list"
+                                className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
                             >
-                                <VaultPlusIcon className="mx-auto h-12 w-12 text-gray-400" />
-                                <span className="mt-2 block text-sm font-semibold text-gray-900">
-                                    Create a new vault
-                                </span>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-            </Slide.Left>
-            <Slide.Right>{renderedForm}</Slide.Right>
-        </Slide>
+                                {vaultPanels}
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="relative block w-full h-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                        onClick={() =>
+                                            setActiveVaultId("<new>")
+                                        }
+                                    >
+                                        <VaultPlusIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                        <span className="mt-2 block text-sm font-semibold text-gray-900">
+                                            Create a new vault
+                                        </span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    </Slide.Left>
+                    <Slide.Right>{renderedForm}</Slide.Right>
+                </Slide>
+            </div>
+        </div>
     )
 }

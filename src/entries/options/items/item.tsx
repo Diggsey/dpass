@@ -14,6 +14,7 @@ import {
     usePromiseState,
     useSharedPromiseState,
 } from "~/entries/shared/ui/hooks"
+import { Card } from "~/entries/shared/components/styledElem"
 
 type ItemProps = {
     vaultId: string
@@ -122,108 +123,115 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
     )
 
     return (
-        <div className="box">
-            <div className="is-flex is-flex-direction-row is-justify-content-end gap-1">
-                <IconButton
-                    iconClass={cn("fas fa-trash-can", {
-                        isLoading: deletingItem.inProgress,
-                    })}
-                    disabled={itemAction.inProgress}
-                    onClick={deleteItem}
-                >
-                    Delete
-                </IconButton>
-            </div>
-            <div className="field">
-                <label className="label">Name</label>
-                <div className="control">
-                    <input
-                        className="input"
-                        type="text"
-                        value={itemDetails.name}
-                        onChange={(e) =>
-                            updateItem({
-                                ...itemDetails,
-                                name: e.currentTarget.value,
-                            })
-                        }
-                    />
+        <Card>
+            <Card.Header>
+                <div className="is-flex is-flex-direction-row is-justify-content-end gap-1">
+                    <IconButton
+                        iconClass={cn("fas fa-trash-can", {
+                            isLoading: deletingItem.inProgress,
+                        })}
+                        disabled={itemAction.inProgress}
+                        onClick={deleteItem}
+                    >
+                        Delete
+                    </IconButton>
                 </div>
-            </div>
-            <div className="field">
-                <label className="label">Origins</label>
-            </div>
-
-            {itemDetails.origins.map((origin, i) => (
-                <div className="field is-grouped">
-                    <div key={i} className="control is-expanded">
+            </Card.Header>
+            <Card.Body>
+                <div className="field">
+                    <label className="label">Name</label>
+                    <div className="control">
                         <input
                             className="input"
                             type="text"
-                            placeholder="example.com"
-                            value={origin}
+                            value={itemDetails.name}
                             onChange={(e) =>
                                 updateItem({
                                     ...itemDetails,
-                                    origins: itemDetails.origins.map((o, j) =>
-                                        i == j ? e.currentTarget.value : o
-                                    ),
+                                    name: e.currentTarget.value,
                                 })
                             }
                         />
                     </div>
-                    <button
-                        className="delete is-large is-align-self-center"
-                        onClick={() =>
-                            updateItem({
-                                ...itemDetails,
-                                origins: [
-                                    ...itemDetails.origins.slice(0, i),
-                                    ...itemDetails.origins.slice(i + 1),
-                                ],
-                            })
-                        }
-                    />
                 </div>
-            ))}
-            <div className="field">
-                <div className="control">
-                    <IconButton
-                        iconClass="fas fa-plus"
-                        onClick={() =>
-                            updateItem({
-                                ...itemDetails,
-                                origins: [...itemDetails.origins, ""],
-                            })
-                        }
-                    >
-                        Add origin
-                    </IconButton>
+                <div className="field">
+                    <label className="label">Origins</label>
                 </div>
-            </div>
-            <div className="field">
-                <div className="control">
-                    <label className="checkbox">
-                        <input
-                            type="checkbox"
-                            disabled={!payload}
-                            checked={itemDetails.encrypted}
+
+                {itemDetails.origins.map((origin, i) => (
+                    <div className="field is-grouped">
+                        <div key={i} className="control is-expanded">
+                            <input
+                                className="input"
+                                type="text"
+                                placeholder="example.com"
+                                value={origin}
+                                onChange={(e) =>
+                                    updateItem({
+                                        ...itemDetails,
+                                        origins: itemDetails.origins.map(
+                                            (o, j) =>
+                                                i == j
+                                                    ? e.currentTarget.value
+                                                    : o
+                                        ),
+                                    })
+                                }
+                            />
+                        </div>
+                        <button
+                            className="delete is-large is-align-self-center"
                             onClick={() =>
-                                payload &&
                                 updateItem({
                                     ...itemDetails,
-                                    payload,
-                                    encrypted: !itemDetails.encrypted,
+                                    origins: [
+                                        ...itemDetails.origins.slice(0, i),
+                                        ...itemDetails.origins.slice(i + 1),
+                                    ],
                                 })
                             }
                         />
-                        Encrypted
-                    </label>
+                    </div>
+                ))}
+                <div className="field">
+                    <div className="control">
+                        <IconButton
+                            iconClass="fas fa-plus"
+                            onClick={() =>
+                                updateItem({
+                                    ...itemDetails,
+                                    origins: [...itemDetails.origins, ""],
+                                })
+                            }
+                        >
+                            Add origin
+                        </IconButton>
+                    </div>
                 </div>
-            </div>
-            <hr />
-            {payloadView}
-        </div>
+                <div className="field">
+                    <div className="control">
+                        <label className="checkbox">
+                            <input
+                                type="checkbox"
+                                disabled={!payload}
+                                checked={itemDetails.encrypted}
+                                onClick={() =>
+                                    payload &&
+                                    updateItem({
+                                        ...itemDetails,
+                                        payload,
+                                        encrypted: !itemDetails.encrypted,
+                                    })
+                                }
+                            />
+                            Encrypted
+                        </label>
+                    </div>
+                </div>
+                <hr />
+                {payloadView}
+            </Card.Body>
+        </Card>
     )
 }
 

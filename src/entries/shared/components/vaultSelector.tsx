@@ -1,5 +1,6 @@
 import { FC, useMemo } from "react"
 import { cn } from "../ui"
+import { Select } from "./styledElem"
 
 type VaultMap = {
     readonly [vaultId: string]: {
@@ -30,32 +31,30 @@ export const VaultSelector: FC<VaultSelectorProps> = ({
         [vaults]
     )
     const classForItem = (vaultId: string | null) =>
-        cn({
-            isItalic: vaultId === null,
-            hasTextWeightBold: vaultId === defaultVaultId,
-        })
+        cn(
+            vaultId === null ? "italic" : "not-italic",
+            vaultId === defaultVaultId ? "font-bold" : "font-normal"
+        )
     return (
-        <div className="select">
-            <select
-                className={classForItem(value)}
-                value={value ?? ""}
-                onChange={(e) => onChange(e.currentTarget.value || null)}
-            >
-                {allowAll && (
-                    <option value="" className={classForItem(null)}>
-                        All vaults
-                    </option>
-                )}
-                {vaultOptions.map(([vaultId, vault]) => (
-                    <option
-                        key={vaultId}
-                        value={vaultId}
-                        className={classForItem(vaultId)}
-                    >
-                        {vault.name}
-                    </option>
-                ))}
-            </select>
-        </div>
+        <Select
+            className={classForItem(value)}
+            value={value ?? ""}
+            onChange={(e) => onChange(e.currentTarget.value || null)}
+        >
+            {allowAll && (
+                <option value="" className={classForItem(null)}>
+                    All vaults
+                </option>
+            )}
+            {vaultOptions.map(([vaultId, vault]) => (
+                <option
+                    key={vaultId}
+                    value={vaultId}
+                    className={classForItem(vaultId)}
+                >
+                    {vault.name}
+                </option>
+            ))}
+        </Select>
     )
 }
