@@ -1017,7 +1017,7 @@ class SecureContext extends Actor implements IIntegrator {
         }
         return this.#superKey
     }
-    async createVault(name: string): Promise<string> {
+    async createVault(name: string, copyStorage: boolean): Promise<string> {
         const superKey = await this.#requireSuperKey()
         const personalVaultSalt = generateSalt()
         const personalVaultKey = await deriveKeyFromSuperKey(
@@ -1049,11 +1049,14 @@ class SecureContext extends Actor implements IIntegrator {
         const setAsDefaultOn = this.#privilegedState.defaultVaultId
             ? undefined
             : Date.now()
+
+        const addresses = copyStorage ? this.#privilegedState.rootAddresses : []
+
         await this.#patchRoot(
             itemCreator({
                 id: "vault",
                 fileId,
-                addresses: [],
+                addresses,
                 vaultKey: rawVaultKey,
                 personalVaultSalt,
                 encryptedVaultSuperKey,

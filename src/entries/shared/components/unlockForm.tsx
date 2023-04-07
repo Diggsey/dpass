@@ -4,6 +4,7 @@ import { sendMessage } from "../messages"
 import { cn } from "../ui"
 import { usePromiseState } from "../ui/hooks"
 import { ButtonIcon } from "./buttonIcon"
+import { DPassIcon } from "./icons/dpass"
 import { Loader } from "./icons/loader"
 import { LockButtons } from "./lockButtons"
 import { PasswordInput } from "./passwordInput"
@@ -112,7 +113,8 @@ export const UnlockPanel: FC<UnlockPanelProps> = ({ isSetUp, isUnlocked }) => {
         : "device not enrolled"
     return (
         <Card>
-            <Card.Header>
+            <Card.Header className="flex items-center gap-3">
+                <DPassIcon className="w-6 h-6" />
                 <h3 className="text-base font-semibold leading-6 text-gray-900">
                     Identity status: {status}
                 </h3>

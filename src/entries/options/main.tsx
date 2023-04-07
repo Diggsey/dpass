@@ -2,7 +2,6 @@ import { FC } from "react"
 import { createRoot } from "react-dom/client"
 import { usePrivilegedState } from "../shared/privileged/hooks"
 import "./style.css"
-import "@fortawesome/fontawesome-free/css/all.css"
 import { IdentityPage } from "./identity"
 import { PrivilegedState } from "../shared/privileged/state"
 import { VaultsPage } from "./vaults"
@@ -17,7 +16,7 @@ const AppBody: FC<{ state: PrivilegedState }> = ({ state }) => {
             body: <IdentityPage state={state} />,
         },
         {
-            key: "Vaults",
+            key: "vaults",
             title: "Vaults",
             body: <VaultsPage state={state} />,
             disabled: !state?.isUnlocked,

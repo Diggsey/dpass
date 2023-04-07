@@ -105,7 +105,7 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
                     <div className="flex-1">
                         <div className="flex justify-between">
                             <Input
-                                className="!ring-0 hover:bg-gray-100 !p-0 !shadow-none font-medium max-w-sm"
+                                className="!ring-0 hover:bg-gray-100 !p-0 !shadow-none font-medium !min-w-[150px] max-w-sm"
                                 type="text"
                                 placeholder="Name"
                                 value={field.name}
@@ -117,7 +117,7 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
                                 }
                             />
                             <Select
-                                className="!ring-0 hover:bg-gray-100 !py-0 !shadow-none font-medium text-right w-min !text-indigo-600"
+                                className="!ring-0 hover:bg-gray-100 !py-0 !shadow-none font-medium text-right w-min !text-indigo-600 !text-xs !pr-5 !bg-right"
                                 value={field.autofillMode.id}
                                 onChange={(e) =>
                                     setAutofillMode(e.currentTarget.value)

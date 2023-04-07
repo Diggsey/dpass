@@ -14,7 +14,7 @@ export const requestUnlock = async () => {
         const { id, tabs } = await browser.windows.create({
             url: browser.runtime.getURL("src/entries/unlockPopup/index.html"),
             type: "popup",
-            width: 400,
+            width: 300,
             height: 300,
         })
         if (id === undefined || !tabs || tabs[0]?.id === undefined) {

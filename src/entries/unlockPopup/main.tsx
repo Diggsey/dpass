@@ -2,9 +2,9 @@ import { FC, useEffect } from "react"
 import { createRoot } from "react-dom/client"
 import { usePrivilegedState } from "../shared/privileged/hooks"
 import "./style.css"
-import "@fortawesome/fontawesome-free/css/all.css"
 import { UnlockPanel } from "../shared/components/unlockForm"
 import browser from "webextension-polyfill"
+import { useElementSize } from "../shared/ui/hooks"
 
 const Popup: FC = () => {
     const state = usePrivilegedState()
@@ -18,8 +18,14 @@ const Popup: FC = () => {
         }
     }, [isSuper])
 
+    const [sizeRef, size] = useElementSize()
+    if (size.height !== null) {
+        document.body.style.width = `${size.width ?? 0}px`
+        document.body.style.height = `${size.height ?? 0}px`
+    }
+
     return (
-        <div>
+        <div ref={sizeRef}>
             <UnlockPanel isSetUp={isSetUp} isUnlocked={isUnlocked} />
         </div>
     )
@@ -27,13 +33,6 @@ const Popup: FC = () => {
 
 const root = createRoot(document.body)
 root.render(<Popup />)
-
-const rootElem = document.body.firstElementChild as HTMLElement
-
-new ResizeObserver(() => {
-    document.body.style.width = `${rootElem.offsetWidth}px`
-    document.body.style.height = `${rootElem.offsetHeight}px`
-}).observe(rootElem)
 
 if (window.location.hash !== "#popup") {
     new ResizeObserver(() => {

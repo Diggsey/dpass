@@ -8,6 +8,7 @@ import { PasswordInput } from "~/entries/shared/components/passwordInput"
 import { Slide } from "~/entries/shared/components/slide"
 import {
     Card,
+    Checkbox,
     HelpText,
     Label,
     OutlineButton,
@@ -17,7 +18,11 @@ import {
     ValidationError,
 } from "~/entries/shared/components/styledElem"
 import { sendMessage } from "~/entries/shared/messages"
-import { useFormData, usePromiseState } from "~/entries/shared/ui/hooks"
+import {
+    setLocalState,
+    useFormData,
+    usePromiseState,
+} from "~/entries/shared/ui/hooks"
 import { generateRandomWords } from "~/entries/shared/wordlist"
 
 type SetupFormProps = {
@@ -29,6 +34,9 @@ type Data = {
     masterPassword: string | null
     retypePassword: string | null
     secretSentence: string | null
+    createVault: boolean
+    vaultName: string
+    copyStorage: boolean
 }
 
 export const SetupForm = ({ close }: SetupFormProps) => {
@@ -68,6 +76,16 @@ export const SetupForm = ({ close }: SetupFormProps) => {
                           )
                         : null,
             },
+            createVault: {
+                initial: true,
+            },
+            vaultName: {
+                initial: "Personal Vault",
+                validator: (v, d) => v.length > 0 || !d.createVault,
+            },
+            copyStorage: {
+                initial: true,
+            },
         },
         [randomWords.lastResult]
     )
@@ -83,6 +101,21 @@ export const SetupForm = ({ close }: SetupFormProps) => {
                 masterPassword: data.masterPassword,
                 secretSentence: data.secretSentence,
             })
+
+            if (data.createVault) {
+                const vaultId = await sendMessage({
+                    id: "createVault",
+                    name: data.vaultName,
+                    copyStorage: data.copyStorage,
+                })
+                if (!vaultId) {
+                    throw new Error(
+                        "Unknown error whilst creating initial vault"
+                    )
+                }
+                setLocalState("activeTab", "vaults")
+                setLocalState("activeVaultId", vaultId)
+            }
 
             close()
         },
@@ -101,6 +134,7 @@ export const SetupForm = ({ close }: SetupFormProps) => {
                         id={ids.name}
                         aria-invalid={validity.name === false}
                         onCommit={(e) => setData("name", e.currentTarget.value)}
+                        autoFocus
                     />
                     <InputValidationIcon valid={validity.name} />
                 </div>
@@ -169,6 +203,52 @@ export const SetupForm = ({ close }: SetupFormProps) => {
                     </ValidationError>
                 )}
             </div>
+            <Checkbox.Label htmlFor={ids.createVault}>
+                <Checkbox.Input
+                    id={ids.createVault}
+                    type="checkbox"
+                    onChange={(e) =>
+                        setData("createVault", e.currentTarget.checked)
+                    }
+                    defaultChecked={true}
+                />
+                <span>Create an initial vault</span>
+            </Checkbox.Label>
+            {data.createVault && (
+                <>
+                    <div>
+                        <Label htmlFor={ids.name}>Vault Name</Label>
+                        <div className="relative mt-2 rounded-md shadow-sm">
+                            <FormInput
+                                type="text"
+                                id={ids.name}
+                                aria-invalid={validity.name === false}
+                                onCommit={(e) =>
+                                    setData("vaultName", e.currentTarget.value)
+                                }
+                                defaultValue={data.vaultName}
+                            />
+                            <InputValidationIcon valid={validity.name} />
+                        </div>
+                        {validity.name === false && (
+                            <ValidationError>
+                                Vault name is required.
+                            </ValidationError>
+                        )}
+                    </div>
+                    <Checkbox.Label htmlFor={ids.copyStorage}>
+                        <Checkbox.Input
+                            id={ids.copyStorage}
+                            type="checkbox"
+                            onChange={(e) =>
+                                setData("copyStorage", e.currentTarget.checked)
+                            }
+                            defaultChecked={true}
+                        />
+                        <span>Store vault with my identity</span>
+                    </Checkbox.Label>
+                </>
+            )}
             <div className="flex items-center justify-end gap-3">
                 <SecondaryButton type="button" onClick={close}>
                     Cancel
@@ -197,22 +277,12 @@ export const SetupPanel = () => {
         const vaultId = await sendMessage({
             id: "createVault",
             name: "Personal Vault",
+            copyStorage: true,
         })
         if (vaultId === undefined) {
             console.error("Failed to create vault")
             return
         }
-        await sendMessage({
-            id: "editStorageAddresses",
-            vaultId,
-            action: {
-                id: "add",
-                storageAddress: {
-                    id: "local",
-                    folderName: "default",
-                },
-            },
-        })
         await sendMessage({
             id: "createVaultItem",
             vaultId,
@@ -251,9 +321,9 @@ export const SetupPanel = () => {
                     Identity status: not found
                 </h3>
             </Card.Header>
-            <Card.Body>
-                <Slide open={formOpen}>
-                    <Slide.Left>
+            <Slide open={formOpen}>
+                <Slide.Left>
+                    <Card.Body>
                         <p className="text-sm text-gray-500">
                             It looks like you don't have an identity yet. Either
                             add another storage location containing an existing
@@ -274,12 +344,14 @@ export const SetupPanel = () => {
                                 <span>Set up a new identity</span>
                             </PrimaryButton>
                         </div>
-                    </Slide.Left>
-                    <Slide.Right>
+                    </Card.Body>
+                </Slide.Left>
+                <Slide.Right>
+                    <Card.Body>
                         <SetupForm close={() => setFormOpen(false)} />
-                    </Slide.Right>
-                </Slide>
-            </Card.Body>
+                    </Card.Body>
+                </Slide.Right>
+            </Slide>
         </Card>
     )
 }

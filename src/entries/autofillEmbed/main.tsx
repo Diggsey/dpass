@@ -1,5 +1,4 @@
 import { FC, useCallback, useEffect, useState } from "react"
-import "@fortawesome/fontawesome-free/css/all.css"
 import "./style.css"
 import { ModalProps, renderModal } from "../shared/modal"
 import { useUnprivilegedState } from "../shared/unprivileged"
@@ -12,16 +11,26 @@ import {
 import { AutofillItem } from "./item"
 import { defaultName } from "../shared/autofill"
 import { Field } from "../shared/components/field"
-import { IconButton } from "../shared/components/iconButton"
 import { sendMessage } from "../shared/messages"
 import { objectKey } from "../shared"
-import { cn } from "../shared/ui"
 import { VaultSelector } from "../shared/components/vaultSelector"
 import {
     useFilteredVaultItems,
     usePromiseState,
     useSharedPromiseState,
 } from "../shared/ui/hooks"
+import { ReorderableList } from "../shared/components/reorderableList"
+import {
+    Card,
+    Input,
+    PrimaryButton,
+    SecondaryButton,
+    TextButton,
+} from "../shared/components/styledElem"
+import { MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/outline"
+import { ButtonIcon } from "../shared/components/buttonIcon"
+import { Loader } from "../shared/components/icons/loader"
+import { DPassIcon } from "../shared/components/icons/dpass"
 
 type AutofillInnerProps = {
     state: UnprivilegedState
@@ -162,86 +171,116 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
         }
     }, [allItems.length, args.manual])
 
+    const reorderFields = (sourceIndex: number, destIndex: number) => {
+        const newFields = [...fields]
+        const [movedField] = newFields.splice(sourceIndex, 1)
+        newFields.splice(destIndex, 0, movedField)
+        setFields(newFields)
+    }
     return (
-        <div className="columns is-mobile">
-            <div className="column">
-                <VaultSelector
-                    vaults={state.vaults}
-                    value={selectedVaultId}
-                    onChange={selectVault}
-                    defaultVaultId={state.defaultVaultId}
-                    allowAll
-                />
-                <div>
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.currentTarget.value)}
-                    />
+        <>
+            <div className="grid grid-flow-col divide-x divide-gray-200 auto-cols-min">
+                <div className="grid grid-rows-[max-content] min-w-[300px]">
+                    <div className="grid bg-gray-200 p-3 gap-3">
+                        <VaultSelector
+                            vaults={state.vaults}
+                            value={selectedVaultId}
+                            onChange={selectVault}
+                            defaultVaultId={state.defaultVaultId}
+                            allowAll
+                        />
+                        <div className="flex justify-end flex-wrap gap-3">
+                            <div className="relative flex-1 min-w-[200px]">
+                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <MagnifyingGlassIcon
+                                        className="h-5 w-5 text-gray-400"
+                                        aria-hidden="true"
+                                    />
+                                </div>
+                                <Input
+                                    type="search"
+                                    className="pl-10 pr-3"
+                                    placeholder="Search"
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.currentTarget.value)
+                                    }
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="overflow-y-auto divide-y divide-gray-200 [container-type:size] min-h-[300px]">
+                        {filteredItems.map((item) => (
+                            <AutofillItem
+                                item={item}
+                                autofillItem={autofillItem}
+                                updateItem={updateItem}
+                                sharedPromiseState={sharedPromiseState}
+                            />
+                        ))}
+                        {filteredItems.length === 0 ? (
+                            <div>No applicable vault items</div>
+                        ) : null}
+                    </div>
                 </div>
-                {filteredItems.map((item) => (
-                    <AutofillItem
-                        item={item}
-                        autofillItem={autofillItem}
-                        updateItem={updateItem}
-                        sharedPromiseState={sharedPromiseState}
-                    />
-                ))}
-                {filteredItems.length === 0 ? (
-                    <div>No applicable vault items</div>
-                ) : null}
-                <div className="is-flex is-flex-wrap-wrap gap-1">
-                    <IconButton
-                        className={cn({ isLoading: creatingItem.inProgress })}
-                        iconClass="fas fa-plus"
-                        disabled={sharedPromiseState.inProgress}
-                        onClick={createItem}
+                <div className="grid p-5 gap-5 auto-rows-max">
+                    <ReorderableList
+                        onReorder={reorderFields}
+                        className="-mt-4"
                     >
-                        Create new item
-                    </IconButton>
-                    <button
+                        {fields.map((f, i) => (
+                            <Field
+                                index={i}
+                                field={f}
+                                onUpdate={(nf) =>
+                                    setFields([
+                                        ...fields.slice(0, i),
+                                        nf,
+                                        ...fields.slice(i + 1),
+                                    ])
+                                }
+                                onDelete={() =>
+                                    setFields([
+                                        ...fields.slice(0, i),
+                                        ...fields.slice(i + 1),
+                                    ])
+                                }
+                            />
+                        ))}
+                    </ReorderableList>
+                    <div>
+                        <TextButton
+                            onClick={addField}
+                            disabled={sharedPromiseState.inProgress}
+                        >
+                            <ButtonIcon icon={PlusIcon} />
+                            <span>Add new field</span>
+                        </TextButton>
+                    </div>
+                </div>
+            </div>
+            <Card.Footer>
+                <div className="flex items-center justify-end gap-3">
+                    <SecondaryButton
                         type="button"
                         className="button"
                         disabled={sharedPromiseState.inProgress}
                         onClick={() => resolve(null)}
                     >
                         Cancel
-                    </button>
+                    </SecondaryButton>
+                    <PrimaryButton
+                        disabled={sharedPromiseState.inProgress}
+                        onClick={createItem}
+                    >
+                        <ButtonIcon
+                            icon={creatingItem.inProgress ? Loader : PlusIcon}
+                        />
+                        <span>New item</span>
+                    </PrimaryButton>
                 </div>
-            </div>
-            <div className="column">
-                {fields.map((f, i) => (
-                    <Field
-                        index={i}
-                        field={f}
-                        onUpdate={(nf) =>
-                            setFields([
-                                ...fields.slice(0, i),
-                                nf,
-                                ...fields.slice(i + 1),
-                            ])
-                        }
-                        onDelete={() =>
-                            setFields([
-                                ...fields.slice(0, i),
-                                ...fields.slice(i + 1),
-                            ])
-                        }
-                    />
-                ))}
-                <div className="field">
-                    <div className="control">
-                        <IconButton
-                            iconClass="fas fa-plus"
-                            disabled={sharedPromiseState.inProgress}
-                            onClick={addField}
-                        >
-                            Add new field
-                        </IconButton>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </Card.Footer>
+        </>
     )
 }
 
@@ -252,28 +291,27 @@ const AutofillEmbed: FC<ModalProps<"autofillEmbed">> = ({
 }) => {
     const state = useUnprivilegedState(args.origin)
     return (
-        <article className="panel is-primary">
-            <p className="panel-heading">
-                <div className="icon-text">
-                    <span className="icon">
-                        <i className="fas fa-pen-to-square"></i>
-                    </span>
-                    <span>dpass: Auto-fill</span>
-                </div>
-            </p>
-            <div className="panel-block">
-                {state ? (
-                    <AutofillInner
-                        state={state}
-                        args={args}
-                        resolve={resolve}
-                        reject={reject}
-                    />
-                ) : (
+        <Card>
+            <Card.Header className="flex items-center gap-3">
+                <DPassIcon className="w-6 h-6" />
+                <h3 className="text-base font-semibold leading-6 text-gray-900">
+                    dpass: Auto-fill
+                </h3>
+            </Card.Header>
+
+            {state ? (
+                <AutofillInner
+                    state={state}
+                    args={args}
+                    resolve={resolve}
+                    reject={reject}
+                />
+            ) : (
+                <Card.Body>
                     <div className="loader" />
-                )}
-            </div>
-        </article>
+                </Card.Body>
+            )}
+        </Card>
     )
 }
 

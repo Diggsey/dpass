@@ -17,6 +17,7 @@ export type ChangeRootPasswordMessage = {
 export type CreateVaultMessage = {
     id: "createVault"
     name: string
+    copyStorage: boolean
 }
 export type RemoveVaultMessage = {
     id: "removeVault"

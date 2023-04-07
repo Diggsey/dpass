@@ -1,17 +1,15 @@
+import {
+    ArrowLeftIcon,
+    EyeIcon,
+    PencilSquareIcon,
+} from "@heroicons/react/24/outline"
 import { FC, useCallback } from "react"
-import { IconButton } from "../shared/components/iconButton"
+import { ButtonIcon } from "../shared/components/buttonIcon"
+import { Loader } from "../shared/components/icons/loader"
+import { TextButton } from "../shared/components/styledElem"
 import { sendMessage } from "../shared/messages"
-import { VaultItem } from "../shared/state"
-import { cn } from "../shared/ui"
 import { SharedPromiseState, usePromiseState } from "../shared/ui/hooks"
-
-type ItemInfo = {
-    displayName: string
-    vaultName: string
-    vaultId: string
-    itemId: string
-    item: VaultItem
-}
+import { ItemInfo } from "../shared/ui/hooks/filteredVaultItems"
 
 type AutofillItemProps = {
     item: ItemInfo
@@ -41,34 +39,54 @@ export const AutofillItem: FC<AutofillItemProps> = ({
         })
     }, [item.itemId])
     return (
-        <div className="box">
-            <h4>{item.displayName}</h4>
-            <h5>{item.vaultName}</h5>
-            <div className="is-flex is-flex-direction-row gap-1">
-                <IconButton
-                    className={cn({ isLoading: updatingItem.inProgress })}
-                    iconClass="fas fa-eye"
-                    disabled={sharedPromiseState.inProgress}
-                    onClick={viewItem}
-                >
-                    View
-                </IconButton>
-                <IconButton
-                    iconClass="fas fa-wand-magic-sparkles"
+        <div className="relative group flex flex-row p-4 gap-3 hover:bg-gray-100">
+            <span className="flex items-center text-sm w-[32px] h-[32px]">
+                {item.logoUrl && (
+                    <img
+                        src={item.logoUrl}
+                        className="is-align-self-center"
+                        alt="logo"
+                        width="32"
+                        height="32"
+                    />
+                )}
+            </span>
+            <span className="flex flex-col text-sm flex-1">
+                <span className="text-gray-900 font-medium">
+                    <span>{item.displayName}</span>
+                    <TextButton
+                        className="align-middle mx-1 invisible group-hover:visible"
+                        disabled={sharedPromiseState.inProgress}
+                        onClick={viewItem}
+                    >
+                        <ButtonIcon icon={EyeIcon} />
+                    </TextButton>
+                </span>
+                <span className="text-gray-500">{item.vaultName}</span>
+            </span>
+            <div className="grid gap-3 min-w-max shrink-0 auto-rows-max">
+                <TextButton
+                    className="group/button"
                     disabled={sharedPromiseState.inProgress}
                     onClick={() => autofillItem(item)}
                 >
-                    Auto-fill
-                </IconButton>
-                <IconButton
-                    className={cn({ isLoading: updatingItem.inProgress })}
-                    iconClass="fas fa-arrow-left"
-                    iconSide="right"
+                    <span className="invisible group-hover/button:visible">
+                        Auto-fill
+                    </span>
+                    <ButtonIcon icon={PencilSquareIcon} />
+                </TextButton>
+                <TextButton
+                    className="group/button"
                     disabled={sharedPromiseState.inProgress}
                     onClick={updateItemFn}
                 >
-                    Update
-                </IconButton>
+                    <span className="invisible group-hover/button:visible">
+                        Update
+                    </span>
+                    <ButtonIcon
+                        icon={updatingItem.inProgress ? Loader : ArrowLeftIcon}
+                    />
+                </TextButton>
             </div>
         </div>
     )

@@ -12,7 +12,11 @@ import {
     ValidationError,
 } from "~/entries/shared/components/styledElem"
 import { sendMessage } from "~/entries/shared/messages"
-import { useFormData, usePromiseState } from "~/entries/shared/ui/hooks"
+import {
+    setLocalState,
+    useFormData,
+    usePromiseState,
+} from "~/entries/shared/ui/hooks"
 
 export const CreateVaultForm = ({ close }: { close: () => void }) => {
     const { data, setData, ids, validity, allValid } = useFormData<{
@@ -36,11 +40,15 @@ export const CreateVaultForm = ({ close }: { close: () => void }) => {
             if (!allValid) {
                 return
             }
-            await sendMessage({
+            const vaultId = await sendMessage({
                 id: "createVault",
                 name: data.name,
+                copyStorage: data.copyStorage,
             })
-            close()
+            if (!vaultId) {
+                throw new Error("Vault creation failed for unknown reason")
+            }
+            setLocalState("activeVaultId", vaultId)
         },
         [close, data, allValid]
     )

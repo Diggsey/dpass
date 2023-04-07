@@ -76,7 +76,7 @@ export const PRESET_AUTOFILL_MAPPING: {
         matcher: genericMatcher("family-name", "cc-family-name"),
     },
     honirificSuffix: {
-        name: "Honirific Suffix",
+        name: "Honorific Suffix",
         matcher: genericMatcher("honorific-suffix"),
     },
     name: {
@@ -84,47 +84,47 @@ export const PRESET_AUTOFILL_MAPPING: {
         matcher: genericMatcher("name"),
     },
     addressLine1: {
-        name: "Address Line 1",
+        name: "Addr Line 1",
         matcher: genericMatcher("address-line1", "street-address"),
     },
     addressLine2: {
-        name: "Address Line 2",
+        name: "Addr Line 2",
         matcher: genericMatcher("address-line2", "street-address"),
     },
     addressLine3: {
-        name: "Address Line 3",
+        name: "Addr Line 3",
         matcher: genericMatcher("address-line3", "street-address"),
     },
     addressLevel2: {
-        name: "Address Locality",
+        name: "Addr Locality",
         matcher: genericMatcher("address-level2"),
     },
     addressLevel1: {
-        name: "Address State/Province",
+        name: "Addr State/Prov.",
         matcher: genericMatcher("address-level1"),
     },
     addressCountry: {
-        name: "Address Country",
+        name: "Addr Country",
         matcher: genericMatcher("country", "country-name"),
     },
     addressPostalCode: {
-        name: "Address Postal Code",
+        name: "Addr Postcode",
         matcher: genericMatcher("postal-code"),
     },
     ccNumber: {
-        name: "Credit Card Number",
+        name: "CC Number",
         matcher: genericMatcher("cc-number"),
     },
     ccExpiry: {
-        name: "Credit Card Expiry",
+        name: "CC Expiry",
         matcher: genericMatcher("cc-exp", "cc-exp-month", "cc-exp-year"),
     },
     ccSecurityCode: {
-        name: "Credit Card Security Code",
+        name: "CC Security Code",
         matcher: genericMatcher("cc-csc"),
     },
     ccType: {
-        name: "Credit Card Type",
+        name: "CC Type",
         matcher: genericMatcher("cc-type"),
     },
     dob: {

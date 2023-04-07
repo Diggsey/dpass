@@ -95,7 +95,7 @@ function handleMessage(
                 message.newSentence ?? null
             )
         case "createVault":
-            return createVault(senderType, message.name)
+            return createVault(senderType, message.name, message.copyStorage)
         case "removeVault":
             return removeVault(senderType, message.vaultId)
         case "setVaultAsDefault":
@@ -339,12 +339,13 @@ async function lock(
 
 async function createVault(
     senderType: SenderType,
-    name: string
+    name: string,
+    copyStorage: boolean
 ): Promise<string | undefined> {
     if (senderType.id !== "privileged") {
         return
     }
-    return await SECURE_CONTEXT.createVault(name)
+    return await SECURE_CONTEXT.createVault(name, copyStorage)
 }
 
 async function removeVault(
