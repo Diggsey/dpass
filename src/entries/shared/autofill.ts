@@ -32,6 +32,7 @@ export type PresetAutofillValue = (typeof PRESET_AUTOFILL_VALUES)[number]
 export type AutofillInfo = {
     name: string
     matcher: (elem: HTMLInputElement) => number
+    multiLine?: true
 }
 
 export const PRESET_AUTOFILL_MAPPING: {
@@ -52,6 +53,7 @@ export const PRESET_AUTOFILL_MAPPING: {
     note: {
         name: "Note",
         matcher: neverMatch,
+        multiLine: true,
     },
     passwordNote: {
         name: "Password Note",

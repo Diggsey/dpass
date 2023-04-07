@@ -10,3 +10,4 @@ export {
     PromiseState,
 } from "./promiseState"
 export { default as useFormData } from "./formData"
+export { default as useDebouncedEffect } from "./debouncedEffect"

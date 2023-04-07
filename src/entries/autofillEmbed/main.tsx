@@ -212,6 +212,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
             <div className="column">
                 {fields.map((f, i) => (
                     <Field
+                        index={i}
                         field={f}
                         onUpdate={(nf) =>
                             setFields([

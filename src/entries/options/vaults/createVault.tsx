@@ -5,6 +5,7 @@ import { InputValidationIcon } from "~/entries/shared/components/inputValidation
 import { Loader } from "~/entries/shared/components/icons/loader"
 import {
     Card,
+    Checkbox,
     Label,
     PrimaryButton,
     SecondaryButton,
@@ -72,14 +73,10 @@ export const CreateVaultForm = ({ close }: { close: () => void }) => {
                                 </ValidationError>
                             )}
                         </div>
-                        <label
-                            className="relative flex items-center leading-6 cursor-pointer"
-                            htmlFor={ids.copyStorage}
-                        >
-                            <input
+                        <Checkbox.Label htmlFor={ids.copyStorage}>
+                            <Checkbox.Input
                                 id={ids.copyStorage}
                                 type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                                 onChange={(e) =>
                                     setData(
                                         "copyStorage",
@@ -88,10 +85,8 @@ export const CreateVaultForm = ({ close }: { close: () => void }) => {
                                 }
                                 defaultChecked={true}
                             />
-                            <span className="ml-3 text-sm font-medium text-gray-900">
-                                Store with my identity
-                            </span>
-                        </label>
+                            <span>Store with my identity</span>
+                        </Checkbox.Label>
                         <div className="flex items-center justify-end gap-3">
                             <SecondaryButton type="button" onClick={close}>
                                 Cancel

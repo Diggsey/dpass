@@ -57,7 +57,11 @@ type ReorderableItemProps = {
     ) => ReactNode
 }
 
-export const ReorderableItem = ({ index, children }: ReorderableItemProps) => {
+export const ReorderableItem = ({
+    index,
+    className,
+    children,
+}: ReorderableItemProps) => {
     const draggableId = useId()
     return (
         <Draggable
@@ -66,7 +70,11 @@ export const ReorderableItem = ({ index, children }: ReorderableItemProps) => {
             disableInteractiveElementBlocking={true}
         >
             {(provided) => (
-                <li ref={provided.innerRef} {...provided.draggableProps}>
+                <li
+                    ref={provided.innerRef}
+                    className={className}
+                    {...provided.draggableProps}
+                >
                     {children(provided.dragHandleProps)}
                 </li>
             )}

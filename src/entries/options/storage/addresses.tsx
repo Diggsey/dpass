@@ -213,17 +213,15 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
     return (
         <Card>
             <Card.Header>
-                <div className="-ml-4 -mt-2 flex flex-wrap items-center justify-between sm:flex-nowrap">
-                    <div className="ml-4 mt-2">
-                        <h3 className="text-base font-semibold leading-6 text-gray-900">
-                            Where is my{" "}
-                            <span className="text-indigo-600 cursor-default">
-                                {name}
-                            </span>{" "}
-                            stored?
-                        </h3>
-                    </div>
-                    <div className="ml-4 mt-2 flex-shrink-0">
+                <div className="flex flex-wrap items-center justify-between sm:flex-nowrap">
+                    <h3 className="text-base font-semibold leading-6 text-gray-900">
+                        Where is my{" "}
+                        <span className="text-indigo-600 cursor-default">
+                            {name}
+                        </span>{" "}
+                        stored?
+                    </h3>
+                    <div className="flex-shrink-0">
                         {editingExisting ? (
                             <OutlineButton
                                 type="button"

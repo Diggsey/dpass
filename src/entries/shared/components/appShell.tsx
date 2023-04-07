@@ -26,7 +26,10 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
     )
     return (
         <div className="bg-gray-100 grid grid-rows-[max-content]">
-            <Disclosure as="nav" className="border-b border-gray-200 bg-white">
+            <Disclosure
+                as="nav"
+                className="border-b border-gray-200 bg-white shadow z-10"
+            >
                 {({ open }) => (
                     <>
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-16 justify-between">
@@ -89,31 +92,31 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
                             </div>
                         </div>
 
-                        <Disclosure.Panel className="sm:hidden">
-                            <div className="space-y-1 pt-2 pb-3">
-                                {navigation.map((item) => (
-                                    <Disclosure.Button
-                                        key={item.key}
-                                        onClick={() => setActiveKey(item.key)}
-                                        className={cn(
-                                            item === currentItem
-                                                ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                                                : item.disabled
-                                                ? "border-transparent text-gray-400"
-                                                : "border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800",
-                                            "block border-l-4 py-2 pl-3 pr-4 text-base font-medium"
-                                        )}
-                                        aria-current={
-                                            item === currentItem
-                                                ? "page"
-                                                : undefined
-                                        }
-                                        disabled={item.disabled}
-                                    >
-                                        {item.title}
-                                    </Disclosure.Button>
-                                ))}
-                            </div>
+                        <Disclosure.Panel className="sm:hidden absolute w-full z-10 border-b border-gray-200 bg-white shadow-lg grid gap-1 py-2">
+                            {/* <div className="space-y-1 pt-2 pb-3"> */}
+                            {navigation.map((item) => (
+                                <Disclosure.Button
+                                    key={item.key}
+                                    onClick={() => setActiveKey(item.key)}
+                                    className={cn(
+                                        item === currentItem
+                                            ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                                            : item.disabled
+                                            ? "border-transparent text-gray-400"
+                                            : "border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800",
+                                        "block border-l-4 py-2 pl-3 pr-4 text-base font-medium text-left"
+                                    )}
+                                    aria-current={
+                                        item === currentItem
+                                            ? "page"
+                                            : undefined
+                                    }
+                                    disabled={item.disabled}
+                                >
+                                    {item.title}
+                                </Disclosure.Button>
+                            ))}
+                            {/* </div> */}
                         </Disclosure.Panel>
                     </>
                 )}

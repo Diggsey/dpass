@@ -98,3 +98,19 @@ export const Select = styledElem(
     "select",
     "block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
 )
+
+export const TextArea = styledElem(
+    "textarea",
+    "block w-full rounded-md border-0 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:py-1.5 sm:text-sm sm:leading-6"
+)
+
+export const Checkbox = {
+    Label: styledElem(
+        "label",
+        "relative flex items-center leading-6 cursor-pointer text-sm font-medium text-gray-900 gap-3 aria-disabled:cursor-default aria-disabled:text-gray-500"
+    ),
+    Input: styledElem(
+        "input",
+        "h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 disabled:text-gray-500"
+    ),
+}

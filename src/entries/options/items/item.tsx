@@ -1,33 +1,73 @@
-import { FC, useEffect, useState } from "react"
+import { FC, useCallback, useEffect, useId, useState } from "react"
 import { sendMessage } from "~/entries/shared/messages"
-import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import {
     VaultItem,
     VaultItemField,
     VaultItemPayload,
 } from "~/entries/shared/state"
-import { cn } from "~/entries/shared/ui"
 import { Field } from "../../shared/components/field"
 import { ItemDetails } from "~/entries/shared/messages/vault"
 import {
+    useDebouncedEffect,
     usePromiseState,
     useSharedPromiseState,
 } from "~/entries/shared/ui/hooks"
-import { Card } from "~/entries/shared/components/styledElem"
+import {
+    Card,
+    Checkbox,
+    Input,
+    Label,
+    OutlineButton,
+    PrimaryButton,
+    TextButton,
+} from "~/entries/shared/components/styledElem"
+import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
+import { LockOpenIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline"
+import { Loader } from "~/entries/shared/components/icons/loader"
+import { AutoTextArea } from "~/entries/shared/components/autoTextArea"
+import { ReorderableList } from "~/entries/shared/components/reorderableList"
 
 type ItemProps = {
     vaultId: string
     itemId: string
     item: VaultItem
+    displayName: string
 }
 
-export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
+function stripCarriageReturns(elem: HTMLTextAreaElement) {
+    const value = elem.value
+    if (value.includes("\r")) {
+        const { selectionStart, selectionEnd, selectionDirection } = elem
+        let adjustStart = 0
+        let adjustEnd = 0
+        elem.value = value.replaceAll("\r", (_m, offset) => {
+            if (offset < selectionStart) {
+                adjustStart += 1
+            }
+            if (offset < selectionEnd) {
+                adjustEnd += 1
+            }
+            return ""
+        })
+        if (adjustEnd !== 0 || adjustStart !== 0) {
+            elem.setSelectionRange(
+                selectionStart - adjustStart,
+                selectionEnd - adjustEnd,
+                selectionDirection
+            )
+        }
+    }
+}
+
+export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
     const itemAction = useSharedPromiseState()
+    const fieldId = useId()
 
     // Not-null if there are local (unsaved) changes to the item.
     // Local payload changes are only stored here if the item is not encrypted.
     const [editedDetails, setEditedDetails] = useState<ItemDetails | null>(null)
+    const [hasUnsaved, setHasUnsaved] = useState(false)
 
     // Not-null if the item is encrypted, but has been temporarily decrypted for editing.
     // Local changes are also made here if the item is encrypted.
@@ -35,8 +75,8 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
         useState<VaultItemPayload | null>(null)
 
     // Used to initiate an update to the item
-    const [updatingItem, updateItem] = usePromiseState(
-        async (details: ItemDetails) => {
+    const updateItem = useCallback(
+        (details: ItemDetails) => {
             // Immediately update our local state
             if (details.encrypted) {
                 // For encrypted items, split payload and non-payload changes
@@ -54,7 +94,14 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
                 // Clear the decrypted payload in case this item was just un-encrypted
                 setDecryptedPayload(null)
             }
+            setHasUnsaved(true)
+        },
+        [vaultId, itemId]
+    )
 
+    const [savingChanges, saveChanges] = usePromiseState(
+        async (details: ItemDetails) => {
+            setHasUnsaved(false)
             // Asynchronously propagate the change to the vault
             await sendMessage({
                 id: "updateVaultItem",
@@ -66,6 +113,8 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
         [vaultId, itemId],
         itemAction
     )
+
+    const inFlightChanges = hasUnsaved || savingChanges.inProgress
 
     // Delete this entire item
     const [deletingItem, deleteItem] = usePromiseState(
@@ -80,13 +129,35 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
         itemAction
     )
 
-    useEffect(() => {
-        // If the latest asynchronous vault update is done then our local changes can
-        // be discarded.
-        if (!updatingItem.inProgress && editedDetails) {
-            setEditedDetails(null)
-        }
-    }, [updatingItem.inProgress, editedDetails])
+    // Whenever we have unsaved changes, save them on a debounce
+    useDebouncedEffect(
+        () => {
+            if (!savingChanges.inProgress && editedDetails && hasUnsaved) {
+                void saveChanges(
+                    decryptedPayload
+                        ? {
+                              ...editedDetails,
+                              payload: decryptedPayload,
+                          }
+                        : editedDetails
+                )
+            }
+        },
+        100,
+        [savingChanges.inProgress, editedDetails, decryptedPayload, hasUnsaved]
+    )
+
+    // If the latest asynchronous vault update is done then our local changes can
+    // be discarded. Do this on a delay so we have time to receive the updates.
+    useDebouncedEffect(
+        () => {
+            if (!inFlightChanges && editedDetails !== null) {
+                setEditedDetails(null)
+            }
+        },
+        100,
+        [inFlightChanges, editedDetails !== null]
+    )
 
     // Create a local view of the item, including any unsaved edits
     const itemDetails: ItemDetails = editedDetails || {
@@ -96,13 +167,20 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
         payload: item.data.encrypted ? undefined : item.data.payload,
     }
 
-    // If the item becomes encrypted, clear the decrypted payload until
-    // it is explicitly decrypted.
     // If the item becomes decrypted, clear the decrypted payload because
     // the payload will no longer be stored there.
     useEffect(() => {
-        setDecryptedPayload(null)
+        if (!itemDetails.encrypted) {
+            setDecryptedPayload(null)
+        }
     }, [itemDetails.encrypted])
+    // If the item becomes encrypted, clear the decrypted payload until
+    // it is explicitly decrypted.
+    useEffect(() => {
+        if (item.data.encrypted) {
+            setDecryptedPayload(null)
+        }
+    }, [item.data.encrypted])
 
     // Create a local view of the payload
     const payload = itemDetails.payload || decryptedPayload
@@ -124,113 +202,74 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item }) => {
 
     return (
         <Card>
-            <Card.Header>
-                <div className="is-flex is-flex-direction-row is-justify-content-end gap-1">
-                    <IconButton
-                        iconClass={cn("fas fa-trash-can", {
-                            isLoading: deletingItem.inProgress,
-                        })}
-                        disabled={itemAction.inProgress}
+            <Card.Header className="flex flex-wrap items-center justify-between sm:flex-nowrap gap-3">
+                <Input
+                    type="text"
+                    className="!ring-0 hover:bg-gray-100 !p-0 !shadow-none !text-base font-semibold text-gray-900 flex-1 max-w-md"
+                    placeholder={displayName || "Name"}
+                    value={itemDetails.name}
+                    onChange={(e) =>
+                        updateItem({
+                            ...itemDetails,
+                            name: e.currentTarget.value,
+                        })
+                    }
+                />
+                <div className="flex-shrink-0">
+                    <OutlineButton
+                        disabled={itemAction.inProgress || inFlightChanges}
                         onClick={deleteItem}
                     >
-                        Delete
-                    </IconButton>
+                        <ButtonIcon
+                            icon={deletingItem.inProgress ? Loader : TrashIcon}
+                        />
+                        <span>Delete</span>
+                    </OutlineButton>
                 </div>
             </Card.Header>
-            <Card.Body>
-                <div className="field">
-                    <label className="label">Name</label>
-                    <div className="control">
-                        <input
-                            className="input"
-                            type="text"
-                            value={itemDetails.name}
-                            onChange={(e) =>
-                                updateItem({
+            <Card.Body className="grid gap-4">
+                <div>
+                    <Label htmlFor={`${fieldId}-origins`}>Origins</Label>
+                    <div className="relative mt-2 rounded-md shadow-sm font-mono">
+                        <AutoTextArea
+                            id={`${fieldId}-origins`}
+                            className="max-h-48"
+                            placeholder="example.com"
+                            value={itemDetails.origins.join("\n")}
+                            onChange={(e) => {
+                                stripCarriageReturns(e.currentTarget)
+                                void updateItem({
                                     ...itemDetails,
-                                    name: e.currentTarget.value,
+                                    origins: e.currentTarget.value
+                                        ? e.currentTarget.value.split("\n")
+                                        : [],
                                 })
-                            }
+                            }}
                         />
                     </div>
                 </div>
-                <div className="field">
-                    <label className="label">Origins</label>
-                </div>
-
-                {itemDetails.origins.map((origin, i) => (
-                    <div className="field is-grouped">
-                        <div key={i} className="control is-expanded">
-                            <input
-                                className="input"
-                                type="text"
-                                placeholder="example.com"
-                                value={origin}
-                                onChange={(e) =>
-                                    updateItem({
-                                        ...itemDetails,
-                                        origins: itemDetails.origins.map(
-                                            (o, j) =>
-                                                i == j
-                                                    ? e.currentTarget.value
-                                                    : o
-                                        ),
-                                    })
-                                }
-                            />
-                        </div>
-                        <button
-                            className="delete is-large is-align-self-center"
-                            onClick={() =>
-                                updateItem({
-                                    ...itemDetails,
-                                    origins: [
-                                        ...itemDetails.origins.slice(0, i),
-                                        ...itemDetails.origins.slice(i + 1),
-                                    ],
-                                })
-                            }
-                        />
-                    </div>
-                ))}
-                <div className="field">
-                    <div className="control">
-                        <IconButton
-                            iconClass="fas fa-plus"
-                            onClick={() =>
-                                updateItem({
-                                    ...itemDetails,
-                                    origins: [...itemDetails.origins, ""],
-                                })
-                            }
-                        >
-                            Add origin
-                        </IconButton>
-                    </div>
-                </div>
-                <div className="field">
-                    <div className="control">
-                        <label className="checkbox">
-                            <input
-                                type="checkbox"
-                                disabled={!payload}
-                                checked={itemDetails.encrypted}
-                                onClick={() =>
-                                    payload &&
-                                    updateItem({
-                                        ...itemDetails,
-                                        payload,
-                                        encrypted: !itemDetails.encrypted,
-                                    })
-                                }
-                            />
-                            Encrypted
-                        </label>
-                    </div>
-                </div>
-                <hr />
-                {payloadView}
+                <Checkbox.Label
+                    htmlFor={`${fieldId}-encrypted`}
+                    aria-disabled={!payload}
+                >
+                    <Checkbox.Input
+                        id={`${fieldId}-encrypted`}
+                        type="checkbox"
+                        disabled={!payload}
+                        checked={itemDetails.encrypted}
+                        onChange={(e) =>
+                            payload &&
+                            updateItem({
+                                ...itemDetails,
+                                payload,
+                                encrypted: e.target.checked,
+                            })
+                        }
+                    />
+                    <span>Require explicit decryption</span>
+                </Checkbox.Label>
             </Card.Body>
+            {payloadView}
         </Card>
     )
 }
@@ -241,6 +280,7 @@ type ItemPayloadProps = {
 }
 
 const ItemPayload: FC<ItemPayloadProps> = ({ payload, onUpdate }) => {
+    const fieldId = useId()
     const updateField = (newField: VaultItemField) => {
         onUpdate({
             ...payload,
@@ -269,8 +309,18 @@ const ItemPayload: FC<ItemPayloadProps> = ({ payload, onUpdate }) => {
             ],
         })
     }
-    const fieldViews = payload.fields.map((field) => (
+    const reorderFields = (sourceIndex: number, destIndex: number) => {
+        const newFields = [...payload.fields]
+        const [movedField] = newFields.splice(sourceIndex, 1)
+        newFields.splice(destIndex, 0, movedField)
+        onUpdate({
+            ...payload,
+            fields: newFields,
+        })
+    }
+    const fieldViews = payload.fields.map((field, index) => (
         <Field
+            index={index}
             key={field.uuid}
             field={field}
             onUpdate={updateField}
@@ -279,49 +329,62 @@ const ItemPayload: FC<ItemPayloadProps> = ({ payload, onUpdate }) => {
     ))
     return (
         <>
-            <div className="field">
-                <label className="label">Login URL</label>
-                <div className="control">
-                    <input
-                        className="input"
-                        type="text"
-                        value={payload.login_url || ""}
-                        onChange={(e) => {
-                            const login_url = e.currentTarget.value || undefined
-                            const restrict_url = login_url
-                                ? payload.restrict_url
-                                : undefined
-                            onUpdate({ ...payload, login_url, restrict_url })
-                        }}
-                    />
-                </div>
-            </div>
-            <div className="field">
-                <div className="control">
-                    <label className="checkbox">
-                        <input
-                            type="checkbox"
-                            disabled={!payload.login_url}
-                            checked={!!payload.restrict_url}
-                            onClick={() => {
-                                const restrict_url =
-                                    !payload.restrict_url || undefined
-                                onUpdate({ ...payload, restrict_url })
+            <Card.Body className="grid gap-4">
+                <div>
+                    <Label htmlFor={`${fieldId}-loginUrl`}>Login URL</Label>
+                    <div className="relative mt-2 rounded-md shadow-sm">
+                        <Input
+                            type="text"
+                            id={`${fieldId}-loginUrl`}
+                            value={payload.login_url || ""}
+                            onChange={(e) => {
+                                const login_url =
+                                    e.currentTarget.value || undefined
+                                const restrict_url = login_url
+                                    ? payload.restrict_url
+                                    : undefined
+                                onUpdate({
+                                    ...payload,
+                                    login_url,
+                                    restrict_url,
+                                })
                             }}
                         />
-                        Restrict to login URL
-                    </label>
+                    </div>
                 </div>
-            </div>
-            <hr />
-            {fieldViews}
-            <div className="field">
-                <div className="control">
-                    <IconButton iconClass="fas fa-plus" onClick={addField}>
-                        Add new field
-                    </IconButton>
+                <Checkbox.Label
+                    htmlFor={`${fieldId}-restrictUrl`}
+                    aria-disabled={!payload.login_url}
+                >
+                    <Checkbox.Input
+                        id={`${fieldId}-restrictUrl`}
+                        type="checkbox"
+                        disabled={!payload.login_url}
+                        checked={!!payload.restrict_url}
+                        onChange={(e) => {
+                            const restrict_url = e.target.checked || undefined
+                            onUpdate({ ...payload, restrict_url })
+                        }}
+                    />
+                    <span>Restrict to login URL</span>
+                </Checkbox.Label>
+            </Card.Body>
+            <Card.Body className="grid gap-5">
+                {fieldViews.length > 0 && (
+                    <ReorderableList
+                        onReorder={reorderFields}
+                        className="-mt-4"
+                    >
+                        {fieldViews}
+                    </ReorderableList>
+                )}
+                <div>
+                    <TextButton onClick={addField}>
+                        <ButtonIcon icon={PlusIcon} />
+                        <span>Add new field</span>
+                    </TextButton>
                 </div>
-            </div>
+            </Card.Body>
         </>
     )
 }
@@ -349,19 +412,17 @@ const LockedItem: FC<LockedItemProps> = ({ vaultId, itemId, onUnlock }) => {
             {decryptingItem.lastError.toString()}
         </Status>
     ) : null
-    const decryptButtonClass = cn({
-        isLoading: decryptingItem.inProgress,
-    })
     return (
-        <div>
+        <Card.Body className="bg-[repeating-linear-gradient(135deg,#ffffff,#ffffff_20px,rgb(229_231_235)_20px,rgb(229_231_235)_40px)]">
             {decryptItemError}
-            <IconButton
-                className={decryptButtonClass}
-                iconClass="fas fa-unlock"
-                onClick={decryptItem}
-            >
-                Decrypt Item
-            </IconButton>
-        </div>
+            <div className="mx-auto w-fit">
+                <PrimaryButton onClick={decryptItem}>
+                    <ButtonIcon
+                        icon={decryptingItem.inProgress ? Loader : LockOpenIcon}
+                    />
+                    <span>Decrypt Item</span>
+                </PrimaryButton>
+            </div>
+        </Card.Body>
     )
 }

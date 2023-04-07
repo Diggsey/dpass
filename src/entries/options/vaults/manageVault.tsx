@@ -14,7 +14,7 @@ export const ManageVault: FC<{
 }> = ({ vaultId, vault, isDefault, close }) => {
     return (
         <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 pb-10 auto-rows-max">
-            <div className="px-3 py-5">
+            <div className="px-3 pt-5 pb-3 ">
                 <TextButton onClick={close}>
                     <ButtonIcon icon={ChevronLeftIcon} />
                     <span>Back to vaults</span>

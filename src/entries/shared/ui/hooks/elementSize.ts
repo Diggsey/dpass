@@ -7,10 +7,15 @@ type Size = {
 
 function useElementSize<T extends HTMLElement = HTMLDivElement>(): [
     (node: T | null) => void,
+    Size,
     Size
 ] {
     const ref = useRef<T | null>()
     const [size, setSize] = useState<Size>({
+        width: null,
+        height: null,
+    })
+    const [clientSize, setClientSize] = useState<Size>({
         width: null,
         height: null,
     })
@@ -28,6 +33,16 @@ function useElementSize<T extends HTMLElement = HTMLDivElement>(): [
                             ? oldSize
                             : size
                     )
+                    const clientSize = {
+                        width: ref.current.clientWidth,
+                        height: ref.current.clientHeight,
+                    }
+                    setClientSize((oldSize) =>
+                        clientSize.width === oldSize.width &&
+                        clientSize.height === oldSize.height
+                            ? oldSize
+                            : clientSize
+                    )
                 }
             }),
         []
@@ -41,7 +56,7 @@ function useElementSize<T extends HTMLElement = HTMLDivElement>(): [
         if (ref.current) observer.observe(ref.current)
     }, [])
 
-    return [setRef, size]
+    return [setRef, size, clientSize]
 }
 
 export default useElementSize

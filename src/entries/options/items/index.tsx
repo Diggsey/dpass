@@ -1,6 +1,5 @@
 import { FC } from "react"
 import { sendMessage } from "~/entries/shared/messages"
-import { IconButton } from "~/entries/shared/components/iconButton"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
 import { cn } from "~/entries/shared/ui"
 import { Item } from "./item"
@@ -12,7 +11,6 @@ import {
 } from "~/entries/shared/ui/hooks"
 import { Slide } from "~/entries/shared/components/slide"
 import {
-    Card,
     Input,
     PrimaryButton,
     TextButton,
@@ -24,6 +22,7 @@ import {
 } from "@heroicons/react/24/outline"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { RadioGroup } from "@headlessui/react"
+import { MagicVScroll } from "~/entries/shared/components/magicVScroll"
 
 export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     const [selectedVaultId, selectVault] = useLocalState<string | null>(
@@ -103,6 +102,7 @@ export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
             vaultId={selectedItem.vaultId}
             itemId={selectedItem.itemId}
             item={selectedItem.item}
+            displayName={selectedItem.displayName}
         />
     ) : (
         <div>No item selected</div>
@@ -184,19 +184,17 @@ export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
                 </div>
             </Slide.Left>
             <Slide.Right persistent className="md:flex-[2_2_0] grid">
-                <div className="overflow-y-auto overflow-x-hidden [container-type:size]">
-                    <div className="sm:mr-[calc(100%_-_100cqw)]">
-                        <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 pb-10 md:pt-10 auto-rows-max">
-                            <div className="px-3 py-5 md:hidden">
-                                <TextButton onClick={() => selectItem(null)}>
-                                    <ButtonIcon icon={ChevronLeftIcon} />
-                                    <span>Back to items</span>
-                                </TextButton>
-                            </div>
-                            <Card>{itemView}</Card>
+                <MagicVScroll>
+                    <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 pb-10 md:pt-10 auto-rows-max">
+                        <div className="px-3 pt-5 pb-3 md:hidden">
+                            <TextButton onClick={() => selectItem(null)}>
+                                <ButtonIcon icon={ChevronLeftIcon} />
+                                <span>Back to items</span>
+                            </TextButton>
                         </div>
+                        {itemView}
                     </div>
-                </div>
+                </MagicVScroll>
             </Slide.Right>
         </Slide>
     )
