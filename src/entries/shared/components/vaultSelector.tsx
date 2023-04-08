@@ -5,6 +5,7 @@ import { Select } from "./styledElem"
 type VaultMap = {
     readonly [vaultId: string]: {
         readonly name: string
+        readonly missing: boolean
     }
 }
 
@@ -33,7 +34,10 @@ export const VaultSelector: FC<VaultSelectorProps> = ({
     const classForItem = (vaultId: string | null) =>
         cn(
             vaultId === null ? "italic" : "not-italic",
-            vaultId === defaultVaultId ? "font-bold" : "font-normal"
+            vaultId === defaultVaultId ? "font-bold" : "font-normal",
+            vaultId !== null && vaults[vaultId].missing
+                ? "text-red-700"
+                : "text-gray-900"
         )
     return (
         <Select

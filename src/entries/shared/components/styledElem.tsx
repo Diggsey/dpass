@@ -52,7 +52,7 @@ export const Card = styledElem(
 
 export const BaseButton = styledElem(
     "button",
-    "relative inline-flex items-center gap-x-1.5 text-sm font-semibold"
+    "relative inline-flex items-center justify-center gap-x-1.5 text-sm font-semibold"
 )
 
 export const PrimaryButton = styledElem(
@@ -67,7 +67,7 @@ export const SecondaryButton = styledElem(
 
 export const OutlineButton = styledElem(
     BaseButton,
-    "rounded-md px-3 py-2 bg-white text-gray-900 ring-1 ring-inset ring-gray-600 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-300"
+    "rounded-md px-3 py-2 bg-white text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-100 shadow-sm"
 )
 
 export const TextButton = styledElem(
@@ -77,7 +77,12 @@ export const TextButton = styledElem(
 
 export const FlatButton = styledElem(
     BaseButton,
-    "justify-center py-4 text-sm font-semibold text-gray-900 -outline-offset-2 bg-white hover:bg-gray-50 disabled:bg-white disabled:text-gray-600"
+    "justify-center py-4 text-gray-900 -outline-offset-2 bg-white hover:bg-gray-50 disabled:bg-white disabled:text-gray-600"
+)
+
+export const DangerButton = styledElem(
+    BaseButton,
+    "rounded-md px-3 py-2 bg-red-600 text-white hover:bg-red-500 disabled:bg-red-300 shadow-sm"
 )
 
 export const Input = styledElem(

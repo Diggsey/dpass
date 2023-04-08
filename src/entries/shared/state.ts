@@ -19,6 +19,7 @@ export type UnprivilegedVault = {
     readonly name: string
     readonly items: VaultItemMap | null
     readonly syncState: UnprivilegedSyncState
+    readonly missing: boolean
 }
 
 export type VaultItemMap = {

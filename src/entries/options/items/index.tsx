@@ -108,16 +108,16 @@ export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
         <div>No item selected</div>
     )
 
+    const vaultIdForNewItems =
+        selectedVaultId ?? state.defaultVaultId ?? Object.keys(state.vaults)[0]
+    const canCreateItem = state.vaults[vaultIdForNewItems]?.missing === false
+
     const [creatingItem, createItem] = usePromiseState(async () => {
-        const vaultId =
-            selectedVaultId ??
-            state.defaultVaultId ??
-            Object.keys(state.vaults)[0]
         const itemId = await sendMessage({
             id: "createVaultItem",
-            vaultId,
+            vaultId: vaultIdForNewItems,
             details: {
-                name: "Unnamed",
+                name: searchTerm || "Unnamed",
                 origins: [],
                 encrypted: false,
                 payload: {
@@ -128,7 +128,7 @@ export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
         if (itemId) {
             selectItem(itemId)
         }
-    }, [state.vaults])
+    }, [state.vaults, vaultIdForNewItems, searchTerm])
 
     return (
         <Slide
@@ -167,7 +167,7 @@ export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
                             />
                         </div>
                         <PrimaryButton
-                            disabled={creatingItem.inProgress}
+                            disabled={creatingItem.inProgress || !canCreateItem}
                             onClick={createItem}
                         >
                             <ButtonIcon icon={PlusIcon} />

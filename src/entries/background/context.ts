@@ -533,6 +533,7 @@ class SecureContext extends Actor implements IIntegrator {
                 items: {},
                 addresses: [],
                 syncState: {},
+                missing: true,
             }
         }
 
@@ -578,6 +579,7 @@ class SecureContext extends Actor implements IIntegrator {
             ),
             addresses: [],
             syncState: {},
+            missing: false,
         }
     }
 
@@ -1050,7 +1052,14 @@ class SecureContext extends Actor implements IIntegrator {
             ? undefined
             : Date.now()
 
-        const addresses = copyStorage ? this.#privilegedState.rootAddresses : []
+        const addresses: StorageAddress[] = copyStorage
+            ? this.#privilegedState.rootAddresses
+            : [
+                  {
+                      id: "local",
+                      folderName: "default",
+                  },
+              ]
 
         await this.#patchRoot(
             itemCreator({

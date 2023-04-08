@@ -56,6 +56,7 @@ export class UnprivilegedPublisher
                     item.origins.includes(this.#origin)
                 ),
             syncState: this.convertSyncState(vault.syncState),
+            missing: vault.missing,
         }
     }
 }

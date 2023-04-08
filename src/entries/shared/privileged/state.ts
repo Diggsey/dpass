@@ -43,6 +43,7 @@ export type PrivilegedVault = {
     readonly items: VaultItemMap | null
     readonly addresses: StorageAddress[]
     readonly syncState: PrivilegedSyncState
+    readonly missing: boolean
 }
 
 export type PrivilegedSyncState = {
