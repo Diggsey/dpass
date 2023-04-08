@@ -4,7 +4,7 @@ import {
     StorageAddress,
 } from "../shared/privileged/state"
 import { UNPRIVILEGED_PORT_NAME, VaultItemPayload } from "../shared/state"
-import { SECURE_CONTEXT } from "./context"
+import { ROOT_FILE_ID, SECURE_CONTEXT } from "./context"
 import { PrivilegedPublisher } from "./pubsub/privileged"
 import { UnprivilegedPublisher } from "./pubsub/unprivileged"
 import "./browserAction"
@@ -20,6 +20,7 @@ import { StorageAddressAction } from "../shared/messages/storage"
 import { ItemDetails } from "../shared/messages/vault"
 import { FrameDetails, OptionsPageTarget } from "../shared/messages/misc"
 import { setLocalState } from "../shared/ui/hooks"
+import { STORAGE_MANAGER } from "./storage/connection"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -302,15 +303,31 @@ async function editStorageAddresses(
         return copiedAddresses
     }
 
-    if (vaultId !== null) {
-        await SECURE_CONTEXT.editVaultStorageAddresses(vaultId, addressModifier)
-    } else {
-        const res = await browser.storage.sync.get("rootAddresses")
-        const rootAddresses: StorageAddress[] = addressModifier(
-            res.rootAddresses || []
-        )
-        await browser.storage.sync.set({ rootAddresses })
+    let storageToWipe = null
+    if (action.id === "remove" && action.wipe) {
+        storageToWipe = await STORAGE_MANAGER.open(action.storageAddress)
     }
+    try {
+        if (vaultId !== null) {
+            await SECURE_CONTEXT.editVaultStorageAddresses(
+                vaultId,
+                addressModifier
+            )
+        } else {
+            const res = await browser.storage.sync.get("rootAddresses")
+            const rootAddresses: StorageAddress[] = addressModifier(
+                res.rootAddresses || []
+            )
+            await browser.storage.sync.set({ rootAddresses })
+        }
+
+        if (storageToWipe) {
+            await storageToWipe.deleteFile(vaultId ?? ROOT_FILE_ID, null)
+        }
+    } finally {
+        storageToWipe && storageToWipe.dispose()
+    }
+
     return
 }
 

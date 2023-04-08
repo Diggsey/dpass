@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline"
 import {
     useEventCallback,
+    useModalDialog,
     usePromiseState,
     useSharedPromiseState,
 } from "~/entries/shared/ui/hooks"
@@ -30,8 +31,11 @@ import {
     Card,
     PrimaryButton,
     OutlineButton,
+    DangerButton,
 } from "~/entries/shared/components/styledElem"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
+import { ModalDialog } from "~/entries/shared/components/modalDialog"
+import { ErrorText } from "~/entries/shared/components/errorText"
 
 type StorageAddressRowProps = {
     index: number
@@ -111,6 +115,7 @@ type StorageAddressesProps = {
     vaultId: string | null
     addresses: StorageAddress[]
     syncState: PrivilegedSyncState
+    isSetUp: boolean
 }
 
 type EditingAddressMode = {
@@ -124,6 +129,7 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
     vaultId,
     addresses,
     syncState,
+    isSetUp,
 }) => {
     const [editingAddress, setEditingAddress] =
         useState<EditingAddressMode | null>(null)
@@ -173,7 +179,7 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
         })
     }, [])
     const [deletingAddress, deleteAddress] = usePromiseState(
-        async () => {
+        async (wipe: boolean) => {
             if (!editingAddress) {
                 return
             }
@@ -183,6 +189,7 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
                 action: {
                     id: "remove",
                     storageAddress: editingAddress.address,
+                    wipe,
                 },
             })
             close()
@@ -210,92 +217,150 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
         </div>
     )
 
-    return (
-        <Card>
-            <Card.Header>
-                <div className="flex flex-wrap items-center justify-between sm:flex-nowrap">
-                    <h3 className="text-base font-semibold leading-6 text-gray-900">
-                        Where is my{" "}
-                        <span className="text-indigo-600 cursor-default">
-                            {name}
-                        </span>{" "}
-                        stored?
-                    </h3>
-                    <div className="flex-shrink-0">
-                        {editingExisting ? (
-                            <OutlineButton
-                                type="button"
-                                onClick={deleteAddress}
-                                disabled={sharedPromiseState.inProgress}
-                            >
-                                <ButtonIcon
-                                    icon={
-                                        deletingAddress.inProgress
-                                            ? Loader
-                                            : TrashIcon
-                                    }
-                                    className="text-gray-400"
-                                />
-                                <span>Delete storage</span>
-                            </OutlineButton>
-                        ) : (
-                            <PrimaryButton
-                                type="button"
-                                onClick={addStorage}
-                                disabled={
-                                    !!editingAddress ||
-                                    sharedPromiseState.inProgress
-                                }
-                            >
-                                <ButtonIcon icon={PlusIcon} />
-                                <span>Add storage</span>
-                            </PrimaryButton>
-                        )}
+    const [deleteAddressDialog, openDeleteAddressDialog] = useModalDialog(
+        ({ close, initialFocusRef }) => (
+            <>
+                <ModalDialog.Body>
+                    <ModalDialog.Icon
+                        icon={ExclamationTriangleIcon}
+                        className="bg-red-100 text-red-600"
+                    />
+                    <div>
+                        <ModalDialog.Title>Remove storage</ModalDialog.Title>
+                        <p>
+                            Are you sure you want to remove this storage? Data
+                            will no longer be saved to this location. If you
+                            choose to wipe this storage, the data will also be
+                            permanently deleted from this location.
+                        </p>
+                        <ErrorText state={deletingAddress} />
                     </div>
-                </div>
-            </Card.Header>
-
-            <Slide
-                open={editingAddress?.isClosing === false}
-                onTransitionEnd={closed}
-            >
-                <Slide.Left>
-                    <ReorderableList
-                        onReorder={reorderAddresses}
-                        className="divide-y divide-gray-200"
-                        disabled={sharedPromiseState.inProgress}
+                </ModalDialog.Body>
+                <ModalDialog.Footer>
+                    <DangerButton
+                        onClick={async () => {
+                            await deleteAddress(true)
+                            close()
+                        }}
                     >
-                        {effectiveAddresses.map((address, i) => (
-                            <StorageAddressRow
-                                key={objectKey(address)}
-                                index={i}
-                                address={address}
-                                syncStates={syncState}
-                                onClick={() => {
-                                    setEditingAddress({
-                                        isNew: false,
-                                        address,
-                                        isClosing: false,
-                                    })
-                                }}
-                                disabled={sharedPromiseState.inProgress}
+                        {deletingAddress.inProgress &&
+                            deletingAddress.lastArgs[0] === true && (
+                                <ButtonIcon icon={Loader} />
+                            )}
+                        <span>Wipe and remove</span>
+                    </DangerButton>
+                    <DangerButton
+                        onClick={async () => {
+                            await deleteAddress(false)
+                            close()
+                        }}
+                    >
+                        {deletingAddress.inProgress &&
+                            deletingAddress.lastArgs[0] === false && (
+                                <ButtonIcon icon={Loader} />
+                            )}
+                        <span>Remove only</span>
+                    </DangerButton>
+                    <OutlineButton ref={initialFocusRef} onClick={close}>
+                        Cancel
+                    </OutlineButton>
+                </ModalDialog.Footer>
+            </>
+        )
+    )
+
+    return (
+        <>
+            {deleteAddressDialog}
+            <Card>
+                <Card.Header>
+                    <div className="flex flex-wrap items-center justify-between sm:flex-nowrap">
+                        <h3 className="text-base font-semibold leading-6 text-gray-900">
+                            Where is my{" "}
+                            <span className="text-indigo-600 cursor-default">
+                                {name}
+                            </span>{" "}
+                            stored?
+                        </h3>
+                        <div className="flex-shrink-0">
+                            {editingExisting ? (
+                                <OutlineButton
+                                    type="button"
+                                    onClick={openDeleteAddressDialog}
+                                    disabled={
+                                        sharedPromiseState.inProgress ||
+                                        (addresses.length <= 1 && isSetUp)
+                                    }
+                                >
+                                    <ButtonIcon
+                                        icon={
+                                            deletingAddress.inProgress
+                                                ? Loader
+                                                : TrashIcon
+                                        }
+                                        className="text-gray-400"
+                                    />
+                                    <span>Delete storage</span>
+                                </OutlineButton>
+                            ) : (
+                                <PrimaryButton
+                                    type="button"
+                                    onClick={addStorage}
+                                    disabled={
+                                        !!editingAddress ||
+                                        sharedPromiseState.inProgress
+                                    }
+                                >
+                                    <ButtonIcon icon={PlusIcon} />
+                                    <span>Add storage</span>
+                                </PrimaryButton>
+                            )}
+                        </div>
+                    </div>
+                </Card.Header>
+
+                <Slide
+                    open={editingAddress?.isClosing === false}
+                    onTransitionEnd={closed}
+                >
+                    <Slide.Left>
+                        <ReorderableList
+                            onReorder={reorderAddresses}
+                            className="divide-y divide-gray-200"
+                            disabled={sharedPromiseState.inProgress}
+                        >
+                            {effectiveAddresses.map((address, i) => (
+                                <StorageAddressRow
+                                    key={objectKey(address)}
+                                    index={i}
+                                    address={address}
+                                    syncStates={syncState}
+                                    onClick={() => {
+                                        setEditingAddress({
+                                            isNew: false,
+                                            address,
+                                            isClosing: false,
+                                        })
+                                    }}
+                                    disabled={sharedPromiseState.inProgress}
+                                />
+                            ))}
+                        </ReorderableList>
+                        {storageAddressWarning}
+                    </Slide.Left>
+                    <Slide.Right>
+                        {editingAddress && (
+                            <StorageAddressEditor
+                                isNew={editingAddress.isNew}
+                                address={editingAddress.address}
+                                vaultId={vaultId}
+                                onClose={close}
+                                parentState={sharedPromiseState}
                             />
-                        ))}
-                    </ReorderableList>
-                    {storageAddressWarning}
-                </Slide.Left>
-                <Slide.Right>
-                    {editingAddress && (
-                        <StorageAddressEditor
-                            isNew={editingAddress.isNew}
-                            address={editingAddress.address}
-                            vaultId={vaultId}
-                            onClose={close}
-                            parentState={sharedPromiseState}
-                        />
-                    )}
-                </Slide.Right>
-            </Slide>
-        </Card>
+                        )}
+                    </Slide.Right>
+                </Slide>
+            </Card>
+        </>
     )
 }

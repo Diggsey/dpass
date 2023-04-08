@@ -7,7 +7,7 @@ export type EditStorageAddressesMessage = {
 }
 export type StorageAddressAction =
     | { id: "add"; storageAddress: StorageAddress }
-    | { id: "remove"; storageAddress: StorageAddress }
+    | { id: "remove"; storageAddress: StorageAddress; wipe: boolean }
     | { id: "move"; storageAddress: StorageAddress; priority: number }
     | {
           id: "edit"

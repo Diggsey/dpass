@@ -126,14 +126,16 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
             return etag
         })
     }
-    deleteFile(fileId: string, expectedEtag: string): Promise<void> {
+    deleteFile(fileId: string, expectedEtag: string | null): Promise<void> {
         return this.performTransaction("readwrite", async (objectStore) => {
-            const fileAndEtag = await LocalStorage.downloadFileInner(
-                objectStore,
-                fileId
-            )
-            if (fileAndEtag?.etag != expectedEtag) {
-                throw new ETagMismatchError()
+            if (expectedEtag !== null) {
+                const fileAndEtag = await LocalStorage.downloadFileInner(
+                    objectStore,
+                    fileId
+                )
+                if (fileAndEtag?.etag != expectedEtag) {
+                    throw new ETagMismatchError()
+                }
             }
             await LocalStorage.deleteFileInner(objectStore, fileId)
         })

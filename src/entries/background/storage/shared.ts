@@ -16,7 +16,7 @@ export class SharedStorage extends Rc<IStorage> implements IStorage {
     ): Promise<string> {
         return this.value.uploadFile(fileId, expectedEtag, data)
     }
-    deleteFile(fileId: string, expectedEtag: string): Promise<void> {
+    deleteFile(fileId: string, expectedEtag: string | null): Promise<void> {
         return this.value.deleteFile(fileId, expectedEtag)
     }
 }

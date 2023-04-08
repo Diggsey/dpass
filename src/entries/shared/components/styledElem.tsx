@@ -67,7 +67,7 @@ export const SecondaryButton = styledElem(
 
 export const OutlineButton = styledElem(
     BaseButton,
-    "rounded-md px-3 py-2 bg-white text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-100 shadow-sm"
+    "rounded-md px-3 py-2 bg-white text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:ring-gray-100 shadow-sm"
 )
 
 export const TextButton = styledElem(

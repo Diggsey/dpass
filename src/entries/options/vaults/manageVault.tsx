@@ -26,6 +26,7 @@ export const ManageVault: FC<{
                     vaultId={vaultId}
                     addresses={vault.addresses}
                     syncState={vault.syncState}
+                    isSetUp
                 />
                 <DetailsPanel
                     vaultId={vaultId}

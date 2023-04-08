@@ -20,7 +20,7 @@ type ModalState<T> =
 
 function useModalDialog<T = unknown>(
     render: (args: ModalArgs<T>) => ReactNode
-): [ReactNode, (data: T) => void] {
+): [ReactNode, (data: T) => void, boolean] {
     const initialFocus = useRef<HTMLElement | null>(null)
     const [state, setState] = useState<ModalState<T>>({
         open: false,
@@ -42,7 +42,7 @@ function useModalDialog<T = unknown>(
         </ModalDialog>,
         document.body
     )
-    return [portal, setData]
+    return [portal, setData, state.open]
 }
 
 export default useModalDialog

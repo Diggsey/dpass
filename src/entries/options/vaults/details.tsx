@@ -20,6 +20,7 @@ import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { Loader } from "~/entries/shared/components/icons/loader"
 import { ModalDialog } from "~/entries/shared/components/modalDialog"
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline"
+import { ErrorText } from "~/entries/shared/components/errorText"
 
 type DetailsListProps = {
     vaultId: string
@@ -37,7 +38,20 @@ const DetailsList = ({
     const vaultAction = useSharedPromiseState()
 
     const [removingVault, removeVault] = usePromiseState(
-        async () => {
+        async (wipe: boolean) => {
+            if (wipe) {
+                for (const storageAddress of vault.addresses) {
+                    await sendMessage({
+                        id: "editStorageAddresses",
+                        vaultId,
+                        action: {
+                            id: "remove",
+                            wipe: true,
+                            storageAddress,
+                        },
+                    })
+                }
+            }
             await sendMessage({
                 id: "removeVault",
                 vaultId,
@@ -72,16 +86,37 @@ const DetailsList = ({
                         <p>
                             Are you sure you want to remove this vault? You will
                             no longer be able to access items which were stored
-                            here.
+                            here. If you choose to wipe this vault, the data
+                            will also be permanently deleted from all storage
+                            locations.
                         </p>
+                        <ErrorText state={removingVault} />
                     </div>
                 </ModalDialog.Body>
                 <ModalDialog.Footer>
-                    <DangerButton onClick={removeVault}>
-                        {removingVault.inProgress && (
-                            <ButtonIcon icon={Loader} />
-                        )}
-                        <span>Remove Vault</span>
+                    <DangerButton
+                        onClick={async () => {
+                            await removeVault(true)
+                            close()
+                        }}
+                    >
+                        {removingVault.inProgress &&
+                            removingVault.lastArgs[0] === true && (
+                                <ButtonIcon icon={Loader} />
+                            )}
+                        <span>Wipe and remove</span>
+                    </DangerButton>
+                    <DangerButton
+                        onClick={async () => {
+                            await removeVault(false)
+                            close()
+                        }}
+                    >
+                        {removingVault.inProgress &&
+                            removingVault.lastArgs[0] === false && (
+                                <ButtonIcon icon={Loader} />
+                            )}
+                        <span>Remove only</span>
                     </DangerButton>
                     <OutlineButton ref={initialFocusRef} onClick={close}>
                         Cancel

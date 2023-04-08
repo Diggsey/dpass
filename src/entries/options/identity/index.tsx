@@ -13,6 +13,7 @@ export const IdentityPage: FC<{ state: PrivilegedState }> = ({ state }) => {
             vaultId={null}
             addresses={state.rootAddresses}
             syncState={state.syncState}
+            isSetUp={state.isSetUp}
         />
     )
     const unlockPanel = state.hasIdentity && !state.isUnlocked && (

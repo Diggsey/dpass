@@ -81,7 +81,7 @@ type UpdateRootHint = {
 
 type TimerId = ReturnType<typeof setTimeout>
 
-const ROOT_FILE_ID = "root"
+export const ROOT_FILE_ID = "root"
 // 5 minutes
 // const SUPER_KEY_TIMEOUT = 5 * 60 * 1000
 const SUPER_KEY_TIMEOUT = 15 * 1000
@@ -294,6 +294,9 @@ class SecureContext extends Actor implements IIntegrator {
             ...this.#privilegedState,
             rootAddresses: this.#rootAddresses,
         })
+        if (this.#rootAddresses.length === 0) {
+            await this.#lockInner(true)
+        }
     }
 
     async #saveRootChanges(addressKey?: string) {
@@ -734,34 +737,38 @@ class SecureContext extends Actor implements IIntegrator {
         }
     }
 
+    async #lockInner(unenroll: boolean) {
+        this.#key = null
+        this.#superKey = null
+        if (this.#superKeyTimer != null) {
+            clearTimeout(this.#superKeyTimer)
+            this.#superKeyTimer = null
+        }
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            isSuper: false,
+        })
+        this._lockedSyncedRoot = null
+        await this.#updateRoot(null)
+
+        if (unenroll) {
+            this.#updateSetupKey(null)
+        }
+
+        // Re-download the encrypted root file, since we don't
+        // retain that after we unlock it.
+        for (const syncManager of this.#syncManagers.values()) {
+            syncManager.triggerDownload()
+        }
+    }
+
     // Public API
     lock(unenroll: boolean): Promise<void> {
         return this._post("lock()", async () => {
             if (this.#key === null && (!unenroll || !this.#setupKey)) {
                 return
             }
-            this.#key = null
-            this.#superKey = null
-            if (this.#superKeyTimer != null) {
-                clearTimeout(this.#superKeyTimer)
-                this.#superKeyTimer = null
-            }
-            this.#updatePrivilegedState({
-                ...this.#privilegedState,
-                isSuper: false,
-            })
-            this._lockedSyncedRoot = null
-            await this.#updateRoot(null)
-
-            if (unenroll) {
-                this.#updateSetupKey(null)
-            }
-
-            // Re-download the encrypted root file, since we don't
-            // retain that after we unlock it.
-            for (const syncManager of this.#syncManagers.values()) {
-                syncManager.triggerDownload()
-            }
+            await this.#lockInner(unenroll)
         })
     }
     #saveSuperKey(superKey: CryptoKey) {

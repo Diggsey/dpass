@@ -168,7 +168,7 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
     }
     async #deleteGDriveFile(
         gdriveId: string,
-        expectedEtag: string
+        expectedEtag: string | null
     ): Promise<Response> {
         return await this.#fetch(
             `${BASE_URL}/drive/v2/files/${gdriveId}?` +
@@ -177,9 +177,11 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
                 }),
             {
                 method: "DELETE",
-                headers: {
-                    "If-Match": expectedEtag,
-                },
+                headers: expectedEtag
+                    ? {
+                          "If-Match": expectedEtag,
+                      }
+                    : {},
             }
         )
     }
@@ -224,7 +226,10 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
         }
         return file.etag
     }
-    async deleteFile(fileId: string, expectedEtag: string): Promise<void> {
+    async deleteFile(
+        fileId: string,
+        expectedEtag: string | null
+    ): Promise<void> {
         const gdriveId = await this.#getGDriveFileId(fileId)
         if (!gdriveId) {
             return

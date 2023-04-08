@@ -16,5 +16,5 @@ export interface IStorage extends IDisposable {
         expectedEtag: string | null,
         data: Uint8Array
     ): Promise<string>
-    deleteFile(fileId: string, expectedEtag: string): Promise<void>
+    deleteFile(fileId: string, expectedEtag: string | null): Promise<void>
 }
