@@ -70,7 +70,6 @@ export const LockButtons: FC<{ isUnlocked: boolean }> = ({ isUnlocked }) => {
                 ) : null}
                 <OutlineButton
                     type="button"
-                    className="relative inline-flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-600 hover:bg-gray-50 disabled:bg-white disabled:text-gray-600 disabled:ring-gray-300"
                     onClick={openUnenrollDeviceDialog}
                     disabled={locking.inProgress}
                 >

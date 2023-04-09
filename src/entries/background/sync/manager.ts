@@ -54,16 +54,21 @@ export class SyncManager extends Actor {
             this.triggerDownload()
             return
         }
-        if (this.#pendingData === null) {
+        const dataToUpload = this.#pendingData
+        if (dataToUpload === null) {
             return
         }
+
         try {
             this.#lastSeenEtag = await this.storage.uploadFile(
                 this.#fileId,
                 this.#lastIntegratedEtag,
-                this.#pendingData
+                dataToUpload
             )
-            this.#pendingData = null
+            if (this.#pendingData === dataToUpload) {
+                this.#pendingData = null
+            }
+
             this.#lastError = null
             this.#lastIntegratedEtag = this.#lastSeenEtag
         } catch (err) {

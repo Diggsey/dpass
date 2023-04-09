@@ -5,6 +5,7 @@ const permissions: chrome.runtime.ManifestPermissions[] = [
     "scripting",
     "storage",
     "identity",
+    "contextMenus",
 ]
 
 const hostPermissions: string[] = ["https://www.googleapis.com/*"]
@@ -20,6 +21,19 @@ const sharedManifest = {
     browser_specific_settings: {
         gecko: {
             id: "dpass@diggsey.com",
+        },
+    },
+    commands: {
+        "dpass-configure": {
+            description: "Open the dpass options page",
+        },
+        "dpass-sync": {
+            description: "Trigger an immediate dpass sync",
+        },
+        _execute_browser_action: {
+            suggested_key: {
+                default: "Ctrl+Space",
+            },
         },
     },
 }

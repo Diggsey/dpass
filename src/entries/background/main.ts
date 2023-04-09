@@ -8,6 +8,8 @@ import { ROOT_FILE_ID, SECURE_CONTEXT } from "./context"
 import { PrivilegedPublisher } from "./pubsub/privileged"
 import { UnprivilegedPublisher } from "./pubsub/unprivileged"
 import "./browserAction"
+import "./contextMenus"
+import "./commands"
 import {
     addMessageListener,
     Message,

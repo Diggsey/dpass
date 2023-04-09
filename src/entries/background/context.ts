@@ -17,14 +17,12 @@ import {
     VaultInfoItem,
     VaultItemData,
 } from "./serialize/vaultData"
-import { STORAGE_MANAGER } from "./storage/connection"
-import { IIntegrator, SyncManager } from "./sync/manager"
+import { IIntegrator } from "./sync/manager"
 import browser from "webextension-polyfill"
 import {
     PrivilegedState,
     PrivilegedVault,
     StorageAddress,
-    StorageSyncState,
 } from "../shared/privileged/state"
 import { IStatePublisher } from "./pubsub/state"
 import { decodeRoot, encodeRoot } from "./serialize/root"
@@ -51,23 +49,18 @@ import {
     importKey,
     KeyApplication,
 } from "./crypto"
-import { objectKey } from "../shared"
 import { requestUnlock } from "./unlock"
 import { decodeVault, encodeVault } from "./serialize/vault"
 import * as msgpack from "@msgpack/msgpack"
-import {
-    deleteKey,
-    loadKey,
-    PersistentKeyType,
-    storeKey,
-} from "./persistentKeys"
 import { VaultItemPayload } from "../shared/state"
 import { ItemDetails } from "../shared/messages/vault"
+import { SetupKeyContext } from "./context/setupKeyContext"
+import { SuperKeyContext } from "./context/superKeyContext"
+import { SyncManagerContext } from "./context/syncManagerContext"
 
 type VaultState = {
     keySalt: Uint8Array | null
     vault: DecryptedVaultFile | null
-    syncManagers: Map<string, SyncManager>
 }
 type NewVaultHint = {
     keySalt: Uint8Array
@@ -82,9 +75,6 @@ type UpdateRootHint = {
 type TimerId = ReturnType<typeof setTimeout>
 
 export const ROOT_FILE_ID = "root"
-// 5 minutes
-// const SUPER_KEY_TIMEOUT = 5 * 60 * 1000
-const SUPER_KEY_TIMEOUT = 15 * 1000
 
 type PendingRootIntegration = {
     file: Uint8Array
@@ -111,13 +101,12 @@ class IncorrectPasswordError extends Error {
     }
 }
 
-class SecureContext extends Actor implements IIntegrator {
-    #setupKey: CryptoKey | null = null
-    #superKey: CryptoKey | null = null
-    #superKeyTimer: TimerId | null = null
+class SecureContext
+    extends SyncManagerContext(SuperKeyContext(SetupKeyContext(Actor)))
+    implements IIntegrator
+{
     #key: CryptoKey | null = null
     #root: DecryptedRootFile | null = null
-    #syncManagers: Map<string, SyncManager> = new Map()
     #vaults: Map<string, VaultState> = new Map()
     #rootAddresses: StorageAddress[] = []
     #privilegedState: PrivilegedState = {
@@ -144,51 +133,22 @@ class SecureContext extends Actor implements IIntegrator {
         }
     }
 
-    #updateSetupKey(setupKey: CryptoKey | null, alreadyStored?: boolean) {
-        if (setupKey && !alreadyStored) {
-            void storeKey(PersistentKeyType.setupKey, setupKey)
-        } else if (setupKey === null) {
-            void deleteKey(PersistentKeyType.setupKey)
-        }
-        this.#setupKey = setupKey
+    _setupKeyChanged(): void {
         this.#updatePrivilegedState({
             ...this.#privilegedState,
-            isSetUp: setupKey !== null,
+            isSetUp: this._setupKey !== null,
         })
     }
 
-    #loadSetupKey = async () => {
-        const setupKey = await loadKey(PersistentKeyType.setupKey)
-        if (setupKey) {
-            this.#updateSetupKey(setupKey, true)
-        }
+    _superKeyChanged(): void {
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            isSuper: this._superKey !== null,
+        })
     }
 
-    #updatePrivilegedState(privilegedState: PrivilegedState) {
-        this.#privilegedState = privilegedState
-        if (this.#statePublishTimer === null) {
-            this.#statePublishTimer = setTimeout(() => {
-                this.#statePublishTimer = null
-                for (const statePublisher of this.#statePublishers) {
-                    statePublisher.publishPrivileged(this.#privilegedState)
-                }
-            }, 0)
-        }
-    }
-
-    #syncStateChanged(fileId: string) {
-        const map = this.#getSyncManagers(fileId)
-        if (!map) {
-            return
-        }
-        const syncState: { [storageAddress: string]: StorageSyncState } = {}
-        for (const [k, v] of map) {
-            syncState[k] = {
-                address: v.storage.address,
-                inProgress: v.busy,
-                lastError: v.lastError?.toString(),
-            }
-        }
+    _syncStateChanged(fileId: string) {
+        const syncState = this._getSyncState(fileId)
         if (fileId === ROOT_FILE_ID) {
             this.#updatePrivilegedState({
                 ...this.#privilegedState,
@@ -211,71 +171,7 @@ class SecureContext extends Actor implements IIntegrator {
         }
     }
 
-    #updateSyncManagersFromAddresses(
-        fileId: string,
-        addresses: StorageAddress[],
-        oldMap: Map<string, SyncManager>
-    ): Map<string, SyncManager> {
-        const newMap = new Map<string, SyncManager>()
-        for (const [i, address] of addresses.entries()) {
-            const addressKey = objectKey(address)
-            const syncManager = oldMap.get(addressKey)
-            if (syncManager && syncManager.priority === i) {
-                oldMap.delete(addressKey)
-                newMap.set(addressKey, syncManager)
-            } else {
-                void this._post(
-                    `setupSyncManager(${fileId}, ${addressKey}, ${i})`,
-                    () => this.#setupSyncManager(fileId, address, i)
-                )
-            }
-        }
-        for (const syncManager of oldMap.values()) {
-            syncManager.dispose()
-        }
-        if (oldMap.size > 0) {
-            void this._post(`syncStateChanged(${fileId})`, async () =>
-                this.#syncStateChanged(fileId)
-            )
-        }
-        return newMap
-    }
-
-    #getSyncManagers(fileId: string): Map<string, SyncManager> | null {
-        if (fileId == ROOT_FILE_ID) {
-            return this.#syncManagers
-        } else {
-            const vaultState = this.#vaults.get(fileId)
-            if (!vaultState) {
-                return null
-            }
-            return vaultState.syncManagers
-        }
-    }
-
-    async #setupSyncManager(
-        fileId: string,
-        address: StorageAddress,
-        priority: number
-    ) {
-        const map = this.#getSyncManagers(fileId)
-        if (!map) {
-            return
-        }
-        const addressKey = objectKey(address)
-        if (map.get(addressKey)) {
-            return
-        }
-        const storage = await STORAGE_MANAGER.open(address)
-        const syncManager = new SyncManager(storage, fileId, this, priority)
-        syncManager.addEventListener("busychanged", () => {
-            void this._post(`syncStateChanged(${fileId})`, async () => {
-                this.#syncStateChanged(fileId)
-            })
-        })
-        map.set(addressKey, syncManager)
-        this.#syncStateChanged(fileId)
-
+    async _dataRequested(fileId: string, addressKey: string): Promise<void> {
         if (fileId === ROOT_FILE_ID) {
             await this.#saveRootChanges(addressKey)
         } else {
@@ -283,13 +179,21 @@ class SecureContext extends Actor implements IIntegrator {
         }
     }
 
+    #updatePrivilegedState(privilegedState: PrivilegedState) {
+        this.#privilegedState = privilegedState
+        if (this.#statePublishTimer === null) {
+            this.#statePublishTimer = setTimeout(() => {
+                this.#statePublishTimer = null
+                for (const statePublisher of this.#statePublishers) {
+                    statePublisher.publishPrivileged(this.#privilegedState)
+                }
+            }, 0)
+        }
+    }
+
     async #updateRootAddresses(rootAddresses: StorageAddress[]) {
         this.#rootAddresses = rootAddresses
-        this.#syncManagers = this.#updateSyncManagersFromAddresses(
-            ROOT_FILE_ID,
-            this.#rootAddresses,
-            this.#syncManagers
-        )
+        this._updateSyncManagers(ROOT_FILE_ID, this.#rootAddresses)
         this.#updatePrivilegedState({
             ...this.#privilegedState,
             rootAddresses: this.#rootAddresses,
@@ -310,16 +214,7 @@ class SecureContext extends Actor implements IIntegrator {
                 keySalt: this.#lockedSyncedRoot.keySalt,
                 encryptedData: new Uint8Array(encryptedData),
             })
-            if (addressKey) {
-                const syncManager = this.#syncManagers.get(addressKey)
-                if (syncManager) {
-                    syncManager.onDataChanged(file)
-                }
-            } else {
-                for (const syncManager of this.#syncManagers.values()) {
-                    syncManager.onDataChanged(file)
-                }
-            }
+            this._saveChanges(ROOT_FILE_ID, file, addressKey)
         }
     }
 
@@ -341,29 +236,15 @@ class SecureContext extends Actor implements IIntegrator {
                     let vaultState = this.#vaults.get(fileId)
                     this.#vaults.delete(fileId)
                     if (!vaultState) {
-                        const vaultHint = (hint?.newVaults &&
+                        vaultState = (hint?.newVaults &&
                             hint.newVaults[fileId]) || {
                             keySalt: null,
                             vault: null,
                         }
-                        vaultState = { ...vaultHint, syncManagers: new Map() }
-                    }
-                    vaultState = {
-                        ...vaultState,
-                        syncManagers: this.#updateSyncManagersFromAddresses(
-                            fileId,
-                            addresses,
-                            vaultState.syncManagers
-                        ),
                     }
                     newVaults.set(fileId, vaultState)
+                    this._updateSyncManagers(fileId, addresses)
                 }
-            }
-        }
-        // Disconnect from old vault addresses
-        for (const oldVaultState of this.#vaults.values()) {
-            for (const syncManager of oldVaultState.syncManagers.values()) {
-                syncManager.dispose()
             }
         }
         this.#vaults = newVaults
@@ -513,16 +394,7 @@ class SecureContext extends Actor implements IIntegrator {
             keySalt: vaultState.keySalt,
             encryptedData: new Uint8Array(encryptedData),
         })
-        if (addressKey) {
-            const syncManager = vaultState.syncManagers.get(addressKey)
-            if (syncManager) {
-                syncManager.onDataChanged(file)
-            }
-        } else {
-            for (const syncManager of vaultState.syncManagers.values()) {
-                syncManager.onDataChanged(file)
-            }
-        }
+        this._saveChanges(vaultId, file, addressKey)
     }
 
     #computePrivilegedVaultState(
@@ -602,7 +474,6 @@ class SecureContext extends Actor implements IIntegrator {
             return
         }
         this.#vaults.set(vaultId, {
-            syncManagers: prevVaultState.syncManagers,
             keySalt: keySalt || prevVaultState.keySalt,
             vault: newVault,
         })
@@ -684,7 +555,6 @@ class SecureContext extends Actor implements IIntegrator {
         super()
         browser.storage.sync.onChanged.addListener(this.#syncStorageChanged)
         void this._post("loadRootAddresses()", this.#loadRootAddresses)
-        void this._post("loadSetupKey", this.#loadSetupKey)
     }
 
     get _lockedSyncedRoot(): LockedSyncedRoot {
@@ -707,10 +577,6 @@ class SecureContext extends Actor implements IIntegrator {
             ...this.#privilegedState,
             hasIdentity: lockedSyncedRoot !== null,
         })
-    }
-
-    get hasSuperKey(): boolean {
-        return this.#superKey !== null
     }
 
     addStatePublisher(statePublisher: IStatePublisher) {
@@ -739,56 +605,26 @@ class SecureContext extends Actor implements IIntegrator {
 
     async #lockInner(unenroll: boolean) {
         this.#key = null
-        this.#superKey = null
-        if (this.#superKeyTimer != null) {
-            clearTimeout(this.#superKeyTimer)
-            this.#superKeyTimer = null
-        }
-        this.#updatePrivilegedState({
-            ...this.#privilegedState,
-            isSuper: false,
-        })
+        this._superKey = null
         this._lockedSyncedRoot = null
         await this.#updateRoot(null)
 
         if (unenroll) {
-            this.#updateSetupKey(null)
+            this._setupKey = null
         }
 
         // Re-download the encrypted root file, since we don't
         // retain that after we unlock it.
-        for (const syncManager of this.#syncManagers.values()) {
-            syncManager.triggerDownload()
-        }
+        this._refetchData(ROOT_FILE_ID)
     }
 
     // Public API
     lock(unenroll: boolean): Promise<void> {
         return this._post("lock()", async () => {
-            if (this.#key === null && (!unenroll || !this.#setupKey)) {
+            if (this.#key === null && (!unenroll || !this._setupKey)) {
                 return
             }
             await this.#lockInner(unenroll)
-        })
-    }
-    #saveSuperKey(superKey: CryptoKey) {
-        if (this.#superKeyTimer != null) {
-            clearTimeout(this.#superKeyTimer)
-            this.#superKeyTimer = null
-        }
-        this.#superKey = superKey
-        this.#superKeyTimer = setTimeout(() => {
-            this.#superKey = null
-            this.#superKeyTimer = null
-            this.#updatePrivilegedState({
-                ...this.#privilegedState,
-                isSuper: false,
-            })
-        }, SUPER_KEY_TIMEOUT)
-
-        this.#updatePrivilegedState({
-            ...this.#privilegedState,
-            isSuper: true,
         })
     }
     async #unlockInner(
@@ -801,7 +637,7 @@ class SecureContext extends Actor implements IIntegrator {
             masterPassword,
             passwordSalt
         )
-        let setupKey = this.#setupKey
+        let setupKey = this._setupKey
         if (secretSentence !== null) {
             const keyFromSentence = await deriveKeyFromPassword(
                 secretSentence,
@@ -831,10 +667,10 @@ class SecureContext extends Actor implements IIntegrator {
         }
 
         if (secretSentence !== null) {
-            this.#updateSetupKey(setupKey)
+            this._setupKey = setupKey
         }
         this.#saveKey(key)
-        this.#saveSuperKey(superKey)
+        this._superKey = superKey
     }
     unlock(
         masterPassword: string,
@@ -864,11 +700,9 @@ class SecureContext extends Actor implements IIntegrator {
                 secretSentence,
                 sentenceSalt
             )
-            const setupKey = await combineKeys(keyFromSentence, keyFromPassword)
+            this._setupKey = await combineKeys(keyFromSentence, keyFromPassword)
 
-            this.#updateSetupKey(setupKey)
-
-            const superKey = await combineKeys(setupKey, keyFromPassword)
+            const superKey = await combineKeys(this._setupKey, keyFromPassword)
             const key = await deriveKeyFromSuperKey(
                 superKey,
                 keySalt,
@@ -885,7 +719,8 @@ class SecureContext extends Actor implements IIntegrator {
                 pendingRootIntegrations: new Map(),
             }
             this.#saveKey(key)
-            this.#saveSuperKey(superKey)
+            this._superKey = superKey
+
             await this.#updateRoot({
                 uuid: crypto.randomUUID(),
                 items: [
@@ -932,14 +767,15 @@ class SecureContext extends Actor implements IIntegrator {
                     newSentence ?? oldSentence,
                     sentenceSalt
                 )
-                const setupKey = await combineKeys(
+                this._setupKey = await combineKeys(
                     keyFromSentence,
                     keyFromPassword
                 )
 
-                this.#updateSetupKey(setupKey)
-
-                const superKey = await combineKeys(setupKey, keyFromPassword)
+                const superKey = await combineKeys(
+                    this._setupKey,
+                    keyFromPassword
+                )
                 const key = await deriveKeyFromSuperKey(
                     superKey,
                     keySalt,
@@ -955,7 +791,7 @@ class SecureContext extends Actor implements IIntegrator {
                     canaryData,
                 }
                 this.#saveKey(key)
-                this.#saveSuperKey(superKey)
+                this._superKey = superKey
 
                 if (newSentence !== null && this.#root !== null) {
                     const rootInfoPatcher = itemPatcher<RootFileItem>(
@@ -1018,13 +854,13 @@ class SecureContext extends Actor implements IIntegrator {
         )
     }
     async #requireSuperKey(): Promise<CryptoKey> {
-        if (!this.#superKey) {
+        if (!this._superKey) {
             await requestUnlock()
-            if (!this.#superKey) {
+            if (!this._superKey) {
                 throw new Error("Failed to unlock")
             }
         }
-        return this.#superKey
+        return this._superKey
     }
     async createVault(name: string, copyStorage: boolean): Promise<string> {
         const superKey = await this.#requireSuperKey()
