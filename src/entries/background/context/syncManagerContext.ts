@@ -19,20 +19,14 @@ export interface ISyncManagerContext extends IIntegrator {
     _saveChanges(
         fileId: string,
         data: Uint8Array,
-        specificAddressKey?: string
+        specificAddress?: StorageAddress
     ): void
     _refetchData(fileId: string): void
 
     // Must be implemented
     _syncStateChanged(fileId: string): void
     // Returns true if the data was successfully provided
-    _dataRequested(fileId: string, addressKey: string): Promise<boolean>
-    // Returns true if the request was handled
-    integrate(
-        fileId: string,
-        file: Uint8Array,
-        priority: number
-    ): Promise<boolean>
+    _dataRequested(fileId: string, address: StorageAddress): Promise<boolean>
 }
 
 type SyncManagerState = {
@@ -52,6 +46,12 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
         class SyncManagerContext extends Base implements ISyncManagerContext {
             #syncManagers: Map<string, SyncManagers> = new Map()
 
+            #triggerSyncStateChanged(fileId: string) {
+                void this._post(`_syncStateChanged(${fileId})`, async () => {
+                    this._syncStateChanged(fileId)
+                })
+            }
+
             _updateSyncManagers(
                 fileId: string,
                 addresses: readonly StorageAddress[]
@@ -66,20 +66,14 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
                             newMap.set(key, state)
                         } else {
                             newMap.set(key, { address })
-                            void this._post(
-                                `#setupSyncManager(${fileId}, ${key}, ${i})`,
-                                () => this.#setupSyncManager(fileId, address, i)
-                            )
+                            this.#setupSyncManager(fileId, address, i)
                         }
                     }
                     for (const state of oldMap.values()) {
                         state.manager?.dispose()
                     }
                     if (oldMap.size > 0) {
-                        void this._post(
-                            `_syncStateChanged(${fileId})`,
-                            async () => this._syncStateChanged(fileId)
-                        )
+                        this.#triggerSyncStateChanged(fileId)
                     }
                     return newMap
                 })
@@ -88,8 +82,10 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
             _saveChanges(
                 fileId: string,
                 data: Uint8Array,
-                specificAddressKey?: string
+                specificAddress?: StorageAddress
             ) {
+                const specificAddressKey =
+                    specificAddress && objectKey(specificAddress)
                 const map = this.#syncManagers.get(fileId)
                 if (map) {
                     for (const state of map.values()) {
@@ -124,51 +120,53 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
                 }
             }
 
-            async #setupSyncManager(
+            #setupSyncManager(
                 fileId: string,
                 address: StorageAddress,
                 priority: number
             ) {
-                const key = addressKey(priority, address)
-                let storage: IStorage | undefined = undefined
-                try {
-                    storage = await STORAGE_MANAGER.open(address)
-                } finally {
-                    this.#updateFile(fileId, (map) => {
-                        const state = map.get(key)
-                        if (state && !state.manager) {
-                            if (storage === undefined) {
-                                map.delete(key)
-                            } else {
-                                state.manager = new SyncManager(
-                                    storage,
-                                    fileId,
-                                    this,
-                                    priority
-                                )
-                                state.manager.addEventListener(
-                                    "busychanged",
-                                    () => {
-                                        void this._post(
-                                            `syncStateChanged(${fileId})`,
-                                            async () => {
-                                                this._syncStateChanged(fileId)
+                void this._post(
+                    `#setupSyncManager(${fileId}, ${address}, ${priority})`,
+                    async () => {
+                        const key = addressKey(priority, address)
+                        let storage: IStorage | undefined = undefined
+                        try {
+                            storage = await STORAGE_MANAGER.open(address)
+                        } finally {
+                            this.#updateFile(fileId, (map) => {
+                                const state = map.get(key)
+                                if (state && !state.manager) {
+                                    if (storage === undefined) {
+                                        map.delete(key)
+                                    } else {
+                                        state.manager = new SyncManager(
+                                            storage,
+                                            fileId,
+                                            this,
+                                            priority
+                                        )
+                                        state.manager.addEventListener(
+                                            "busychanged",
+                                            () => {
+                                                this.#triggerSyncStateChanged(
+                                                    fileId
+                                                )
                                             }
                                         )
                                     }
-                                )
+                                } else {
+                                    storage?.dispose()
+                                    storage = undefined
+                                }
+                                return map
+                            })
+                            this._syncStateChanged(fileId)
+                            if (storage) {
+                                await this._dataRequested(fileId, address)
                             }
-                        } else {
-                            storage?.dispose()
-                            storage = undefined
                         }
-                        return map
-                    })
-                    this._syncStateChanged(fileId)
-                    if (storage) {
-                        await this._dataRequested(fileId, key)
                     }
-                }
+                )
             }
 
             _getSyncState(fileId: string): PrivilegedSyncState {
@@ -190,7 +188,7 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
             _syncStateChanged(_fileId: string) {}
             async _dataRequested(
                 _fileId: string,
-                _addressKey: string
+                _address: StorageAddress
             ): Promise<boolean> {
                 return false
             }

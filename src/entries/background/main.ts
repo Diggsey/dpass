@@ -182,7 +182,7 @@ async function requestAutoFill(
     }
     const origin = senderType.origin || ""
 
-    const item = SECURE_CONTEXT.getVaultItem(vaultId, itemId)
+    const item = await SECURE_CONTEXT.getVaultItem(vaultId, itemId)
     if (!item.origins.includes(origin)) {
         throw new Error("Invalid origin")
     }

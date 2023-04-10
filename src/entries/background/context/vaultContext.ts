@@ -4,8 +4,6 @@ import {
     decodeVaultData,
     DecryptedVaultFile,
     encodeVaultData,
-    VaultFileItem,
-    VaultInfoItem,
 } from "../serialize/vaultData"
 import { IRootContext, UpdateRootHint } from "./rootContext"
 import { ISyncManagerContext } from "./syncManagerContext"
@@ -14,10 +12,6 @@ import {
     decryptKey,
     deriveKeyFromSuperKey,
     encrypt,
-    encryptKey,
-    exportKey,
-    generateSalt,
-    generateSuperKey,
     importKey,
     KeyApplication,
 } from "../crypto"
@@ -25,11 +19,8 @@ import { decodeVault, encodeVault } from "../serialize/vault"
 import {
     areFilesEqual,
     extractItems,
-    itemCreator,
-    itemPatcher,
     MergeableItem,
     mergeFiles,
-    newFile,
 } from "../serialize/merge"
 import { Vault } from "../serialize/rootData"
 import { ISuperKeyContext } from "./superKeyContext"
@@ -44,25 +35,11 @@ export interface IVaultContext {
     get _vaults(): Map<string, VaultState>
     get _defaultVaultId(): string | null
 
-    _updateVault(
-        vaultId: string,
-        newVault: DecryptedVaultFile,
-        keySalt?: Uint8Array
-    ): Promise<void>
     _patchVault(
         vaultId: string,
         f: (root: DecryptedVaultFile) => DecryptedVaultFile
     ): Promise<void>
     _deriveVaultSuperKey(vaultId: string): Promise<CryptoKey>
-
-    createVault(name: string, copyStorage: boolean): Promise<string>
-    updateVaultName(vaultId: string, name: string): Promise<void>
-    removeVault(vaultId: string): Promise<void>
-    editVaultStorageAddresses(
-        vaultId: string,
-        f: (addresses: readonly StorageAddress[]) => readonly StorageAddress[]
-    ): Promise<void>
-    setVaultAsDefault(vaultId: string): Promise<void>
 
     // Must be implemented
     _vaultChanged(vaultId: string): void
@@ -92,11 +69,11 @@ export const VaultContext = mixin<
 
             async _dataRequested(
                 fileId: string,
-                addressKey: string
+                address: StorageAddress
             ): Promise<boolean> {
                 return (
-                    (await super._dataRequested(fileId, addressKey)) ||
-                    (await this.#saveVaultChanges(fileId, addressKey))
+                    (await super._dataRequested(fileId, address)) ||
+                    (await this.#saveVaultChanges(fileId, address))
                 )
             }
 
@@ -105,10 +82,15 @@ export const VaultContext = mixin<
                 file: Uint8Array,
                 priority: number
             ): Promise<boolean> {
-                return (
-                    (await super.integrate(fileId, file, priority)) ||
-                    (await this.#integrateVault(fileId, file))
-                )
+                const handled = await super.integrate(fileId, file, priority)
+                if (!handled) {
+                    await this._post(
+                        `integrate(${fileId}, <file>, ${priority})`,
+                        () => this.#integrateVault(fileId, file)
+                    )
+                    return true
+                }
+                return handled
             }
 
             _rootChanged(hint?: UpdateRootHint): void {
@@ -155,7 +137,7 @@ export const VaultContext = mixin<
 
             async #saveVaultChanges(
                 vaultId: string,
-                addressKey?: string
+                address?: StorageAddress
             ): Promise<boolean> {
                 const vaultDesc = this.#getVaultDesc(vaultId)
                 const vaultState = this.#vaults.get(vaultId)
@@ -170,12 +152,12 @@ export const VaultContext = mixin<
                     keySalt: vaultState.keySalt,
                     encryptedData: new Uint8Array(encryptedData),
                 })
-                this._saveChanges(vaultId, file, addressKey)
+                this._saveChanges(vaultId, file, address)
 
                 return true
             }
 
-            async _updateVault(
+            async #updateVault(
                 vaultId: string,
                 newVault: DecryptedVaultFile,
                 keySalt?: Uint8Array
@@ -199,17 +181,15 @@ export const VaultContext = mixin<
                 this._vaultChanged(vaultId)
             }
 
-            _patchVault(
+            async _patchVault(
                 vaultId: string,
                 f: (root: DecryptedVaultFile) => DecryptedVaultFile
             ): Promise<void> {
-                return this._post(`patchVault(${vaultId}, ...)`, async () => {
-                    const vaultState = this._vaults.get(vaultId)
-                    if (!vaultState?.vault) {
-                        throw new Error("No such vault - cannot update")
-                    }
-                    await this._updateVault(vaultId, f(vaultState.vault))
-                })
+                const vaultState = this._vaults.get(vaultId)
+                if (!vaultState?.vault) {
+                    throw new Error("No such vault - cannot update")
+                }
+                await this.#updateVault(vaultId, f(vaultState.vault))
             }
 
             #getVaultDesc(vaultId: string): MergeableItem<Vault> | undefined {
@@ -227,10 +207,10 @@ export const VaultContext = mixin<
             async #integrateVault(
                 fileId: string,
                 file: Uint8Array
-            ): Promise<boolean> {
+            ): Promise<void> {
                 const vaultDesc = this.#getVaultDesc(fileId)
                 if (!vaultDesc) {
-                    return false
+                    return
                 }
                 const { version, keySalt, encryptedData } = decodeVault(file)
                 const vaultKey = await importKey(vaultDesc.payload.vaultKey)
@@ -239,15 +219,11 @@ export const VaultContext = mixin<
                     new Uint8Array(buffer),
                     version
                 )
-                await this._post(`mergeAndUpdateVault(${fileId})`, async () => {
-                    const vaultState = this.#vaults.get(fileId)
-                    const mergedVault = vaultState?.vault
-                        ? mergeFiles(vaultState.vault, downloadedVault)
-                        : downloadedVault
-                    await this._updateVault(fileId, mergedVault, keySalt)
-                })
-
-                return true
+                const vaultState = this.#vaults.get(fileId)
+                const mergedVault = vaultState?.vault
+                    ? mergeFiles(vaultState.vault, downloadedVault)
+                    : downloadedVault
+                await this.#updateVault(fileId, mergedVault, keySalt)
             }
 
             async _deriveVaultSuperKey(vaultId: string): Promise<CryptoKey> {
@@ -266,124 +242,6 @@ export const VaultContext = mixin<
                 return await decryptKey(
                     personalVaultKey,
                     encryptedVaultSuperKey
-                )
-            }
-
-            updateVaultName(vaultId: string, name: string): Promise<void> {
-                return this._patchVault(
-                    vaultId,
-                    itemPatcher((payload) => {
-                        if (payload?.id === "vaultInfo") {
-                            return {
-                                ...payload,
-                                name,
-                            }
-                        }
-                        return payload
-                    })
-                )
-            }
-            async createVault(
-                name: string,
-                copyStorage: boolean
-            ): Promise<string> {
-                const superKey = await this._requireSuperKey()
-                const personalVaultSalt = generateSalt()
-                const personalVaultKey = await deriveKeyFromSuperKey(
-                    superKey,
-                    personalVaultSalt,
-                    KeyApplication.personalVaultKey
-                )
-                const vaultSuperKey = await generateSuperKey()
-                const keySalt = generateSalt()
-                const vaultKey = await deriveKeyFromSuperKey(
-                    vaultSuperKey,
-                    keySalt,
-                    KeyApplication.vaultKey
-                )
-                const rawVaultKey = await exportKey(vaultKey)
-                const encryptedVaultSuperKey = await encryptKey(
-                    personalVaultKey,
-                    vaultSuperKey
-                )
-                const fileId = crypto.randomUUID()
-                const vault: DecryptedVaultFile = itemCreator<
-                    VaultFileItem,
-                    VaultInfoItem
-                >({
-                    id: "vaultInfo",
-                    name,
-                })(newFile())
-                // If there is no default vault, make this vault the default
-                const setAsDefaultOn =
-                    this._defaultVaultId !== null ? undefined : Date.now()
-
-                const addresses: readonly StorageAddress[] = copyStorage
-                    ? this._rootAddresses
-                    : [
-                          {
-                              id: "local",
-                              folderName: "default",
-                          },
-                      ]
-
-                await this._patchRoot(
-                    itemCreator({
-                        id: "vault",
-                        fileId,
-                        addresses,
-                        vaultKey: rawVaultKey,
-                        personalVaultSalt,
-                        encryptedVaultSuperKey,
-                        setAsDefaultOn,
-                    }),
-                    {
-                        newVaults: { [fileId]: { keySalt, vault } },
-                    }
-                )
-                return fileId
-            }
-            async removeVault(vaultId: string): Promise<void> {
-                await this._patchRoot(
-                    itemPatcher((item, _uuid) =>
-                        item?.id === "vault" && item.fileId === vaultId
-                            ? null
-                            : item
-                    )
-                )
-            }
-            async editVaultStorageAddresses(
-                vaultId: string,
-                f: (
-                    addresses: readonly StorageAddress[]
-                ) => readonly StorageAddress[]
-            ): Promise<void> {
-                await this._patchRoot(
-                    itemPatcher((item, _uuid) => {
-                        if (item?.id !== "vault" || item.fileId !== vaultId) {
-                            return item
-                        } else {
-                            return {
-                                ...item,
-                                addresses: f(item.addresses),
-                            }
-                        }
-                    })
-                )
-            }
-            async setVaultAsDefault(vaultId: string): Promise<void> {
-                const setAsDefaultOn = Date.now()
-                await this._patchRoot(
-                    itemPatcher((item, _uuid) => {
-                        if (item?.id !== "vault" || item.fileId !== vaultId) {
-                            return item
-                        } else {
-                            return {
-                                ...item,
-                                setAsDefaultOn,
-                            }
-                        }
-                    })
                 )
             }
 

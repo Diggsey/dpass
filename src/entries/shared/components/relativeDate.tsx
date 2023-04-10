@@ -16,15 +16,16 @@ const INTERVALS: [number, string | null][] = [
 ]
 
 function computeInterval(date: Date): [string, number | null] {
+    const roundedTime = Math.floor(date.getTime() / 1000) * 1000
     const currentTs = Date.now()
-    const delta = currentTs - date.getTime()
+    const delta = currentTs - roundedTime
     for (const [v, name] of INTERVALS) {
         if (delta >= v) {
             if (name === null) {
                 return [date.toLocaleDateString(), null]
             } else {
                 const n = Math.floor(delta / v)
-                const expiry = (n + 1) * v + date.getTime()
+                const expiry = (n + 1) * v + roundedTime
                 const plural = n > 1 ? "s" : ""
                 return [`${n} ${name}${plural} ago`, expiry]
             }

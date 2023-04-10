@@ -89,6 +89,7 @@ export class SyncManager extends Actor {
         try {
             const result = await this.storage.downloadFile(this.#fileId)
             if (result) {
+                this.trace`file present`
                 this.#lastSeenEtag = result.etag
                 await this.#integrator.integrate(
                     this.#fileId,
@@ -97,11 +98,13 @@ export class SyncManager extends Actor {
                 )
                 this.#lastIntegratedEtag = result.etag
             } else {
+                this.trace`file not present`
                 this.#lastSeenEtag = null
                 this.#lastIntegratedEtag = null
             }
             this.#lastError = null
         } catch (err) {
+            console.error(err)
             this.#lastError = err
         }
     }

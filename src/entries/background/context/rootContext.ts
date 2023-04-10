@@ -21,13 +21,13 @@ import { DecryptedVaultFile } from "../serialize/vaultData"
 import {
     areFilesEqual,
     extractItems,
-    itemPatcher,
     MergeableItem,
     mergeFiles,
 } from "../serialize/merge"
 import { ISetupKeyContext } from "./setupKeyContext"
 import { ISuperKeyContext } from "./superKeyContext"
 import { IRootAddressesContext } from "./rootAddressesContext"
+import { StorageAddress } from "~/entries/shared/privileged/state"
 
 class IncorrectPasswordError extends Error {
     constructor(wasEnrolling: boolean) {
@@ -46,7 +46,7 @@ export type NewVaultHint = {
 
 export const ROOT_FILE_ID = "root"
 
-export type LockedSyncedRoot = {
+type LockedSyncedRoot = {
     priority: number
     passwordSalt: Uint8Array
     sentenceSalt: Uint8Array
@@ -54,14 +54,16 @@ export type LockedSyncedRoot = {
     canaryData: Uint8Array
 }
 
-export interface IRootContext {
-    _key: CryptoKey | null
-    get _root(): DecryptedRootFile | null
-    get _lockedSyncedRoot(): LockedSyncedRoot | null
-    get _rootInfo(): MergeableItem<RootInfo> | null
+type BackgroundTask<T> = {
+    promise: Promise<T>
+}
 
-    _clearRoot(): Promise<void>
-    _saveRootChanges(addressKey?: string): Promise<boolean>
+export interface IRootContext {
+    get _root(): DecryptedRootFile | null
+    get _rootInfo(): MergeableItem<RootInfo> | null
+    get _hasIdentity(): boolean
+
+    _saveRootChanges(address?: StorageAddress): Promise<boolean>
     _updateRoot(
         newRoot: DecryptedRootFile | null,
         hint?: UpdateRootHint
@@ -70,21 +72,19 @@ export interface IRootContext {
         f: (root: DecryptedRootFile) => DecryptedRootFile,
         hint?: UpdateRootHint
     ): Promise<void>
-    _expectSyncedRoot(): LockedSyncedRoot
     _recreateEncryptedRoot(
         masterPassword: string,
         secretSentence: string
     ): Promise<void>
+    _encryptRoot(unenroll: boolean): Promise<void>
     _decryptRoot(
         masterPassword: string,
         secretSentence: string | null
     ): Promise<void>
 
-    updateRootName(name: string): Promise<void>
-
     // Must implement
     _rootChanged(hint?: UpdateRootHint): void
-    _lockedSyncedRootChanged(): void
+    _hasIdentityChanged(): void
 }
 
 export type UpdateRootHint = {
@@ -143,15 +143,19 @@ export const RootContext = mixin<
                 }
             }
 
-            get _lockedSyncedRoot(): LockedSyncedRoot | null {
-                return this.#lockedSyncedRoot
+            get _hasIdentity(): boolean {
+                return this.#lockedSyncedRoot !== null
             }
             set _lockedSyncedRoot(lockedSyncedRoot: LockedSyncedRoot | null) {
                 if (lockedSyncedRoot === this.#lockedSyncedRoot) {
                     return
                 }
+                const hadIdentity = this._hasIdentity
                 this.#lockedSyncedRoot = lockedSyncedRoot
-                this._lockedSyncedRootChanged()
+
+                if (hadIdentity !== this._hasIdentity) {
+                    this._hasIdentityChanged()
+                }
             }
 
             get _rootInfo(): MergeableItem<RootInfo> | null {
@@ -169,16 +173,23 @@ export const RootContext = mixin<
             async _rootAddressesChanged(): Promise<void> {
                 await super._rootAddressesChanged()
                 this._updateSyncManagers(ROOT_FILE_ID, this._rootAddresses)
+
+                // Always reset our state when the last root address
+                // is removed, so we don't have cases where the root exists
+                // but isn't stored anywhere.
+                if (this._rootAddresses.length === 0) {
+                    await this._encryptRoot(true)
+                }
             }
 
             async _dataRequested(
                 fileId: string,
-                addressKey: string
+                address: StorageAddress
             ): Promise<boolean> {
                 return (
-                    (await super._dataRequested(fileId, addressKey)) ||
+                    (await super._dataRequested(fileId, address)) ||
                     (fileId === ROOT_FILE_ID &&
-                        (await this._saveRootChanges(addressKey)))
+                        (await this._saveRootChanges(address)))
                 )
             }
 
@@ -187,11 +198,17 @@ export const RootContext = mixin<
                 file: Uint8Array,
                 priority: number
             ): Promise<boolean> {
-                return (
-                    (await super.integrate(fileId, file, priority)) ||
-                    (fileId === ROOT_FILE_ID &&
-                        (await this.#integrateRoot(file, priority)))
-                )
+                const handled = await super.integrate(fileId, file, priority)
+                if (!handled && fileId === ROOT_FILE_ID) {
+                    const task = await this._post(
+                        `integrate(${fileId}, <file>, ${priority})`,
+                        () => this.#integrateRoot(file, priority)
+                    )
+                    await task.promise
+                    return true
+                } else {
+                    return handled
+                }
             }
 
             _clearPendingRootIntegrations() {
@@ -202,14 +219,14 @@ export const RootContext = mixin<
                 this.#pendingRootIntegrations.clear()
             }
 
-            _expectSyncedRoot(): LockedSyncedRoot {
+            #expectSyncedRoot(): LockedSyncedRoot {
                 if (!this.#lockedSyncedRoot) {
                     throw new Error("Invalid state")
                 }
                 return this.#lockedSyncedRoot
             }
 
-            async _saveRootChanges(addressKey?: string): Promise<boolean> {
+            async _saveRootChanges(address?: StorageAddress): Promise<boolean> {
                 if (this.#key && this.#root && this.#lockedSyncedRoot) {
                     // Upload root changes
                     const encodedData = encodeRootData(this.#root)
@@ -220,7 +237,7 @@ export const RootContext = mixin<
                         keySalt: this.#lockedSyncedRoot.keySalt,
                         encryptedData: new Uint8Array(encryptedData),
                     })
-                    this._saveChanges(ROOT_FILE_ID, file, addressKey)
+                    this._saveChanges(ROOT_FILE_ID, file, address)
                 }
                 return true
             }
@@ -242,7 +259,7 @@ export const RootContext = mixin<
             async #integrateRoot(
                 file: Uint8Array,
                 priority: number
-            ): Promise<boolean> {
+            ): Promise<BackgroundTask<void>> {
                 const {
                     version,
                     passwordSalt,
@@ -262,35 +279,37 @@ export const RootContext = mixin<
                             keySalt,
                             canaryData: encryptedData,
                         }
-                        this._lockedSyncedRootChanged()
                     }
-                    await new Promise<void>((resolve, reject) => {
-                        this.#pendingRootIntegrations.set(priority, {
-                            file,
-                            resolve,
-                            reject,
-                        })
-                    })
+
+                    // Data could not be integrated right away, so return a promise
+                    // to wait on asynchronously
+                    const res = {
+                        promise: new Promise<void>((resolve, reject) => {
+                            this.#pendingRootIntegrations.set(priority, {
+                                file,
+                                resolve,
+                                reject,
+                            })
+                        }),
+                    }
+                    this.trace`#pendingRootIntegrations = ${[
+                        ...this.#pendingRootIntegrations.entries(),
+                    ]}`
+                    return res
                 } else {
                     const buffer = await decrypt(this.#key, encryptedData)
                     const downloadedRoot = decodeRootData(
                         new Uint8Array(buffer),
                         version
                     )
-                    await this._post("mergeAndUpdateRoot(...)", async () => {
-                        const mergedRoot = this.#root
-                            ? mergeFiles(this.#root, downloadedRoot)
-                            : downloadedRoot
-                        await this._updateRoot(mergedRoot)
-                    })
-                }
-                return true
-            }
+                    const mergedRoot = this.#root
+                        ? mergeFiles(this.#root, downloadedRoot)
+                        : downloadedRoot
+                    await this._updateRoot(mergedRoot)
 
-            async _clearRoot(): Promise<void> {
-                this._lockedSyncedRoot = null
-                this._clearPendingRootIntegrations()
-                await this._updateRoot(null)
+                    // Data was integrated immediately
+                    return { promise: Promise.resolve() }
+                }
             }
 
             async _recreateEncryptedRoot(
@@ -339,7 +358,7 @@ export const RootContext = mixin<
                 secretSentence: string | null
             ): Promise<void> {
                 const { passwordSalt, sentenceSalt, keySalt, canaryData } =
-                    this._expectSyncedRoot()
+                    this.#expectSyncedRoot()
                 const keyFromPassword = await deriveKeyFromPassword(
                     masterPassword,
                     passwordSalt
@@ -387,37 +406,42 @@ export const RootContext = mixin<
                 this._key = key
                 this._superKey = superKey
             }
-            _patchRoot(
+
+            async _encryptRoot(unenroll: boolean): Promise<void> {
+                if (!this._key && (!unenroll || !this._setupKey)) {
+                    return
+                }
+                this._key = null
+                this._superKey = null
+                this._lockedSyncedRoot = null
+                this._clearPendingRootIntegrations()
+                await this._updateRoot(null)
+
+                if (unenroll) {
+                    this._setupKey = null
+                }
+
+                // Re-download the encrypted root file, since we don't
+                // retain that after we unlock it.
+                this._refetchData(ROOT_FILE_ID)
+            }
+
+            async _patchRoot(
                 f: (root: DecryptedRootFile) => DecryptedRootFile,
                 hint?: UpdateRootHint
             ): Promise<void> {
-                return this._post(`patchRoot(...)`, async () => {
-                    if (!this._root) {
-                        throw new Error("Locked - cannot update")
-                    }
-                    await this._updateRoot(f(this._root), hint)
-                })
-            }
-            updateRootName(name: string): Promise<void> {
-                return this._patchRoot(
-                    itemPatcher((payload) => {
-                        if (payload?.id === "rootInfo") {
-                            return {
-                                ...payload,
-                                name,
-                            }
-                        }
-                        return payload
-                    })
-                )
+                if (!this._root) {
+                    throw new Error("Locked - cannot update")
+                }
+                await this._updateRoot(f(this._root), hint)
             }
 
             _rootChanged(_hint?: UpdateRootHint) {}
-            _lockedSyncedRootChanged() {}
+            _hasIdentityChanged() {}
 
             static _decorators = [
                 abstractMethod("_rootChanged"),
-                abstractMethod("_lockedSyncedRootChanged"),
+                abstractMethod("_hasIdentityChanged"),
             ] as const
         }
     )

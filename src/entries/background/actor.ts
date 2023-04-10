@@ -8,10 +8,16 @@ export class Actor extends Traceable(ObjectId(Disposable(EventTarget))) {
     #inbox: Action[] = []
     #busy = false
 
+    constructor() {
+        super()
+        this.trace`created`
+    }
+
     dispose(): void {
         if (!this.disposed) {
             this.#inbox = []
         }
+        this.trace`disposed`
         super.dispose()
     }
     _post<R>(name: string, action: () => Promise<R>): Promise<R> {

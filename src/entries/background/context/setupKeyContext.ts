@@ -41,15 +41,19 @@ export const SetupKeyContext = mixin<ISetupKeyContext, Actor>((Base) =>
                 this._setupKeyChanged()
             }
 
-            constructor(...args: MixinConstructorArgs) {
-                super(...args)
-                void this._post("loadSetupKey()", async () => {
+            #loadSetupKey() {
+                void this._post("#loadSetupKey()", async () => {
                     const setupKey = await loadKey(PersistentKeyType.setupKey)
                     if (setupKey) {
                         this.#setupKey = setupKey
                         this._setupKeyChanged()
                     }
                 })
+            }
+
+            constructor(...args: MixinConstructorArgs) {
+                super(...args)
+                this.#loadSetupKey()
             }
 
             _setupKeyChanged() {}

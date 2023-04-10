@@ -29,11 +29,15 @@ export const RootAddressesContext = mixin<IRootAddressesContext, Actor>(
                     return this.#rootAddresses
                 }
 
-                #loadRootAddresses = async () => {
-                    const res = await browser.storage.sync.get("rootAddresses")
-                    if (res.rootAddresses) {
-                        await this.#updateRootAddresses(res.rootAddresses)
-                    }
+                #loadRootAddresses() {
+                    void this._post("#loadRootAddresses()", async () => {
+                        const res = await browser.storage.sync.get(
+                            "rootAddresses"
+                        )
+                        if (res.rootAddresses) {
+                            await this.#updateRootAddresses(res.rootAddresses)
+                        }
+                    })
                 }
 
                 async #updateRootAddresses(rootAddresses: StorageAddress[]) {
@@ -45,10 +49,7 @@ export const RootAddressesContext = mixin<IRootAddressesContext, Actor>(
                     changes: Record<string, browser.Storage.StorageChange>
                 ) => {
                     if (Object.hasOwn(changes, "rootAddresses")) {
-                        void this._post(
-                            "loadRootAddresses()",
-                            this.#loadRootAddresses
-                        )
+                        this.#loadRootAddresses()
                     }
                 }
 
@@ -57,10 +58,7 @@ export const RootAddressesContext = mixin<IRootAddressesContext, Actor>(
                     browser.storage.sync.onChanged.addListener(
                         this.#syncStorageChanged
                     )
-                    void this._post(
-                        "loadRootAddresses()",
-                        this.#loadRootAddresses
-                    )
+                    this.#loadRootAddresses()
                 }
 
                 async _rootAddressesChanged() {}

@@ -188,11 +188,11 @@ export const StatePublisherContext = mixin<
                 })
             }
 
-            _lockedSyncedRootChanged(): void {
-                super._lockedSyncedRootChanged()
+            _hasIdentityChanged(): void {
+                super._hasIdentityChanged()
                 this.#updatePrivilegedState({
                     ...this.#privilegedState,
-                    hasIdentity: this._lockedSyncedRoot !== null,
+                    hasIdentity: this._hasIdentity,
                 })
             }
 
