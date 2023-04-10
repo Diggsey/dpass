@@ -113,7 +113,7 @@ export async function combineKeys(
     )
 }
 
-export async function deriveSuperKeyFromPassword(
+export async function deriveKeyFromPassword(
     password: string,
     salt: Uint8Array
 ): Promise<CryptoKey> {

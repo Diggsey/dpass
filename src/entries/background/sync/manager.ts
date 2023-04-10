@@ -2,7 +2,12 @@ import { Actor } from "../actor"
 import { ETagMismatchError, IStorage } from "../storage/interface"
 
 export interface IIntegrator {
-    integrate(fileId: string, file: Uint8Array, priority: number): Promise<void>
+    // Returns true if the request was handled
+    integrate(
+        fileId: string,
+        file: Uint8Array,
+        priority: number
+    ): Promise<boolean>
 }
 
 export class SyncManager extends Actor {

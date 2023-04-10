@@ -1,9 +1,4 @@
-import {
-    abstractMethod,
-    Decorated,
-    IDecorated,
-    mixin,
-} from "~/entries/shared/mixin"
+import { abstractMethod, Decorated, mixin } from "~/entries/shared/mixin"
 import { Actor } from "../actor"
 import { IIntegrator, SyncManager } from "../sync/manager"
 import {
@@ -30,8 +25,14 @@ export interface ISyncManagerContext extends IIntegrator {
 
     // Must be implemented
     _syncStateChanged(fileId: string): void
-    _dataRequested(fileId: string, addressKey: string): Promise<void>
-    integrate(fileId: string, file: Uint8Array, priority: number): Promise<void>
+    // Returns true if the data was successfully provided
+    _dataRequested(fileId: string, addressKey: string): Promise<boolean>
+    // Returns true if the request was handled
+    integrate(
+        fileId: string,
+        file: Uint8Array,
+        priority: number
+    ): Promise<boolean>
 }
 
 type SyncManagerState = {
@@ -190,12 +191,16 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
             async _dataRequested(
                 _fileId: string,
                 _addressKey: string
-            ): Promise<void> {}
+            ): Promise<boolean> {
+                return false
+            }
             async integrate(
                 _fileId: string,
                 _file: Uint8Array,
                 _priority: number
-            ): Promise<void> {}
+            ): Promise<boolean> {
+                return false
+            }
 
             static _decorators = [
                 abstractMethod("_syncStateChanged"),
@@ -205,14 +210,3 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
         }
     )
 )
-
-class Foo {
-    asd() {}
-    fds() {}
-    static _decorators = [abstractMethod("asd")] as const
-}
-
-const Tmp: typeof Foo & IDecorated<Foo> = Foo
-if (Tmp === Foo) {
-    Decorated(Foo)
-}

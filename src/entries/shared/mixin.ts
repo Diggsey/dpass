@@ -84,26 +84,30 @@ export const Decorated = mixin<unknown, object, IDecoratedHkt>((Base) => {
     return Decorated
 })
 
-const notImplemented: GenericFunction = () => {
-    throw new Error("Not implemented")
-}
-
 export function abstractMethod<Name extends string>(
     name: Name
-): <T extends { readonly [name in Name]: GenericFunction }>(
+): <
+    T extends { readonly [name in Name]: GenericFunction & { abstract?: true } }
+>(
     derived: new (...args: MixinConstructorArgs) => T,
     addInitializer: (init: Initializer<T>) => void
 ) => void {
-    function decorator<T extends { readonly [name in Name]: GenericFunction }>(
+    function decorator<
+        T extends {
+            readonly [name in Name]: GenericFunction & { abstract?: true }
+        }
+    >(
         derived: {
             new (...args: MixinConstructorArgs): T
-            readonly prototype: { [name in Name]: GenericFunction }
+            readonly prototype: {
+                [name in Name]: GenericFunction & { abstract?: true }
+            }
         },
         addInitializer: (init: Initializer<T>) => void
     ): void {
-        derived.prototype[name] = notImplemented
+        derived.prototype[name].abstract = true
         addInitializer(function (this: T) {
-            if (this[name] === notImplemented) {
+            if (this[name].abstract) {
                 throw new Error(
                     `Derived class must implement '${name.toString()}(...)'`
                 )

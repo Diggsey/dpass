@@ -4,7 +4,7 @@ import {
     StorageAddress,
 } from "../shared/privileged/state"
 import { UNPRIVILEGED_PORT_NAME, VaultItemPayload } from "../shared/state"
-import { ROOT_FILE_ID, SECURE_CONTEXT } from "./context"
+import { SECURE_CONTEXT } from "./context"
 import { PrivilegedPublisher } from "./pubsub/privileged"
 import { UnprivilegedPublisher } from "./pubsub/unprivileged"
 import "./browserAction"
@@ -23,6 +23,7 @@ import { ItemDetails } from "../shared/messages/vault"
 import { FrameDetails, OptionsPageTarget } from "../shared/messages/misc"
 import { setLocalState } from "../shared/ui/hooks"
 import { STORAGE_MANAGER } from "./storage/connection"
+import { ROOT_FILE_ID } from "./context/rootContext"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol

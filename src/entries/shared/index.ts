@@ -60,3 +60,5 @@ export type Json =
     | string
     | ReadonlyArray<Json>
     | { readonly [key: string]: Json }
+
+export type TimerId = ReturnType<typeof setTimeout>
