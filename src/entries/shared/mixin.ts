@@ -35,8 +35,23 @@ export type MixinDecorator<T> = (
     addInitializer: (init: Initializer<T>) => void
 ) => void
 
+// There is some Typescript weirdness that requires the list to
+// be defined in this way in order to correctly pick up heterogenous
+// element types.
+type ConstList<T> =
+    | readonly [T | null]
+    | readonly [T, T]
+    | readonly [T, T, T]
+    | readonly [T, T, T, T]
+    | readonly [T, T, T, T, T]
+    | readonly [T, T, T, T, T, T]
+    | readonly [T, T, T, T, T, T, T]
+    | readonly [T, T, T, T, T, T, T, T]
+    | readonly [T, T, T, T, T, T, T, T, T]
+    | readonly [T, T, T, T, T, T, T, T, T, T]
+
 export interface IDecorated<T> {
-    readonly _decorators: Iterable<MixinDecorator<T>>
+    readonly _decorators: ConstList<MixinDecorator<T>>
 }
 export interface IDecoratedHkt extends HKT {
     new: (

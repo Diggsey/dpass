@@ -254,7 +254,7 @@ async function editStorageAddresses(
         return
     }
 
-    const addressModifier = (addresses: StorageAddress[]) => {
+    const addressModifier = (addresses: readonly StorageAddress[]) => {
         const addressKeys = addresses.map(objectKey)
         const addressKey = objectKey(action.storageAddress)
         const addressIndex = addressKeys.indexOf(addressKey)

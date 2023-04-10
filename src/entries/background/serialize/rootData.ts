@@ -4,33 +4,33 @@ import { MergeableFile } from "./merge"
 import { SerializationError } from "./utils"
 
 export type Vault = {
-    id: "vault"
-    fileId: string
-    addresses: StorageAddress[]
-    vaultKey: Uint8Array
-    setAsDefaultOn?: number
+    readonly id: "vault"
+    readonly fileId: string
+    readonly addresses: readonly StorageAddress[]
+    readonly vaultKey: Uint8Array
+    readonly setAsDefaultOn?: number
 
     // For each vault, there is a "personal vault key"
     // derived from our super-key using HKDF and the
     // following salt.
-    personalVaultSalt: Uint8Array
+    readonly personalVaultSalt: Uint8Array
     // This "personal vault key" is used to encrypt/decrypt the
     // "vault super key" which is stored here encrypted:
-    encryptedVaultSuperKey: Uint8Array
+    readonly encryptedVaultSuperKey: Uint8Array
 }
 
 export type KeyPair = {
-    id: "keyPair"
-    name?: string
-    privateKeySalt: Uint8Array
-    encryptedPrivateKey: Uint8Array
-    publicKey: Uint8Array
+    readonly id: "keyPair"
+    readonly name?: string
+    readonly privateKeySalt: Uint8Array
+    readonly encryptedPrivateKey: Uint8Array
+    readonly publicKey: Uint8Array
 }
 
 export type RootInfo = {
-    id: "rootInfo"
-    name: string
-    secretSentence: string
+    readonly id: "rootInfo"
+    readonly name: string
+    readonly secretSentence: string
 }
 
 export type RootFileItem = Vault | AuthToken | KeyPair | RootInfo
@@ -50,6 +50,5 @@ export function decodeRootData(
 }
 
 export function encodeRootData(data: DecryptedRootFile): Uint8Array {
-    console.dir(data)
     return msgpack.encode(data)
 }

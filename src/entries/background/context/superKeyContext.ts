@@ -46,7 +46,7 @@ export const SuperKeyContext = mixin<ISuperKeyContext>((Base) =>
 
             _superKeyChanged() {}
 
-            static _decorators = [abstractMethod("_superKeyChanged")]
+            static _decorators = [abstractMethod("_superKeyChanged")] as const
         }
     )
 )

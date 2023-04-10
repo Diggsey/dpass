@@ -1,4 +1,9 @@
-import { abstractMethod, Decorated, mixin } from "~/entries/shared/mixin"
+import {
+    abstractMethod,
+    Decorated,
+    IDecorated,
+    mixin,
+} from "~/entries/shared/mixin"
 import { Actor } from "../actor"
 import { IIntegrator, SyncManager } from "../sync/manager"
 import {
@@ -12,7 +17,10 @@ import { IStorage } from "../storage/interface"
 
 export interface ISyncManagerContext extends IIntegrator {
     _getSyncState(fileId: string): PrivilegedSyncState
-    _updateSyncManagers(fileId: string, addresses: StorageAddress[]): void
+    _updateSyncManagers(
+        fileId: string,
+        addresses: readonly StorageAddress[]
+    ): void
     _saveChanges(
         fileId: string,
         data: Uint8Array,
@@ -43,7 +51,10 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
         class SyncManagerContext extends Base implements ISyncManagerContext {
             #syncManagers: Map<string, SyncManagers> = new Map()
 
-            _updateSyncManagers(fileId: string, addresses: StorageAddress[]) {
+            _updateSyncManagers(
+                fileId: string,
+                addresses: readonly StorageAddress[]
+            ) {
                 this.#updateFile(fileId, (oldMap) => {
                     const newMap: SyncManagers = new Map()
                     for (const [i, address] of addresses.entries()) {
@@ -190,7 +201,18 @@ export const SyncManagerContext = mixin<ISyncManagerContext, Actor>((Base) =>
                 abstractMethod("_syncStateChanged"),
                 abstractMethod("integrate"),
                 abstractMethod("_dataRequested"),
-            ]
+            ] as const
         }
     )
 )
+
+class Foo {
+    asd() {}
+    fds() {}
+    static _decorators = [abstractMethod("asd")] as const
+}
+
+const Tmp: typeof Foo & IDecorated<Foo> = Foo
+if (Tmp === Foo) {
+    Decorated(Foo)
+}

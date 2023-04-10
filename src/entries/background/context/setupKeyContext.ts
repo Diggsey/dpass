@@ -54,7 +54,7 @@ export const SetupKeyContext = mixin<ISetupKeyContext, Actor>((Base) =>
 
             _setupKeyChanged() {}
 
-            static _decorators = [abstractMethod("_setupKeyChanged")]
+            static _decorators = [abstractMethod("_setupKeyChanged")] as const
         }
     )
 )

@@ -18,7 +18,6 @@ import {
     VaultItemData,
 } from "./serialize/vaultData"
 import { IIntegrator } from "./sync/manager"
-import browser from "webextension-polyfill"
 import {
     PrivilegedState,
     PrivilegedVault,
@@ -57,6 +56,7 @@ import { ItemDetails } from "../shared/messages/vault"
 import { SetupKeyContext } from "./context/setupKeyContext"
 import { SuperKeyContext } from "./context/superKeyContext"
 import { SyncManagerContext } from "./context/syncManagerContext"
+import { RootAddressesContext } from "./context/rootAddressesContext"
 
 type VaultState = {
     keySalt: Uint8Array | null
@@ -102,13 +102,14 @@ class IncorrectPasswordError extends Error {
 }
 
 class SecureContext
-    extends SyncManagerContext(SuperKeyContext(SetupKeyContext(Actor)))
+    extends RootAddressesContext(
+        SyncManagerContext(SuperKeyContext(SetupKeyContext(Actor)))
+    )
     implements IIntegrator
 {
     #key: CryptoKey | null = null
     #root: DecryptedRootFile | null = null
     #vaults: Map<string, VaultState> = new Map()
-    #rootAddresses: StorageAddress[] = []
     #privilegedState: PrivilegedState = {
         privileged: true,
         hasIdentity: false,
@@ -125,13 +126,6 @@ class SecureContext
     #statePublishers: Set<IStatePublisher> = new Set()
     #statePublishTimer: TimerId | null = null
     #lockedSyncedRoot: LockedSyncedRoot | null = null
-
-    #loadRootAddresses = async () => {
-        const res = await browser.storage.sync.get("rootAddresses")
-        if (res.rootAddresses) {
-            await this.#updateRootAddresses(res.rootAddresses)
-        }
-    }
 
     _setupKeyChanged(): void {
         this.#updatePrivilegedState({
@@ -179,6 +173,17 @@ class SecureContext
         }
     }
 
+    async _rootAddressesChanged(): Promise<void> {
+        this._updateSyncManagers(ROOT_FILE_ID, this._rootAddresses)
+        this.#updatePrivilegedState({
+            ...this.#privilegedState,
+            rootAddresses: this._rootAddresses,
+        })
+        if (this._rootAddresses.length === 0) {
+            await this.#lockInner(true)
+        }
+    }
+
     #updatePrivilegedState(privilegedState: PrivilegedState) {
         this.#privilegedState = privilegedState
         if (this.#statePublishTimer === null) {
@@ -188,18 +193,6 @@ class SecureContext
                     statePublisher.publishPrivileged(this.#privilegedState)
                 }
             }, 0)
-        }
-    }
-
-    async #updateRootAddresses(rootAddresses: StorageAddress[]) {
-        this.#rootAddresses = rootAddresses
-        this._updateSyncManagers(ROOT_FILE_ID, this.#rootAddresses)
-        this.#updatePrivilegedState({
-            ...this.#privilegedState,
-            rootAddresses: this.#rootAddresses,
-        })
-        if (this.#rootAddresses.length === 0) {
-            await this.#lockInner(true)
         }
     }
 
@@ -246,6 +239,10 @@ class SecureContext
                     this._updateSyncManagers(fileId, addresses)
                 }
             }
+        }
+        // Disconnect from old vault addresses
+        for (const vaultId of this.#vaults.keys()) {
+            this._updateSyncManagers(vaultId, [])
         }
         this.#vaults = newVaults
         await this.#saveRootChanges()
@@ -541,20 +538,6 @@ class SecureContext
             }
             pendingRootIntegrations.clear()
         }
-    }
-
-    #syncStorageChanged = (
-        changes: Record<string, browser.Storage.StorageChange>
-    ) => {
-        if (Object.hasOwn(changes, "rootAddresses")) {
-            void this._post("loadRootAddresses()", this.#loadRootAddresses)
-        }
-    }
-
-    constructor() {
-        super()
-        browser.storage.sync.onChanged.addListener(this.#syncStorageChanged)
-        void this._post("loadRootAddresses()", this.#loadRootAddresses)
     }
 
     get _lockedSyncedRoot(): LockedSyncedRoot {
@@ -895,7 +878,7 @@ class SecureContext
             ? undefined
             : Date.now()
 
-        const addresses: StorageAddress[] = copyStorage
+        const addresses: readonly StorageAddress[] = copyStorage
             ? this.#privilegedState.rootAddresses
             : [
                   {
@@ -929,7 +912,7 @@ class SecureContext
     }
     async editVaultStorageAddresses(
         vaultId: string,
-        f: (addresses: StorageAddress[]) => StorageAddress[]
+        f: (addresses: readonly StorageAddress[]) => readonly StorageAddress[]
     ) {
         await this.#patchRoot(
             itemPatcher((item, _uuid) => {

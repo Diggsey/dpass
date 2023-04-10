@@ -7,7 +7,7 @@ export type PrivilegedState = {
     readonly isUnlocked: boolean
     readonly isSuper: boolean
     readonly rootInfo: RootInfo | null
-    readonly rootAddresses: StorageAddress[]
+    readonly rootAddresses: readonly StorageAddress[]
     readonly defaultVaultId: string | null
     readonly vaults: PrivilegedVaultMap
     readonly syncState: PrivilegedSyncState
@@ -41,7 +41,7 @@ export type PrivilegedVault = {
     readonly updateTimestamp: number
     readonly name: string
     readonly items: VaultItemMap | null
-    readonly addresses: StorageAddress[]
+    readonly addresses: readonly StorageAddress[]
     readonly syncState: PrivilegedSyncState
     readonly missing: boolean
 }

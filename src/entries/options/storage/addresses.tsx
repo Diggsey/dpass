@@ -113,7 +113,7 @@ export const StorageAddressRow: FC<StorageAddressRowProps> = ({
 type StorageAddressesProps = {
     name: string
     vaultId: string | null
-    addresses: StorageAddress[]
+    addresses: readonly StorageAddress[]
     syncState: PrivilegedSyncState
     isSetUp: boolean
 }
