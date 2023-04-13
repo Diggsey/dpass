@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { FormEvent, useState } from "react"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { Loader } from "~/entries/shared/components/icons/loader"
 import {
@@ -53,7 +53,11 @@ export const StorageAddressEditor = ({
     const currentProvider = STORAGE_PROVIDER_MAP[edited.address.id]
 
     const [savingAddress, saveAddress] = usePromiseState(
-        async () => {
+        async (e: FormEvent) => {
+            e.preventDefault()
+            if (!edited.canSave) {
+                return
+            }
             if (isNew) {
                 await sendMessage({
                     id: "editStorageAddresses",
@@ -81,48 +85,51 @@ export const StorageAddressEditor = ({
     )
 
     return (
-        <Card.Body className="gap-8 grid">
-            <StorageTypePicker
-                value={edited.address.id}
-                onChange={(v) => {
-                    const newProvider = STORAGE_PROVIDER_MAP[v]
-                    setEdited({
-                        address: newProvider.initial,
-                        canSave: newProvider.initialValid,
-                    })
-                }}
-                disabled={parentState.inProgress}
-            />
-            <div className="gap-4 grid">
-                <div className="text-base font-semibold leading-6 text-gray-900">
-                    Configure{" "}
-                    <span className="text-indigo-600 cursor-default">
-                        {currentProvider.name}
-                    </span>
-                </div>
-                <GenericStorageEditor
-                    value={edited}
-                    onChange={setEdited}
+        <form onSubmit={saveAddress}>
+            <Card.Body className="gap-8 grid">
+                <StorageTypePicker
+                    value={edited.address.id}
+                    onChange={(v) => {
+                        const newProvider = STORAGE_PROVIDER_MAP[v]
+                        setEdited({
+                            address: newProvider.initial,
+                            canSave: newProvider.initialValid,
+                        })
+                    }}
                     disabled={parentState.inProgress}
                 />
-            </div>
-            <div className="flex items-center justify-end gap-3">
-                <SecondaryButton
-                    type="button"
-                    onClick={onClose}
-                    disabled={parentState.inProgress}
-                >
-                    Cancel
-                </SecondaryButton>
-                <PrimaryButton
-                    type="submit"
-                    onClick={saveAddress}
-                    disabled={parentState.inProgress || !edited.canSave}
-                >
-                    {savingAddress.inProgress && <ButtonIcon icon={Loader} />}
-                    <span>Save</span>
-                </PrimaryButton>
-            </div>
-        </Card.Body>
+                <div className="gap-4 grid">
+                    <div className="text-base font-semibold leading-6 text-gray-900">
+                        Configure{" "}
+                        <span className="text-indigo-600 cursor-default">
+                            {currentProvider.name}
+                        </span>
+                    </div>
+                    <GenericStorageEditor
+                        value={edited}
+                        onChange={setEdited}
+                        disabled={parentState.inProgress}
+                    />
+                </div>
+                <div className="flex items-center justify-end gap-3">
+                    <SecondaryButton
+                        type="button"
+                        onClick={onClose}
+                        disabled={parentState.inProgress}
+                    >
+                        Cancel
+                    </SecondaryButton>
+                    <PrimaryButton
+                        type="submit"
+                        disabled={parentState.inProgress || !edited.canSave}
+                    >
+                        {savingAddress.inProgress && (
+                            <ButtonIcon icon={Loader} />
+                        )}
+                        <span>Save</span>
+                    </PrimaryButton>
+                </div>
+            </Card.Body>
+        </form>
     )
 }

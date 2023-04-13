@@ -11,16 +11,14 @@ export default defineConfig(({ mode }) => {
         plugins: [
             webExtension({
                 manifest: getManifest(Number(env.MANIFEST_VERSION)),
-                extraContentScripts: [
-                    {
-                        js: ["src/entries/content/main.tsx"],
-                    },
-                ],
-                extraHtmlPages: [
-                    "src/entries/unlockPopup/index.html",
-                    "src/entries/noActionPopup/index.html",
-                    "src/entries/autofillEmbed/index.html",
-                ],
+                additionalInputs: {
+                    scripts: ["src/entries/content/main.tsx"],
+                    html: [
+                        "src/entries/unlockPopup/index.html",
+                        "src/entries/noActionPopup/index.html",
+                        "src/entries/autofillEmbed/index.html",
+                    ],
+                },
             }),
         ],
         resolve: {
