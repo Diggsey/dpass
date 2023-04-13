@@ -182,7 +182,7 @@ export const PublicItemContext = mixin<
                 return this._post(
                     `getVaultItem(${vaultId}, ${itemId})`,
                     async () => {
-                        return this.getVaultItem(vaultId, itemId)
+                        return this.#getVaultItem(vaultId, itemId)
                     }
                 )
             }
