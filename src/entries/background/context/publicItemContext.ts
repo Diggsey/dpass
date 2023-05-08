@@ -34,7 +34,7 @@ export interface IPublicItemContext {
     decryptVaultItem(vaultId: string, itemId: string): Promise<VaultItemPayload>
 }
 
-// Publishes changes to the context
+// Public methods for interacting with vault items
 export const PublicItemContext = mixin<
     IPublicItemContext,
     Actor &

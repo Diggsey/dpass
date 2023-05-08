@@ -10,7 +10,6 @@ export type AutofillArgs = {
     url: string
     title: string
     fields: DetectedField[]
-    manual: boolean
 }
 
 export type ModalList = {

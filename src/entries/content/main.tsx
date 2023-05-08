@@ -44,7 +44,11 @@ function populateInput(elem: HTMLInputElement, value: string) {
 
 // Given the details for this origin, and the active element,
 // attempt to populate any appropriate input fields.
-function autofillPage(allInputs: HTMLInputElement[], payload: AutofillPayload) {
+function autofillPage(
+    allInputs: HTMLInputElement[],
+    payload: AutofillPayload
+): boolean {
+    let success = false
     const candidateModes = payload.fields.map((x) => x.autofillMode)
     for (const elem of allInputs) {
         if (elem.value.trim().length > 0) {
@@ -61,7 +65,9 @@ function autofillPage(allInputs: HTMLInputElement[], payload: AutofillPayload) {
             throw new Error("Returned invalid auto-fill mode")
         }
         populateInput(elem, field.value)
+        success = true
     }
+    return success
 }
 
 function categorizeInput(
@@ -125,18 +131,18 @@ function showItemSelector(
 
 async function performAutofill(
     message: PerformAutofillMessage
-): Promise<undefined> {
+): Promise<boolean> {
     if (message.origin !== window.origin) {
-        return
+        throw new Error("Unable to auto-fill: wrong origin")
     }
 
     const allInputs = findAllInputs()
     const payload = await sendMessage(message.item)
 
     if (payload) {
-        autofillPage(allInputs, payload)
+        return autofillPage(allInputs, payload)
     }
-    return
+    return true
 }
 
 function respondIfWeAreActive(): Promise<PokeFrameResponse> | undefined {

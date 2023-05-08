@@ -1,4 +1,5 @@
 import browser from "webextension-polyfill"
+import { randomInt } from "./random"
 
 export enum Lang {
     en = "en",
@@ -31,20 +32,9 @@ async function loadLanguage(lang: Lang): Promise<string[]> {
     }
 }
 
-function generateRandomInt(upperBound: number): number {
-    let result
-    const maxInt = 0x100000000
-    const limit = maxInt - (maxInt % upperBound)
-    const arr = new Uint32Array(1)
-    do {
-        result = crypto.getRandomValues(arr)[0]
-    } while (result >= limit)
-    return result % upperBound
-}
-
 export async function generateRandomWords(count: number): Promise<string[]> {
     const wordlist = await loadLanguage(currentLang)
     return new Array(count)
         .fill("")
-        .map(() => wordlist[generateRandomInt(wordlist.length)])
+        .map(() => wordlist[randomInt(wordlist.length)])
 }

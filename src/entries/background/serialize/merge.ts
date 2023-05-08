@@ -88,13 +88,13 @@ export function extractItems<T, U extends T>(
 }
 
 export function itemPatcher<T>(
-    f: (payload: T | null, uuid: string) => T | null
+    f: (payload: T | null, uuid: string, updateTimestamp: number) => T | null
 ): (file: MergeableFile<T>) => MergeableFile<T> {
     const updateTimestamp = Date.now()
     return (file) => ({
         ...file,
         items: file.items.map((item) => {
-            const payload = f(item.payload, item.uuid)
+            const payload = f(item.payload, item.uuid, item.updateTimestamp)
             if (payload !== item.payload) {
                 item = {
                     ...item,
@@ -124,6 +124,17 @@ export function itemCreator<T, U extends T>(
             },
         ],
     })
+}
+
+export function chainPatches<T>(
+    ...patchers: ((file: MergeableFile<T>) => MergeableFile<T>)[]
+): (file: MergeableFile<T>) => MergeableFile<T> {
+    return (file) => {
+        for (const patcher of patchers) {
+            file = patcher(file)
+        }
+        return file
+    }
 }
 
 function computeUpdateTimestamps<T>(a: MergeableFile<T>): string[] {

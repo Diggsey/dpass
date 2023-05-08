@@ -4,6 +4,7 @@ import {
     decodeRootData,
     DecryptedRootFile,
     encodeRootData,
+    GeneratorSettings,
     RootInfo,
 } from "../serialize/rootData"
 import {
@@ -61,6 +62,7 @@ type BackgroundTask<T> = {
 export interface IRootContext {
     get _root(): DecryptedRootFile | null
     get _rootInfo(): MergeableItem<RootInfo> | null
+    get _generatorSettings(): MergeableItem<GeneratorSettings> | null
     get _hasIdentity(): boolean
 
     _saveRootChanges(address?: StorageAddress): Promise<boolean>
@@ -165,6 +167,18 @@ export const RootContext = mixin<
                             this.#root,
                             (item): item is MergeableItem<RootInfo> =>
                                 item.payload.id === "rootInfo"
+                        )[0]) ??
+                    null
+                )
+            }
+
+            get _generatorSettings(): MergeableItem<GeneratorSettings> | null {
+                return (
+                    (this._root &&
+                        extractItems(
+                            this._root,
+                            (item): item is MergeableItem<GeneratorSettings> =>
+                                item.payload.id === "generatorSettings"
                         )[0]) ??
                     null
                 )

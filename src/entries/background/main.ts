@@ -24,6 +24,7 @@ import { FrameDetails, OptionsPageTarget } from "../shared/messages/misc"
 import { setLocalState } from "../shared/ui/hooks"
 import { STORAGE_MANAGER } from "./storage/connection"
 import { ROOT_FILE_ID } from "./context/rootContext"
+import { runInitializers } from "./init"
 
 const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
 const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
@@ -130,6 +131,10 @@ function handleMessage(
             )
         case "openOptionsPage":
             return openOptionsPage(message.target)
+        case "editGeneratorSettings":
+            return SECURE_CONTEXT.updateGeneratorSettings(message.settings)
+        case "generatePassword":
+            return SECURE_CONTEXT.generatePassword()
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -495,3 +500,5 @@ export async function openOptionsPage(target: OptionsPageTarget) {
 
 addMessageListener(handleMessage)
 browser.runtime.onConnect.addListener(handleConnect)
+
+runInitializers()

@@ -33,7 +33,29 @@ export type RootInfo = {
     readonly secretSentence: string
 }
 
-export type RootFileItem = Vault | AuthToken | KeyPair | RootInfo
+export type GeneratorSettings = {
+    readonly id: "generatorSettings"
+    readonly passwordLength: number
+    readonly passwordLetters: boolean
+    readonly passwordDigits: boolean
+    readonly passwordSymbols: boolean
+    readonly passwordExtra: string
+}
+
+export type GeneratedValue = {
+    id: "generatedValue"
+    type: "password"
+    value: string
+    entropy: number
+}
+
+export type RootFileItem =
+    | Vault
+    | AuthToken
+    | KeyPair
+    | RootInfo
+    | GeneratorSettings
+    | GeneratedValue
 export type DecryptedRootFile = MergeableFile<RootFileItem>
 
 export function decodeRootData(

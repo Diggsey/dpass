@@ -20,7 +20,7 @@ export interface IPublicRootContext {
     updateRootName(name: string): Promise<void>
 }
 
-// Publishes changes to the context
+// Public methods for interacting with root
 export const PublicRootContext = mixin<
     IPublicRootContext,
     Actor & IRootContext
@@ -80,6 +80,19 @@ export const PublicRootContext = mixin<
                                         id: "rootInfo",
                                         name,
                                         secretSentence,
+                                    },
+                                },
+                                {
+                                    uuid: crypto.randomUUID(),
+                                    creationTimestamp: currentTs,
+                                    updateTimestamp: currentTs,
+                                    payload: {
+                                        id: "generatorSettings",
+                                        passwordLength: 16,
+                                        passwordLetters: true,
+                                        passwordDigits: true,
+                                        passwordSymbols: true,
+                                        passwordExtra: "",
                                     },
                                 },
                             ],

@@ -9,7 +9,7 @@ import {
 import { Field } from "../../shared/components/field"
 import { ItemDetails } from "~/entries/shared/messages/vault"
 import {
-    useDebouncedEffect,
+    useDebouncedBoundState,
     usePromiseState,
     useSharedPromiseState,
 } from "~/entries/shared/ui/hooks"
@@ -64,15 +64,38 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
     const itemAction = useSharedPromiseState()
     const fieldId = useId()
 
-    // Not-null if there are local (unsaved) changes to the item.
-    // Local payload changes are only stored here if the item is not encrypted.
-    const [editedDetails, setEditedDetails] = useState<ItemDetails | null>(null)
-    const [hasUnsaved, setHasUnsaved] = useState(false)
-
     // Not-null if the item is encrypted, but has been temporarily decrypted for editing.
     // Local changes are also made here if the item is encrypted.
     const [decryptedPayload, setDecryptedPayload] =
         useState<VaultItemPayload | null>(null)
+
+    const {
+        state: itemDetails,
+        setState: setItemDetails,
+        inFlightChanges,
+    } = useDebouncedBoundState<ItemDetails>(
+        () => ({
+            name: item.name,
+            origins: item.origins,
+            encrypted: item.data.encrypted,
+            payload: item.data.encrypted ? undefined : item.data.payload,
+        }),
+        async (details: ItemDetails) => {
+            // Asynchronously propagate the change to the vault
+            await sendMessage({
+                id: "updateVaultItem",
+                vaultId,
+                itemId,
+                details: decryptedPayload
+                    ? {
+                          ...details,
+                          payload: decryptedPayload,
+                      }
+                    : details,
+            })
+        },
+        [vaultId, itemId, decryptedPayload]
+    )
 
     // Used to initiate an update to the item
     const updateItem = useCallback(
@@ -81,7 +104,7 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
             if (details.encrypted) {
                 // For encrypted items, split payload and non-payload changes
                 const { payload, ...rest } = details
-                setEditedDetails(rest)
+                setItemDetails(rest)
                 // If there was a change to the payload, apply that change
                 if (payload) {
                     setDecryptedPayload(payload)
@@ -89,32 +112,14 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
             } else {
                 // For decrypted items, apply both payload and non-payload changes
                 // directly to the edited details.
-                setEditedDetails(details)
+                setItemDetails(details)
 
                 // Clear the decrypted payload in case this item was just un-encrypted
                 setDecryptedPayload(null)
             }
-            setHasUnsaved(true)
         },
         [vaultId, itemId]
     )
-
-    const [savingChanges, saveChanges] = usePromiseState(
-        async (details: ItemDetails) => {
-            setHasUnsaved(false)
-            // Asynchronously propagate the change to the vault
-            await sendMessage({
-                id: "updateVaultItem",
-                vaultId,
-                itemId,
-                details,
-            })
-        },
-        [vaultId, itemId],
-        itemAction
-    )
-
-    const inFlightChanges = hasUnsaved || savingChanges.inProgress
 
     // Delete this entire item
     const [deletingItem, deleteItem] = usePromiseState(
@@ -128,44 +133,6 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
         [vaultId, itemId],
         itemAction
     )
-
-    // Whenever we have unsaved changes, save them on a debounce
-    useDebouncedEffect(
-        () => {
-            if (!savingChanges.inProgress && editedDetails && hasUnsaved) {
-                void saveChanges(
-                    decryptedPayload
-                        ? {
-                              ...editedDetails,
-                              payload: decryptedPayload,
-                          }
-                        : editedDetails
-                )
-            }
-        },
-        100,
-        [savingChanges.inProgress, editedDetails, decryptedPayload, hasUnsaved]
-    )
-
-    // If the latest asynchronous vault update is done then our local changes can
-    // be discarded. Do this on a delay so we have time to receive the updates.
-    useDebouncedEffect(
-        () => {
-            if (!inFlightChanges && editedDetails !== null) {
-                setEditedDetails(null)
-            }
-        },
-        100,
-        [inFlightChanges, editedDetails !== null]
-    )
-
-    // Create a local view of the item, including any unsaved edits
-    const itemDetails: ItemDetails = editedDetails || {
-        name: item.name,
-        origins: item.origins,
-        encrypted: item.data.encrypted,
-        payload: item.data.encrypted ? undefined : item.data.payload,
-    }
 
     // If the item becomes decrypted, clear the decrypted payload because
     // the payload will no longer be stored there.

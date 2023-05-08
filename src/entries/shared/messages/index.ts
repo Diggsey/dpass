@@ -34,6 +34,10 @@ import {
     EditVaultNameMessage,
     UpdateVaultItemMessage,
 } from "./vault"
+import {
+    EditGeneratorSettingsMessage,
+    GeneratePasswordMessage,
+} from "./generators"
 
 export type Message =
     | RequestAutofillMessage
@@ -59,12 +63,14 @@ export type Message =
     | ContentModalMessage
     | ForwardMessage
     | OpenOptionsPage
+    | EditGeneratorSettingsMessage
+    | GeneratePasswordMessage
 
 type MessageResponses = {
     requestAutofill: AutofillPayload
     pokeActiveFrame: PokeFrameResponse
     showItemSelector: RequestAutofillMessage | null
-    performAutofill: undefined
+    performAutofill: boolean
     optionsPageOpened: undefined
     createRoot: undefined
     editRootName: undefined
@@ -84,6 +90,8 @@ type MessageResponses = {
     contentModal: undefined
     forward: unknown
     openOptionsPage: undefined
+    editGeneratorSettings: undefined
+    generatePassword: string
 }
 export type MessageResponse<M extends Message = Message> =
     MessageResponses[M["id"]]

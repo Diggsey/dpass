@@ -7,6 +7,15 @@ export type UnprivilegedState = {
     readonly defaultVaultId: string | null
     readonly vaults: UnprivilegedVaultMap
     readonly syncState: UnprivilegedSyncState
+    readonly generatorSettings: GeneratorSettings | null
+}
+
+export type GeneratorSettings = {
+    readonly passwordLength: number
+    readonly passwordLetters: boolean
+    readonly passwordDigits: boolean
+    readonly passwordSymbols: boolean
+    readonly passwordExtra: string
 }
 
 export type UnprivilegedVaultMap = {

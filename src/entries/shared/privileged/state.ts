@@ -1,4 +1,4 @@
-import { VaultItemMap } from "../state"
+import { GeneratorSettings, VaultItemMap } from "../state"
 
 export type PrivilegedState = {
     readonly privileged: true
@@ -12,6 +12,8 @@ export type PrivilegedState = {
     readonly vaults: PrivilegedVaultMap
     readonly syncState: PrivilegedSyncState
     readonly keyPairs: KeyPairMap
+    readonly generatorSettings: GeneratorSettings | null
+    readonly generatedValues: readonly GeneratedValue[]
 }
 
 export type RootInfo = {
@@ -19,6 +21,14 @@ export type RootInfo = {
     readonly updateTimestamp: number
     readonly name: string
     readonly secretSentence: string
+}
+
+export type GeneratedValue = {
+    readonly uuid: string
+    readonly creationTimestamp: number
+    readonly type: "password"
+    readonly value: string
+    readonly entropy: number
 }
 
 export type KeyPairMap = {

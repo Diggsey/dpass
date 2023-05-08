@@ -1,4 +1,6 @@
 import browser from "webextension-polyfill"
+import { insideUserAction } from "./userAction"
+import { BROWSER_ACTION, BrowserClickAction } from "./browserAction"
 
 const pendingResolvers: ((arg: void) => void)[] = []
 let unlockPopupInfo: {
@@ -6,11 +8,25 @@ let unlockPopupInfo: {
     tabId: number
 } | null = null
 
-export const requestUnlock = async () => {
-    const promise = new Promise((resolve) => {
-        pendingResolvers.push(resolve)
-    })
+export const requestUnlock = async (waitForUnlock = true) => {
+    const promise = waitForUnlock
+        ? new Promise((resolve) => {
+              pendingResolvers.push(resolve)
+          })
+        : Promise.resolve()
     if (unlockPopupInfo === null) {
+        // If we don't need to wait for the unlock to happen, and we are in a
+        // user action, then we can make use of the extension popup instead
+        // of having to open a new window.
+        if (
+            !waitForUnlock &&
+            insideUserAction &&
+            BROWSER_ACTION.clickAction === BrowserClickAction.RequestPassword
+        ) {
+            await browser.browserAction.openPopup()
+            return
+        }
+
         const { id, tabs } = await browser.windows.create({
             url: browser.runtime.getURL("src/entries/unlockPopup/index.html"),
             type: "popup",

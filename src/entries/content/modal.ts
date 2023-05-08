@@ -69,7 +69,7 @@ export async function openModal<P extends keyof ModalList>(
 
     setTimeout(() => {
         appContainer.style.visibility = "visible"
-    }, 50)
+    }, 0)
 
     try {
         return await promise

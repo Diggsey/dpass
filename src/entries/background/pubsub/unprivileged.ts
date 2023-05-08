@@ -33,6 +33,7 @@ export class UnprivilegedPublisher
             syncState: this.convertSyncState(state.syncState),
             vaults: mapObjectValues(state.vaults, (v) => this.convertVault(v)),
             defaultVaultId: state.defaultVaultId,
+            generatorSettings: state.generatorSettings,
         }
     }
     convertSyncState(syncState: PrivilegedSyncState): UnprivilegedSyncState {

@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useState } from "react"
+import { FC, useCallback, useState } from "react"
 import "./style.css"
 import { ModalProps, renderModal } from "../shared/modal"
 import { useUnprivilegedState } from "../shared/unprivileged"
@@ -41,7 +41,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
     const [selectedVaultId, selectVault] = useState<string | null>(null)
     const [searchTerm, setSearchTerm] = useState("")
 
-    const { allItems, filteredItems } = useFilteredVaultItems(
+    const { filteredItems } = useFilteredVaultItems(
         state.vaults,
         selectedVaultId,
         searchTerm
@@ -165,12 +165,6 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
         sharedPromiseState
     )
 
-    useEffect(() => {
-        if (allItems.length === 1 && !args.manual) {
-            autofillItem(allItems[0])
-        }
-    }, [allItems.length, args.manual])
-
     const reorderFields = (sourceIndex: number, destIndex: number) => {
         const newFields = [...fields]
         const [movedField] = newFields.splice(sourceIndex, 1)
@@ -219,7 +213,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
                             />
                         ))}
                         {filteredItems.length === 0 ? (
-                            <div>No applicable vault items</div>
+                            <div className="p-3">No applicable vault items</div>
                         ) : null}
                     </div>
                 </div>

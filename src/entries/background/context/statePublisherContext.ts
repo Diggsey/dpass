@@ -10,7 +10,7 @@ import { ISyncManagerContext } from "./syncManagerContext"
 import { IStatePublisher } from "../pubsub/state"
 import { TimerId } from "~/entries/shared"
 import { IRootAddressesContext } from "./rootAddressesContext"
-import { KeyPair, Vault } from "../serialize/rootData"
+import { GeneratedValue, KeyPair, Vault } from "../serialize/rootData"
 import {
     DecryptedVaultFile,
     NormalItem,
@@ -21,6 +21,7 @@ import { IRootContext, ROOT_FILE_ID, UpdateRootHint } from "./rootContext"
 import { IVaultContext } from "./vaultContext"
 
 export interface IStatePublisherContext {
+    get privilegedState(): PrivilegedState
     addStatePublisher(statePublisher: IStatePublisher): void
     removeStatePublisher(statePublisher: IStatePublisher): void
 }
@@ -48,6 +49,8 @@ export const StatePublisherContext = mixin<
                 isUnlocked: false,
                 isSuper: false,
                 rootInfo: null,
+                generatorSettings: null,
+                generatedValues: [],
                 rootAddresses: [],
                 vaults: {},
                 syncState: {},
@@ -112,6 +115,9 @@ export const StatePublisherContext = mixin<
                 // Extract "root info" item
                 const rootInfo = this._rootInfo
 
+                // Extract the "generator settings" item
+                const generatorSettings = this._generatorSettings
+
                 // Extract "vault" items
                 const vaults = this._root
                     ? Object.fromEntries(
@@ -169,12 +175,34 @@ export const StatePublisherContext = mixin<
                       )
                     : {}
 
+                // Extract recently generated values
+                const generatedValues = this._root
+                    ? extractItems(
+                          this._root,
+                          (item): item is MergeableItem<GeneratedValue> =>
+                              item.payload.id === "generatedValue"
+                      )
+                          .map((generatedValue) => ({
+                              uuid: generatedValue.uuid,
+                              creationTimestamp:
+                                  generatedValue.creationTimestamp,
+                              type: generatedValue.payload.type,
+                              value: generatedValue.payload.value,
+                              entropy: generatedValue.payload.entropy,
+                          }))
+                          .sort(
+                              (a, b) =>
+                                  b.creationTimestamp - a.creationTimestamp
+                          )
+                    : []
+
                 this.#updatePrivilegedState({
                     ...this.#privilegedState,
                     isUnlocked: this._root !== null,
                     rootInfo: rootInfo &&
                         this._root && {
-                            ...rootInfo.payload,
+                            name: rootInfo.payload.name,
+                            secretSentence: rootInfo.payload.secretSentence,
                             creationTimestamp: rootInfo.creationTimestamp,
                             updateTimestamp: Math.max(
                                 ...this._root.items.map(
@@ -182,8 +210,20 @@ export const StatePublisherContext = mixin<
                                 )
                             ),
                         },
+                    generatorSettings: generatorSettings && {
+                        passwordLetters:
+                            generatorSettings.payload.passwordLetters,
+                        passwordDigits:
+                            generatorSettings.payload.passwordDigits,
+                        passwordSymbols:
+                            generatorSettings.payload.passwordSymbols,
+                        passwordExtra: generatorSettings.payload.passwordExtra,
+                        passwordLength:
+                            generatorSettings.payload.passwordLength,
+                    },
                     vaults,
                     keyPairs,
+                    generatedValues,
                     defaultVaultId: this._defaultVaultId,
                 })
             }
@@ -216,6 +256,10 @@ export const StatePublisherContext = mixin<
                         },
                     },
                 })
+            }
+
+            get privilegedState() {
+                return this.#privilegedState
             }
 
             addStatePublisher(statePublisher: IStatePublisher) {

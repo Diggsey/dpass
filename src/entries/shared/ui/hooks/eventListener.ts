@@ -3,7 +3,7 @@ import { RefObject, useLayoutEffect, useRef, useEffect } from "react"
 function useEventListener<K extends keyof MediaQueryListEventMap>(
     eventName: K,
 
-    handler: (event: MediaQueryListEventMap[K]) => void,
+    handler: ((event: MediaQueryListEventMap[K]) => void) | undefined,
 
     element: RefObject<MediaQueryList>,
 
@@ -15,7 +15,7 @@ function useEventListener<K extends keyof MediaQueryListEventMap>(
 function useEventListener<K extends keyof WindowEventMap>(
     eventName: K,
 
-    handler: (event: WindowEventMap[K]) => void,
+    handler: ((event: WindowEventMap[K]) => void) | undefined,
 
     element?: undefined,
 
@@ -30,7 +30,7 @@ function useEventListener<
 >(
     eventName: K,
 
-    handler: (event: HTMLElementEventMap[K]) => void,
+    handler: ((event: HTMLElementEventMap[K]) => void) | undefined,
 
     element: RefObject<T>,
 
@@ -42,7 +42,7 @@ function useEventListener<
 function useEventListener<K extends keyof DocumentEventMap>(
     eventName: K,
 
-    handler: (event: DocumentEventMap[K]) => void,
+    handler: ((event: DocumentEventMap[K]) => void) | undefined,
 
     element: RefObject<Document>,
 
@@ -57,13 +57,15 @@ function useEventListener<
 >(
     eventName: KW | KH | KM,
 
-    handler: (
-        event:
-            | WindowEventMap[KW]
-            | HTMLElementEventMap[KH]
-            | MediaQueryListEventMap[KM]
-            | Event
-    ) => void,
+    handler:
+        | ((
+              event:
+                  | WindowEventMap[KW]
+                  | HTMLElementEventMap[KH]
+                  | MediaQueryListEventMap[KM]
+                  | Event
+          ) => void)
+        | undefined,
 
     element?: RefObject<T>,
 
@@ -86,7 +88,8 @@ function useEventListener<
 
         // Create event listener that calls handler function stored in ref
 
-        const listener: typeof handler = (event) => savedHandler.current(event)
+        const listener: typeof handler = (event) =>
+            savedHandler.current && savedHandler.current(event)
 
         targetElement.addEventListener(eventName, listener, options)
 

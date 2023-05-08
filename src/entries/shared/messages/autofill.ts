@@ -9,7 +9,6 @@ export type RequestAutofillMessage = {
 }
 export type PokeActiveFrameMessage = {
     id: "pokeActiveFrame"
-    manual: boolean
 }
 export type ShowItemSelectorMessage = {
     id: "showItemSelector"

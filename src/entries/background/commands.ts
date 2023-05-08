@@ -1,15 +1,35 @@
 import browser from "webextension-polyfill"
+import { SECURE_CONTEXT } from "./context"
+import { requestUnlock } from "./unlock"
+import { userAction } from "./userAction"
+import { onInit } from "./init"
 
-export type CommandId = "dpass-configure" | "dpass-sync"
+export type CommandId =
+    | "dpass-configure"
+    | "dpass-sync"
+    | "dpass-lock"
+    | "dpass-unlock"
 
-export function executeCommand(commandId: CommandId) {
+export async function executeCommand(commandId: CommandId) {
     switch (commandId) {
         case "dpass-configure":
-            void browser.runtime.openOptionsPage()
+            await browser.runtime.openOptionsPage()
+            break
+        case "dpass-sync":
+            throw new Error("Not implemented")
+        case "dpass-lock":
+            await SECURE_CONTEXT.lock(false)
+            break
+        case "dpass-unlock":
+            await requestUnlock(false)
             break
     }
 }
 
-browser.commands.onCommand.addListener((commandId) => {
-    executeCommand(commandId as CommandId)
+onInit(() => {
+    browser.commands.onCommand.addListener(
+        userAction((commandId) => {
+            void executeCommand(commandId as CommandId)
+        })
+    )
 })
