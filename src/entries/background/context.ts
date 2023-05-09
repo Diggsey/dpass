@@ -11,18 +11,23 @@ import { PublicVaultContext } from "./context/publicVaultContext"
 import { PublicItemContext } from "./context/publicItemContext"
 import { PublicGeneratorContext } from "./context/publicGeneratorContext"
 import { HistoryContext } from "./context/historyContext"
+import { PublicBackupContext } from "./context/publicBackupContext"
 
-class SecureContext extends PublicGeneratorContext(
-    PublicItemContext(
-        PublicVaultContext(
-            PublicRootContext(
-                StatePublisherContext(
-                    VaultContext(
-                        HistoryContext(
-                            RootContext(
-                                RootAddressesContext(
-                                    SyncManagerContext(
-                                        SuperKeyContext(SetupKeyContext(Actor))
+class SecureContext extends PublicBackupContext(
+    PublicGeneratorContext(
+        PublicItemContext(
+            PublicVaultContext(
+                PublicRootContext(
+                    StatePublisherContext(
+                        VaultContext(
+                            HistoryContext(
+                                RootContext(
+                                    RootAddressesContext(
+                                        SyncManagerContext(
+                                            SuperKeyContext(
+                                                SetupKeyContext(Actor)
+                                            )
+                                        )
                                     )
                                 )
                             )

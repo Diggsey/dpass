@@ -39,6 +39,7 @@ import {
     EditGeneratorSettingsMessage,
     GeneratePasswordMessage,
 } from "./generators"
+import { BackupMessage, RestoreMessage } from "./backup"
 
 export type Message =
     | RequestAutofillMessage
@@ -67,6 +68,8 @@ export type Message =
     | OpenOptionsPage
     | EditGeneratorSettingsMessage
     | GeneratePasswordMessage
+    | BackupMessage
+    | RestoreMessage
 
 type MessageResponses = {
     requestAutofill: AutofillPayload
@@ -95,6 +98,8 @@ type MessageResponses = {
     openOptionsPage: undefined
     editGeneratorSettings: undefined
     generatePassword: string
+    backup: undefined
+    restore: undefined
 }
 export type MessageResponse<M extends Message = Message> =
     MessageResponses[M["id"]]

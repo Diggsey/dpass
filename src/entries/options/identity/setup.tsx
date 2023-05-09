@@ -24,6 +24,7 @@ import {
     usePromiseState,
 } from "~/entries/shared/ui/hooks"
 import { generateRandomWords } from "~/entries/shared/wordlist"
+import { RestoreButton } from "./restore"
 
 type SetupFormProps = {
     close: () => void
@@ -343,6 +344,7 @@ export const SetupPanel = () => {
                                 />
                                 <span>Set up a new identity</span>
                             </PrimaryButton>
+                            <RestoreButton />
                         </div>
                     </Card.Body>
                 </Slide.Left>

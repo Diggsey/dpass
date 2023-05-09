@@ -40,6 +40,12 @@ class IncorrectPasswordError extends Error {
     }
 }
 
+class LockedError extends Error {
+    constructor() {
+        super("Must be unlocked")
+    }
+}
+
 export type NewVaultHint = {
     keySalt: Uint8Array
     vault: DecryptedVaultFile
@@ -65,6 +71,11 @@ export interface IRootContext {
     get _generatorSettings(): MergeableItem<GeneratorSettings> | null
     get _hasIdentity(): boolean
 
+    _backupRoot(): Promise<Uint8Array>
+    _integrateRoot(
+        file: Uint8Array,
+        priority: number
+    ): Promise<BackgroundTask<void>>
     _saveRootChanges(address?: StorageAddress): Promise<boolean>
     _updateRoot(
         newRoot: DecryptedRootFile | null,
@@ -114,8 +125,7 @@ export const RootContext = mixin<
             #key: CryptoKey | null = null
             #root: DecryptedRootFile | null = null
             #lockedSyncedRoot: LockedSyncedRoot | null = null
-            #pendingRootIntegrations: Map<number, PendingRootIntegration> =
-                new Map()
+            #pendingRootIntegrations = new Map<number, PendingRootIntegration>()
 
             get _root(): DecryptedRootFile | null {
                 return this.#root
@@ -136,9 +146,14 @@ export const RootContext = mixin<
                         priority,
                         { file, resolve, reject },
                     ] of this.#pendingRootIntegrations.entries()) {
-                        this.#integrateRoot(file, priority).then(
-                            resolve,
-                            reject
+                        void this._post(
+                            `_integrateRoot(<file>, ${priority})`,
+                            async () => {
+                                await this._integrateRoot(file, priority).then(
+                                    resolve,
+                                    reject
+                                )
+                            }
                         )
                     }
                     this.#pendingRootIntegrations.clear()
@@ -216,7 +231,7 @@ export const RootContext = mixin<
                 if (!handled && fileId === ROOT_FILE_ID) {
                     const task = await this._post(
                         `integrate(${fileId}, <file>, ${priority})`,
-                        () => this.#integrateRoot(file, priority)
+                        () => this._integrateRoot(file, priority)
                     )
                     await task.promise
                     return true
@@ -240,7 +255,7 @@ export const RootContext = mixin<
                 return this.#lockedSyncedRoot
             }
 
-            async _saveRootChanges(address?: StorageAddress): Promise<boolean> {
+            async _backupRoot(): Promise<Uint8Array> {
                 if (this.#key && this.#root && this.#lockedSyncedRoot) {
                     // Upload root changes
                     const encodedData = encodeRootData(this.#root)
@@ -251,7 +266,19 @@ export const RootContext = mixin<
                         keySalt: this.#lockedSyncedRoot.keySalt,
                         encryptedData: new Uint8Array(encryptedData),
                     })
+                    return file
+                }
+                throw new LockedError()
+            }
+
+            async _saveRootChanges(address?: StorageAddress): Promise<boolean> {
+                try {
+                    const file = await this._backupRoot()
                     this._saveChanges(ROOT_FILE_ID, file, address)
+                } catch (ex) {
+                    if (!(ex instanceof LockedError)) {
+                        throw ex
+                    }
                 }
                 return true
             }
@@ -270,7 +297,7 @@ export const RootContext = mixin<
                 await this._saveRootChanges()
             }
 
-            async #integrateRoot(
+            async _integrateRoot(
                 file: Uint8Array,
                 priority: number
             ): Promise<BackgroundTask<void>> {

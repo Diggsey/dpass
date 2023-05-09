@@ -1,12 +1,22 @@
 import { FC, useCallback, useState } from "react"
 import { RootInfo } from "../../shared/privileged/state"
 import { RelativeDate } from "../../shared/components/relativeDate"
-import { Card, TextButton } from "../../shared/components/styledElem"
+import {
+    Card,
+    OutlineButton,
+    TextButton,
+} from "../../shared/components/styledElem"
 import { Slide } from "~/entries/shared/components/slide"
 import { LockButtons } from "~/entries/shared/components/lockButtons"
 import { ChangeNameForm } from "./details/changeNameForm"
 import { ChangePasswordForm } from "./details/changePasswordForm"
 import { ChangeSecretSentenceForm } from "./details/changeSecretSentence"
+import { sendMessage } from "~/entries/shared/messages"
+import { usePromiseState } from "~/entries/shared/ui/hooks"
+import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
+import { ArchiveBoxArrowDownIcon } from "@heroicons/react/24/outline"
+import { Loader } from "~/entries/shared/components/icons/loader"
+import { RestoreButton } from "./restore"
 
 type DetailsListProps = {
     rootInfo: RootInfo
@@ -18,6 +28,10 @@ const DetailsList = ({ rootInfo, openForm }: DetailsListProps) => {
     const toggleSecretSentenceVisible = useCallback(() => {
         setSecretSentenceVisible((v) => !v)
     }, [])
+    const [backingUp, backup] = usePromiseState(async () => {
+        await sendMessage({ id: "backup" })
+    }, [])
+
     return (
         <dl className="sm:divide-y sm:divide-gray-200">
             <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
@@ -96,6 +110,27 @@ const DetailsList = ({ rootInfo, openForm }: DetailsListProps) => {
                 <dt className="text-sm font-medium text-gray-500">Actions</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
                     <LockButtons isUnlocked={true} />
+                </dd>
+            </div>
+            <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                <dt className="text-sm font-medium text-gray-500">Backup</dt>
+                <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                    <div className="flex flex-wrap gap-3">
+                        <OutlineButton
+                            onClick={backup}
+                            disabled={backingUp.inProgress}
+                        >
+                            <ButtonIcon
+                                icon={
+                                    backingUp.inProgress
+                                        ? Loader
+                                        : ArchiveBoxArrowDownIcon
+                                }
+                            />
+                            Backup
+                        </OutlineButton>
+                        <RestoreButton />
+                    </div>
                 </dd>
             </div>
         </dl>

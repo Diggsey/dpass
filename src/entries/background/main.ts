@@ -148,6 +148,10 @@ function handleMessage(
             return SECURE_CONTEXT.updateGeneratorSettings(message.settings)
         case "generatePassword":
             return SECURE_CONTEXT.generatePassword()
+        case "backup":
+            return SECURE_CONTEXT.backup()
+        case "restore":
+            return SECURE_CONTEXT.restore(message.url)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return

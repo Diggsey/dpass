@@ -27,6 +27,12 @@ import { ISuperKeyContext } from "./superKeyContext"
 import { IRootAddressesContext } from "./rootAddressesContext"
 import { StorageAddress } from "~/entries/shared/privileged/state"
 
+class MissingVaultError extends Error {
+    constructor() {
+        super("Vault not found")
+    }
+}
+
 export type VaultState = {
     keySalt: Uint8Array | null
     vault: DecryptedVaultFile | null
@@ -35,6 +41,8 @@ export interface IVaultContext {
     get _vaults(): Map<string, VaultState>
     get _defaultVaultId(): string | null
 
+    _backupVault(vaultId: string): Promise<Uint8Array>
+    _integrateVault(fileId: string, file: Uint8Array): Promise<void>
     _patchVault(
         vaultId: string,
         f: (root: DecryptedVaultFile) => DecryptedVaultFile
@@ -86,7 +94,7 @@ export const VaultContext = mixin<
                 if (!handled) {
                     await this._post(
                         `integrate(${fileId}, <file>, ${priority})`,
-                        () => this.#integrateVault(fileId, file)
+                        () => this._integrateVault(fileId, file)
                     )
                     return true
                 }
@@ -135,26 +143,36 @@ export const VaultContext = mixin<
                 this.#vaults = newVaults
             }
 
-            async #saveVaultChanges(
-                vaultId: string,
-                address?: StorageAddress
-            ): Promise<boolean> {
+            async _backupVault(vaultId: string): Promise<Uint8Array> {
                 const vaultDesc = this.#getVaultDesc(vaultId)
                 const vaultState = this.#vaults.get(vaultId)
                 if (!vaultDesc || !vaultState?.vault || !vaultState.keySalt) {
-                    return false
+                    throw new MissingVaultError()
                 }
                 // Upload vault changes
                 const encodedData = encodeVaultData(vaultState.vault)
                 const vaultKey = await importKey(vaultDesc.payload.vaultKey)
                 const encryptedData = await encrypt(vaultKey, encodedData)
-                const file = encodeVault({
+                return encodeVault({
                     keySalt: vaultState.keySalt,
                     encryptedData: new Uint8Array(encryptedData),
                 })
-                this._saveChanges(vaultId, file, address)
+            }
 
-                return true
+            async #saveVaultChanges(
+                vaultId: string,
+                address?: StorageAddress
+            ): Promise<boolean> {
+                try {
+                    const file = await this._backupVault(vaultId)
+                    this._saveChanges(vaultId, file, address)
+                    return true
+                } catch (ex) {
+                    if (!(ex instanceof MissingVaultError)) {
+                        throw ex
+                    }
+                }
+                return false
             }
 
             async #updateVault(
@@ -204,7 +222,7 @@ export const VaultContext = mixin<
                 )[0]
             }
 
-            async #integrateVault(
+            async _integrateVault(
                 fileId: string,
                 file: Uint8Array
             ): Promise<void> {
