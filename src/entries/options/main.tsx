@@ -8,6 +8,7 @@ import { VaultsPage } from "./vaults"
 import { ItemsPage } from "./items"
 import { AppShell } from "../shared/components/appShell"
 import { GeneratorPage } from "./generator"
+import { HistoryPage } from "./history"
 
 const AppBody: FC<{ state: PrivilegedState }> = ({ state }) => {
     const navigation = [
@@ -32,6 +33,12 @@ const AppBody: FC<{ state: PrivilegedState }> = ({ state }) => {
             key: "generator",
             title: "Generator",
             body: <GeneratorPage state={state} />,
+            disabled: !state?.isUnlocked,
+        },
+        {
+            key: "history",
+            title: "History",
+            body: <HistoryPage state={state} />,
             disabled: !state?.isUnlocked,
         },
     ]

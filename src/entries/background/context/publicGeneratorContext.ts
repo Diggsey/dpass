@@ -1,10 +1,10 @@
 import { mixin } from "~/entries/shared/mixin"
 import { Actor } from "../actor"
-import { chainPatches, itemCreator, itemPatcher } from "../serialize/merge"
+import { itemPatcher } from "../serialize/merge"
 import { IRootContext } from "./rootContext"
 import { GeneratorSettings } from "~/entries/shared/state"
 import { generatePassword, passwordEntropy } from "~/entries/shared/generator"
-import { DAY } from "~/entries/shared/time"
+import { IHistoryContext } from "./historyContext"
 
 export interface IPublicGeneratorContext {
     updateGeneratorSettings(settings: GeneratorSettings): Promise<void>
@@ -14,7 +14,7 @@ export interface IPublicGeneratorContext {
 // Publishes changes to the context
 export const PublicGeneratorContext = mixin<
     IPublicGeneratorContext,
-    Actor & IRootContext
+    Actor & IRootContext & IHistoryContext
 >(
     (Base) =>
         class PublicGeneratorContext
@@ -51,30 +51,17 @@ export const PublicGeneratorContext = mixin<
                     const password = generatePassword(settings.payload)
                     const entropy = passwordEntropy(settings.payload)
 
-                    // Only keep generated passwords from the last week
-                    const cutOff = Date.now() - 7 * DAY
-                    await this._patchRoot(
-                        chainPatches(
-                            // Add the newly generated password
-                            itemCreator({
-                                id: "generatedValue",
-                                type: "password",
-                                value: password,
-                                entropy,
-                            }),
-                            // Delete old passwords
-                            itemPatcher((payload, _id, updateTimestamp) => {
-                                if (
-                                    payload?.id === "generatedValue" &&
-                                    updateTimestamp < cutOff
-                                ) {
-                                    return null
-                                } else {
-                                    return payload
-                                }
-                            })
-                        )
-                    )
+                    await this._recordHistory([
+                        {
+                            id: "historyEntry",
+                            type: "generated",
+                            value: password,
+                            entropy,
+                            origins: [],
+                            name: "Password",
+                            autofillMode: { id: "password" },
+                        },
+                    ])
                     return password
                 })
             }

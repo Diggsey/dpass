@@ -1,3 +1,4 @@
+import { AutofillMode } from "../autofill"
 import { GeneratorSettings, VaultItemMap } from "../state"
 
 export type PrivilegedState = {
@@ -13,7 +14,7 @@ export type PrivilegedState = {
     readonly syncState: PrivilegedSyncState
     readonly keyPairs: KeyPairMap
     readonly generatorSettings: GeneratorSettings | null
-    readonly generatedValues: readonly GeneratedValue[]
+    readonly historyEntries: readonly HistoryEntry[]
 }
 
 export type RootInfo = {
@@ -23,12 +24,15 @@ export type RootInfo = {
     readonly secretSentence: string
 }
 
-export type GeneratedValue = {
+export type HistoryEntry = {
     readonly uuid: string
     readonly creationTimestamp: number
-    readonly type: "password"
+    readonly type: "generated" | "deleted" | "changed"
+    readonly origins: string[]
+    readonly name: string
+    readonly autofillMode: AutofillMode
     readonly value: string
-    readonly entropy: number
+    readonly entropy?: number
 }
 
 export type KeyPairMap = {

@@ -3,6 +3,7 @@ import { Actor } from "../actor"
 import { RootInfo } from "../serialize/rootData"
 import { itemPatcher } from "../serialize/merge"
 import { IRootContext, UpdateRootHint } from "./rootContext"
+import { IHistoryContext } from "./historyContext"
 
 export interface IPublicRootContext {
     lock(unenroll: boolean): Promise<void>
@@ -18,12 +19,13 @@ export interface IPublicRootContext {
         newSentence: string | null
     ): Promise<void>
     updateRootName(name: string): Promise<void>
+    clearHistory(): Promise<void>
 }
 
 // Public methods for interacting with root
 export const PublicRootContext = mixin<
     IPublicRootContext,
-    Actor & IRootContext
+    Actor & IRootContext & IHistoryContext
 >(
     (Base) =>
         class PublicRootContext extends Base implements IPublicRootContext {
@@ -146,6 +148,9 @@ export const PublicRootContext = mixin<
                         name,
                     }))
                 )
+            }
+            clearHistory(): Promise<void> {
+                return this._post("clearHistory()", () => this._clearHistory())
             }
         }
 )

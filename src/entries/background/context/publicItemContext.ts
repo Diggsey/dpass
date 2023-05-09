@@ -18,12 +18,17 @@ import {
     encrypt,
     generateSalt,
 } from "../crypto"
-import { VaultItemPayload } from "~/entries/shared/state"
+import { VaultItemField, VaultItemPayload } from "~/entries/shared/state"
 import * as msgpack from "@msgpack/msgpack"
 import { ItemDetails } from "~/entries/shared/messages/vault"
+import { IHistoryContext } from "./historyContext"
+import { HistoryEntry } from "../serialize/rootData"
 
 export interface IPublicItemContext {
-    createVaultItem(vaultId: string, details: ItemDetails): Promise<string>
+    createVaultItem(
+        vaultId: string | undefined,
+        details: ItemDetails
+    ): Promise<string>
     deleteVaultItem(vaultId: string, itemId: string): Promise<void>
     getVaultItem(vaultId: string, itemId: string): Promise<NormalItem>
     updateVaultItem(
@@ -41,7 +46,8 @@ export const PublicItemContext = mixin<
         IRootContext &
         IVaultContext &
         ISuperKeyContext &
-        IRootAddressesContext
+        IRootAddressesContext &
+        IHistoryContext
 >(
     (Base) =>
         class PublicItemContext extends Base implements IPublicItemContext {
@@ -113,13 +119,56 @@ export const PublicItemContext = mixin<
                 }
                 return item.payload
             }
-            async createVaultItem(
+
+            async #getVaultItemAndDecryptedPayload(
                 vaultId: string,
+                itemId: string
+            ): Promise<[NormalItem, VaultItemPayload]> {
+                const item = this.#getVaultItem(vaultId, itemId)
+                if (!item.data.encrypted) {
+                    return [item, item.data.payload]
+                }
+                const itemKey = await this.#deriveVaultItemKey(
+                    vaultId,
+                    item.data.salt
+                )
+                const buffer = await decrypt(itemKey, item.data.payload)
+                return [item, msgpack.decode(buffer) as VaultItemPayload]
+            }
+            async #recordOldValues(
+                origins: string[],
+                oldFields: VaultItemField[],
+                newFields: VaultItemField[]
+            ): Promise<void> {
+                const historyEntries: HistoryEntry[] = []
+                for (const oldField of oldFields) {
+                    const newField = newFields.find(
+                        (f) => f.uuid === oldField.uuid
+                    )
+                    if (!newField || oldField.value !== newField.value) {
+                        historyEntries.push({
+                            id: "historyEntry",
+                            type: newField ? "changed" : "deleted",
+                            origins,
+                            name: oldField.name,
+                            autofillMode: oldField.autofillMode,
+                            value: oldField.value,
+                        })
+                    }
+                }
+                await this._recordHistory(historyEntries)
+            }
+            async createVaultItem(
+                overrideVaultId: string | undefined,
                 details: ItemDetails
             ): Promise<string> {
                 return this._post(
-                    `createVaultItem(${vaultId}, ${details})`,
+                    `createVaultItem(${overrideVaultId}, ${details})`,
                     async () => {
+                        const vaultId = overrideVaultId ?? this._defaultVaultId
+                        if (vaultId === null) {
+                            throw new Error("No default vault")
+                        }
                         const itemId = crypto.randomUUID()
                         const { payload, encrypted, ...rest } = details
                         const data = await this.#buildItemDataFromPayload(
@@ -148,7 +197,19 @@ export const PublicItemContext = mixin<
             ): Promise<void> {
                 return this._post(
                     `deleteVaultItem(${vaultId}, ${itemId})`,
-                    () => this.#patchVaultItem(vaultId, itemId, () => null)
+                    async () => {
+                        const [oldItem, oldPayload] =
+                            await this.#getVaultItemAndDecryptedPayload(
+                                vaultId,
+                                itemId
+                            )
+                        await this.#recordOldValues(
+                            oldItem.origins,
+                            oldPayload.fields,
+                            []
+                        )
+                        await this.#patchVaultItem(vaultId, itemId, () => null)
+                    }
                 )
             }
             async updateVaultItem(
@@ -167,6 +228,18 @@ export const PublicItemContext = mixin<
                                 payload,
                                 encrypted
                             ))
+                        if (payload) {
+                            const [oldItem, oldPayload] =
+                                await this.#getVaultItemAndDecryptedPayload(
+                                    vaultId,
+                                    itemId
+                                )
+                            await this.#recordOldValues(
+                                oldItem.origins,
+                                oldPayload.fields,
+                                payload?.fields
+                            )
+                        }
                         await this.#patchVaultItem(vaultId, itemId, (item) => ({
                             id: "normal",
                             ...rest,
@@ -193,19 +266,12 @@ export const PublicItemContext = mixin<
                 return this._post(
                     `decryptVaultItem(${vaultId}, ${itemId})`,
                     async () => {
-                        const payload = this.#getVaultItem(vaultId, itemId)
-                        if (!payload.data.encrypted) {
-                            throw new Error("No such encrypted item")
-                        }
-                        const itemKey = await this.#deriveVaultItemKey(
-                            vaultId,
-                            payload.data.salt
-                        )
-                        const buffer = await decrypt(
-                            itemKey,
-                            payload.data.payload
-                        )
-                        return msgpack.decode(buffer) as VaultItemPayload
+                        const [_item, payload] =
+                            await this.#getVaultItemAndDecryptedPayload(
+                                vaultId,
+                                itemId
+                            )
+                        return payload
                     }
                 )
             }

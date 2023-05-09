@@ -2,6 +2,7 @@ import * as msgpack from "@msgpack/msgpack"
 import { AuthToken, StorageAddress } from "~/entries/shared/privileged/state"
 import { MergeableFile } from "./merge"
 import { SerializationError } from "./utils"
+import { AutofillMode } from "~/entries/shared/autofill"
 
 export type Vault = {
     readonly id: "vault"
@@ -42,11 +43,14 @@ export type GeneratorSettings = {
     readonly passwordExtra: string
 }
 
-export type GeneratedValue = {
-    id: "generatedValue"
-    type: "password"
-    value: string
-    entropy: number
+export type HistoryEntry = {
+    readonly id: "historyEntry"
+    readonly type: "generated" | "deleted" | "changed"
+    readonly origins: string[]
+    readonly name: string
+    readonly autofillMode: AutofillMode
+    readonly value: string
+    readonly entropy?: number
 }
 
 export type RootFileItem =
@@ -55,7 +59,7 @@ export type RootFileItem =
     | KeyPair
     | RootInfo
     | GeneratorSettings
-    | GeneratedValue
+    | HistoryEntry
 export type DecryptedRootFile = MergeableFile<RootFileItem>
 
 export function decodeRootData(

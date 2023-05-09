@@ -10,6 +10,7 @@ import { PublicRootContext } from "./context/publicRootContext"
 import { PublicVaultContext } from "./context/publicVaultContext"
 import { PublicItemContext } from "./context/publicItemContext"
 import { PublicGeneratorContext } from "./context/publicGeneratorContext"
+import { HistoryContext } from "./context/historyContext"
 
 class SecureContext extends PublicGeneratorContext(
     PublicItemContext(
@@ -17,10 +18,12 @@ class SecureContext extends PublicGeneratorContext(
             PublicRootContext(
                 StatePublisherContext(
                     VaultContext(
-                        RootContext(
-                            RootAddressesContext(
-                                SyncManagerContext(
-                                    SuperKeyContext(SetupKeyContext(Actor))
+                        HistoryContext(
+                            RootContext(
+                                RootAddressesContext(
+                                    SyncManagerContext(
+                                        SuperKeyContext(SetupKeyContext(Actor))
+                                    )
                                 )
                             )
                         )

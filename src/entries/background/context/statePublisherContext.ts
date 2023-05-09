@@ -10,7 +10,7 @@ import { ISyncManagerContext } from "./syncManagerContext"
 import { IStatePublisher } from "../pubsub/state"
 import { TimerId } from "~/entries/shared"
 import { IRootAddressesContext } from "./rootAddressesContext"
-import { GeneratedValue, KeyPair, Vault } from "../serialize/rootData"
+import { HistoryEntry, KeyPair, Vault } from "../serialize/rootData"
 import {
     DecryptedVaultFile,
     NormalItem,
@@ -50,7 +50,7 @@ export const StatePublisherContext = mixin<
                 isSuper: false,
                 rootInfo: null,
                 generatorSettings: null,
-                generatedValues: [],
+                historyEntries: [],
                 rootAddresses: [],
                 vaults: {},
                 syncState: {},
@@ -176,19 +176,21 @@ export const StatePublisherContext = mixin<
                     : {}
 
                 // Extract recently generated values
-                const generatedValues = this._root
+                const historyEntries = this._root
                     ? extractItems(
                           this._root,
-                          (item): item is MergeableItem<GeneratedValue> =>
-                              item.payload.id === "generatedValue"
+                          (item): item is MergeableItem<HistoryEntry> =>
+                              item.payload.id === "historyEntry"
                       )
-                          .map((generatedValue) => ({
-                              uuid: generatedValue.uuid,
-                              creationTimestamp:
-                                  generatedValue.creationTimestamp,
-                              type: generatedValue.payload.type,
-                              value: generatedValue.payload.value,
-                              entropy: generatedValue.payload.entropy,
+                          .map((historyEntry) => ({
+                              uuid: historyEntry.uuid,
+                              creationTimestamp: historyEntry.creationTimestamp,
+                              type: historyEntry.payload.type,
+                              origins: historyEntry.payload.origins,
+                              autofillMode: historyEntry.payload.autofillMode,
+                              name: historyEntry.payload.name,
+                              value: historyEntry.payload.value,
+                              entropy: historyEntry.payload.entropy,
                           }))
                           .sort(
                               (a, b) =>
@@ -223,7 +225,7 @@ export const StatePublisherContext = mixin<
                     },
                     vaults,
                     keyPairs,
-                    generatedValues,
+                    historyEntries,
                     defaultVaultId: this._defaultVaultId,
                 })
             }

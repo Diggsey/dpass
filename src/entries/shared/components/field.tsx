@@ -1,5 +1,5 @@
 import { ArrowsUpDownIcon, XMarkIcon } from "@heroicons/react/24/outline"
-import { FC, ReactNode } from "react"
+import { FC, ReactNode, useCallback } from "react"
 import {
     AutofillMode,
     defaultName,
@@ -12,6 +12,7 @@ import { AutoTextArea } from "./autoTextArea"
 import { ButtonIcon } from "./buttonIcon"
 import { ReorderableItem } from "./reorderableList"
 import { Input, Select, TextButton } from "./styledElem"
+import { sendMessage } from "../messages"
 
 type FieldProps = {
     index: number
@@ -50,6 +51,17 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
             autofillMode,
         })
     }
+    const copy = useCallback(async () => {
+        await navigator.clipboard.writeText(field.value)
+    }, [field.value])
+
+    const generatePassword = useCallback(async () => {
+        const password = await sendMessage({ id: "generatePassword" })
+        if (password !== undefined) {
+            onUpdate({ ...field, value: password })
+        }
+    }, [field])
+
     let valueView: ReactNode
     switch (field.autofillMode.id) {
         case "password":
@@ -92,6 +104,7 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
                 </div>
             )
     }
+
     return (
         <ReorderableItem index={index} className="mt-4">
             {(dragHandleProps) => (
@@ -160,7 +173,28 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
                                 }
                             />
                         ) : null}
-                        <div className="field is-grouped">{valueView}</div>
+                        <div className="field is-grouped">
+                            {valueView}
+                            <div className="flex gap-3 mt-1">
+                                {!field.value &&
+                                    ["password", "passwordNote"].includes(
+                                        field.autofillMode.id
+                                    ) && (
+                                        <TextButton
+                                            className="text-xs"
+                                            onClick={generatePassword}
+                                        >
+                                            Generate New...
+                                        </TextButton>
+                                    )}
+                                <TextButton
+                                    className="text-xs ml-auto"
+                                    onClick={copy}
+                                >
+                                    Copy
+                                </TextButton>
+                            </div>
+                        </div>
                     </div>
                     <TextButton
                         className="shrink-0"

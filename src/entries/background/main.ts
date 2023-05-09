@@ -3,7 +3,7 @@ import {
     PRIVILEGED_PORT_NAME,
     StorageAddress,
 } from "../shared/privileged/state"
-import { UNPRIVILEGED_PORT_NAME, VaultItemPayload } from "../shared/state"
+import { UNPRIVILEGED_PORT_NAME } from "../shared/state"
 import { SECURE_CONTEXT } from "./context"
 import { PrivilegedPublisher } from "./pubsub/privileged"
 import { UnprivilegedPublisher } from "./pubsub/unprivileged"
@@ -19,7 +19,6 @@ import {
 import { AutofillPayload } from "../shared/messages/autofill"
 import { doesLoginUrlMatch, objectKey } from "../shared"
 import { StorageAddressAction } from "../shared/messages/storage"
-import { ItemDetails } from "../shared/messages/vault"
 import { FrameDetails, OptionsPageTarget } from "../shared/messages/misc"
 import { setLocalState } from "../shared/ui/hooks"
 import { STORAGE_MANAGER } from "./storage/connection"
@@ -61,70 +60,84 @@ function classifySender(sender: Runtime.MessageSender): SenderType {
     }
 }
 
+const unprivilegedMessages = [
+    "requestAutofill",
+    "getFrameDetails",
+    "openOptionsPage",
+]
+
 function handleMessage(
     message: Message,
     sender: Runtime.MessageSender
 ): Promise<MessageResponse> | undefined {
     const senderType = classifySender(sender)
+    if (
+        senderType.id !== "privileged" &&
+        !unprivilegedMessages.includes(message.id)
+    ) {
+        return undefined
+    }
     switch (message.id) {
         case "requestAutofill":
             return requestAutoFill(senderType, message.vaultId, message.itemId)
         case "createRoot":
-            return createRoot(
-                senderType,
+            return SECURE_CONTEXT.createRoot(
                 message.name,
                 message.masterPassword,
                 message.secretSentence
             )
         case "editRootName":
-            return editRootName(senderType, message.name)
+            return SECURE_CONTEXT.updateRootName(message.name)
         case "editStorageAddresses":
-            return editStorageAddresses(
-                senderType,
-                message.vaultId,
-                message.action
-            )
+            return editStorageAddresses(message.vaultId, message.action)
         case "unlock":
-            return unlock(
-                senderType,
+            return SECURE_CONTEXT.unlock(
                 message.masterPassword,
                 message.secretSentence
             )
         case "lock":
-            return lock(senderType, message.unenroll)
+            return SECURE_CONTEXT.lock(message.unenroll)
         case "changeRootPassword":
-            return changeRootPassword(
-                senderType,
+            return SECURE_CONTEXT.changePassword(
                 message.oldPassword,
                 message.newPassword ?? null,
                 message.newSentence ?? null
             )
         case "createVault":
-            return createVault(senderType, message.name, message.copyStorage)
+            return SECURE_CONTEXT.createVault(message.name, message.copyStorage)
         case "removeVault":
-            return removeVault(senderType, message.vaultId)
+            return SECURE_CONTEXT.removeVault(message.vaultId)
         case "setVaultAsDefault":
-            return setVaultAsDefault(senderType, message.vaultId)
+            return SECURE_CONTEXT.setVaultAsDefault(message.vaultId)
+        case "clearHistory":
+            return SECURE_CONTEXT.clearHistory()
         case "editVaultName":
-            return editVaultName(senderType, message.vaultId, message.name)
+            return SECURE_CONTEXT.updateVaultName(message.vaultId, message.name)
         case "createVaultItem":
-            return createVaultItem(senderType, message.vaultId, message.details)
+            return SECURE_CONTEXT.createVaultItem(
+                message.vaultId,
+                message.details
+            )
         case "updateVaultItem":
-            return updateVaultItem(
-                senderType,
+            return SECURE_CONTEXT.updateVaultItem(
                 message.vaultId,
                 message.itemId,
                 message.details
             )
         case "deleteVaultItem":
-            return deleteVaultItem(senderType, message.vaultId, message.itemId)
+            return SECURE_CONTEXT.deleteVaultItem(
+                message.vaultId,
+                message.itemId
+            )
         case "decryptVaultItem":
-            return decryptVaultItem(senderType, message.vaultId, message.itemId)
+            return SECURE_CONTEXT.decryptVaultItem(
+                message.vaultId,
+                message.itemId
+            )
         case "getFrameDetails":
             return getFrameDetails(sender)
         case "forward":
-            return forward(
-                senderType,
+            return sendMessageToFrame(
                 message.tabId,
                 message.frameId,
                 message.message
@@ -214,52 +227,10 @@ async function requestAutoFill(
     }
 }
 
-async function createRoot(
-    senderType: SenderType,
-    name: string,
-    masterPassword: string,
-    secretSentence: string
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.createRoot(name, masterPassword, secretSentence)
-    return
-}
-
-async function editRootName(
-    senderType: SenderType,
-    name: string
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.updateRootName(name)
-    return
-}
-
-async function changeRootPassword(
-    senderType: SenderType,
-    oldPassword: string,
-    newPassword: string | null,
-    newSentence: string | null
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.changePassword(oldPassword, newPassword, newSentence)
-    return
-}
-
 async function editStorageAddresses(
-    senderType: SenderType,
     vaultId: string | null,
     action: StorageAddressAction
 ): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-
     const addressModifier = (addresses: readonly StorageAddress[]) => {
         const addressKeys = addresses.map(objectKey)
         const addressKey = objectKey(action.storageAddress)
@@ -339,121 +310,6 @@ async function editStorageAddresses(
     return
 }
 
-async function unlock(
-    senderType: SenderType,
-    masterPassword: string,
-    secretSentence: string | null
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.unlock(masterPassword, secretSentence)
-    return
-}
-
-async function lock(
-    senderType: SenderType,
-    unenroll: boolean
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.lock(unenroll)
-    return
-}
-
-async function createVault(
-    senderType: SenderType,
-    name: string,
-    copyStorage: boolean
-): Promise<string | undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    return await SECURE_CONTEXT.createVault(name, copyStorage)
-}
-
-async function removeVault(
-    senderType: SenderType,
-    vaultId: string
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.removeVault(vaultId)
-    return
-}
-
-async function setVaultAsDefault(
-    senderType: SenderType,
-    vaultId: string
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.setVaultAsDefault(vaultId)
-    return
-}
-
-async function editVaultName(
-    senderType: SenderType,
-    vaultId: string,
-    name: string
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.updateVaultName(vaultId, name)
-    return
-}
-
-async function createVaultItem(
-    senderType: SenderType,
-    vaultId: string,
-    details: ItemDetails
-): Promise<string | undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    return await SECURE_CONTEXT.createVaultItem(vaultId, details)
-}
-
-async function updateVaultItem(
-    senderType: SenderType,
-    vaultId: string,
-    itemId: string,
-    details: ItemDetails
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.updateVaultItem(vaultId, itemId, details)
-    return
-}
-
-async function deleteVaultItem(
-    senderType: SenderType,
-    vaultId: string,
-    itemId: string
-): Promise<undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    await SECURE_CONTEXT.deleteVaultItem(vaultId, itemId)
-    return
-}
-
-async function decryptVaultItem(
-    senderType: SenderType,
-    vaultId: string,
-    itemId: string
-): Promise<VaultItemPayload | undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    return await SECURE_CONTEXT.decryptVaultItem(vaultId, itemId)
-}
-
 async function getFrameDetails(
     sender: Runtime.MessageSender
 ): Promise<FrameDetails | undefined> {
@@ -469,18 +325,6 @@ async function getFrameDetails(
         tabId: sender.tab.id,
         frameId: sender.frameId,
     }
-}
-
-async function forward(
-    senderType: SenderType,
-    tabId: number,
-    frameId: number,
-    message: Message
-): Promise<unknown | undefined> {
-    if (senderType.id !== "privileged") {
-        return
-    }
-    return await sendMessageToFrame(tabId, frameId, message)
 }
 
 export async function openOptionsPage(target: OptionsPageTarget) {

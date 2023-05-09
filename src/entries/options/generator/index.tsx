@@ -1,7 +1,6 @@
 import { FC, useCallback, useMemo, useRef, useState } from "react"
 import { MagicVScroll } from "~/entries/shared/components/magicVScroll"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
-import { HistoryPanel } from "./history"
 import {
     Card,
     Checkbox,
@@ -213,7 +212,6 @@ export const GeneratorPage: FC<{ state: PrivilegedState }> = ({ state }) => {
         <MagicVScroll>
             <div className="container grid mx-auto max-w-7xl sm:px-6 lg:px-8 py-10 gap-10 auto-rows-max">
                 <PasswordGenerator settings={settings} />
-                <HistoryPanel generatedValues={state.generatedValues} />
             </div>
         </MagicVScroll>
     )

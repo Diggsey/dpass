@@ -7,7 +7,7 @@ export type EditVaultNameMessage = {
 }
 export type CreateVaultItemMessage = {
     id: "createVaultItem"
-    vaultId: string
+    vaultId?: string
     details: ItemDetails
 }
 export type DeleteVaultItemMessage = {

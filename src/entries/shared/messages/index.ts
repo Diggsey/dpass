@@ -18,12 +18,13 @@ import {
 } from "./misc"
 import {
     ChangeRootPasswordMessage,
+    ClearHistoryMessage,
     CreateRootMessage,
     CreateVaultMessage,
     EditRootNameMessage,
     LockMessage,
     RemoveVaultMessage,
-    SetVaultAsDefault,
+    SetVaultAsDefaultMessage,
     UnlockMessage,
 } from "./root"
 import { EditStorageAddressesMessage } from "./storage"
@@ -53,7 +54,8 @@ export type Message =
     | ChangeRootPasswordMessage
     | CreateVaultMessage
     | RemoveVaultMessage
-    | SetVaultAsDefault
+    | SetVaultAsDefaultMessage
+    | ClearHistoryMessage
     | EditVaultNameMessage
     | CreateVaultItemMessage
     | DeleteVaultItemMessage
@@ -81,6 +83,7 @@ type MessageResponses = {
     createVault: string
     removeVault: undefined
     setVaultAsDefault: undefined
+    clearHistory: undefined
     editVaultName: undefined
     createVaultItem: string
     deleteVaultItem: undefined
