@@ -303,17 +303,17 @@ const ItemPayload: FC<ItemPayloadProps> = ({ payload, onUpdate }) => {
                         <Input
                             type="text"
                             id={`${fieldId}-loginUrl`}
-                            value={payload.login_url || ""}
+                            value={payload.loginUrl || ""}
                             onChange={(e) => {
-                                const login_url =
+                                const loginUrl =
                                     e.currentTarget.value || undefined
-                                const restrict_url = login_url
-                                    ? payload.restrict_url
+                                const restrictUrl = loginUrl
+                                    ? payload.restrictUrl
                                     : undefined
                                 onUpdate({
                                     ...payload,
-                                    login_url,
-                                    restrict_url,
+                                    loginUrl: loginUrl,
+                                    restrictUrl: restrictUrl,
                                 })
                             }}
                         />
@@ -321,16 +321,16 @@ const ItemPayload: FC<ItemPayloadProps> = ({ payload, onUpdate }) => {
                 </div>
                 <Checkbox.Label
                     htmlFor={`${fieldId}-restrictUrl`}
-                    aria-disabled={!payload.login_url}
+                    aria-disabled={!payload.loginUrl}
                 >
                     <Checkbox.Input
                         id={`${fieldId}-restrictUrl`}
                         type="checkbox"
-                        disabled={!payload.login_url}
-                        checked={!!payload.restrict_url}
+                        disabled={!payload.loginUrl}
+                        checked={!!payload.restrictUrl}
                         onChange={(e) => {
-                            const restrict_url = e.target.checked || undefined
-                            onUpdate({ ...payload, restrict_url })
+                            const restrictUrl = e.target.checked || undefined
+                            onUpdate({ ...payload, restrictUrl: restrictUrl })
                         }}
                     />
                     <span>Restrict to login URL</span>

@@ -1,5 +1,6 @@
 import { ArchiveBoxIcon } from "@heroicons/react/24/outline"
 import { useCallback } from "react"
+import { openFilePicker } from "~/entries/shared"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { Loader } from "~/entries/shared/components/icons/loader"
 import { OutlineButton } from "~/entries/shared/components/styledElem"
@@ -11,17 +12,12 @@ export const RestoreButton = () => {
         await sendMessage({ id: "restore", url })
     }, [])
     const pickFileToRestore = useCallback(() => {
-        const input = document.createElement("input")
-        input.type = "file"
-        input.accept = ".zip,application/zip"
-        input.onchange = () => {
-            const file = input.files && input.files[0]
-            if (file) {
-                const url = URL.createObjectURL(file)
-                void restore(url)
-            }
-        }
-        input.click()
+        openFilePicker(
+            {
+                accept: ".zip,application/zip",
+            },
+            ([url]) => restore(url)
+        )
     }, [])
 
     return (

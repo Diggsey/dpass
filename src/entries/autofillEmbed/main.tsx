@@ -145,7 +145,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
                     origins: [args.origin],
                     encrypted: false,
                     payload: {
-                        login_url: args.url,
+                        loginUrl: args.url,
                         fields,
                     },
                 },

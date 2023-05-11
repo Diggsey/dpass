@@ -13,7 +13,7 @@ function getTokenKey(connectionInfo: ConnectionInfo): string {
 
 const MIN_EXPIRY_BUFFER_MS = 10000
 
-function url_params(url: string, params: { [param: string]: string }) {
+function urlParams(url: string, params: { [param: string]: string }) {
     const res = new URL(url)
     for (const [k, v] of Object.entries(params)) {
         res.searchParams.append(k, v)
@@ -25,17 +25,14 @@ class TokenManager {
     async #requestGoogleOauthToken(
         connectionInfo: OauthConnectionInfo
     ): Promise<[AuthToken, ConnectionInfo]> {
-        const authUrl = url_params(
-            "https://accounts.google.com/o/oauth2/auth",
-            {
-                client_id:
-                    "711430196916-b8dqrl7bg50kb6b1lsnkrtutd6s704qu.apps.googleusercontent.com",
-                response_type: "token",
-                redirect_uri: browser.identity.getRedirectURL(),
-                scope: "openid https://www.googleapis.com/auth/drive.file",
-                login_hint: connectionInfo.userId,
-            }
-        )
+        const authUrl = urlParams("https://accounts.google.com/o/oauth2/auth", {
+            client_id:
+                "711430196916-b8dqrl7bg50kb6b1lsnkrtutd6s704qu.apps.googleusercontent.com",
+            response_type: "token",
+            redirect_uri: browser.identity.getRedirectURL(),
+            scope: "openid https://www.googleapis.com/auth/drive.file",
+            login_hint: connectionInfo.userId,
+        })
         const redirectUrl = new URL(
             await browser.identity.launchWebAuthFlow({
                 url: authUrl,

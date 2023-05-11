@@ -4,6 +4,7 @@ import {
     decodeVaultData,
     DecryptedVaultFile,
     encodeVaultData,
+    VaultInfoItem,
 } from "../serialize/vaultData"
 import { IRootContext, UpdateRootHint } from "./rootContext"
 import { ISyncManagerContext } from "./syncManagerContext"
@@ -48,6 +49,8 @@ export interface IVaultContext {
         f: (root: DecryptedVaultFile) => DecryptedVaultFile
     ): Promise<void>
     _deriveVaultSuperKey(vaultId: string): Promise<CryptoKey>
+    _getVault(vaultId: string): DecryptedVaultFile
+    _getVaultInfo(vaultId: string): MergeableItem<VaultInfoItem> | null
 
     // Must be implemented
     _vaultChanged(vaultId: string): void
@@ -203,11 +206,8 @@ export const VaultContext = mixin<
                 vaultId: string,
                 f: (root: DecryptedVaultFile) => DecryptedVaultFile
             ): Promise<void> {
-                const vaultState = this._vaults.get(vaultId)
-                if (!vaultState?.vault) {
-                    throw new Error("No such vault - cannot update")
-                }
-                await this.#updateVault(vaultId, f(vaultState.vault))
+                const vault = this._getVault(vaultId)
+                await this.#updateVault(vaultId, f(vault))
             }
 
             #getVaultDesc(vaultId: string): MergeableItem<Vault> | undefined {
@@ -248,7 +248,7 @@ export const VaultContext = mixin<
                 const superKey = await this._requireSuperKey()
                 const vaultDesc = this.#getVaultDesc(vaultId)
                 if (!vaultDesc) {
-                    throw new Error("Vault not found")
+                    throw new MissingVaultError()
                 }
                 const { personalVaultSalt, encryptedVaultSuperKey } =
                     vaultDesc.payload
@@ -260,6 +260,29 @@ export const VaultContext = mixin<
                 return await decryptKey(
                     personalVaultKey,
                     encryptedVaultSuperKey
+                )
+            }
+
+            _getVault(vaultId: string): DecryptedVaultFile {
+                const vaultState = this.#vaults.get(vaultId)
+                if (!vaultState?.vault) {
+                    throw new MissingVaultError()
+                }
+                return vaultState.vault
+            }
+
+            _getVaultInfo(
+                vaultId: string
+            ): MergeableItem<VaultInfoItem> | null {
+                const vault = this.#vaults.get(vaultId)?.vault
+                return (
+                    (vault &&
+                        extractItems(
+                            vault,
+                            (item): item is MergeableItem<VaultInfoItem> =>
+                                item.payload.id === "vaultInfo"
+                        )[0]) ??
+                    null
                 )
             }
 

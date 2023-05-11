@@ -58,8 +58,8 @@ export type EncryptedVaultItemData = {
 }
 
 export type VaultItemPayload = {
-    readonly login_url?: string
-    readonly restrict_url?: true
+    readonly loginUrl?: string
+    readonly restrictUrl?: true
     readonly fields: VaultItemField[]
 }
 

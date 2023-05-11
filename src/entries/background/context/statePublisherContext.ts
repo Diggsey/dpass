@@ -125,27 +125,18 @@ export const StatePublisherContext = mixin<
                               this._root,
                               (item): item is MergeableItem<Vault> =>
                                   item.payload.id === "vault"
-                          ).map((vault) => {
-                              const vaultState = this._vaults.get(
-                                  vault.payload.fileId
-                              )
-                              if (!vaultState) {
-                                  throw new Error(
-                                      "Vault state should have been initialized"
-                                  )
-                              }
+                          ).map((vaultItem) => {
+                              const vaultId = vaultItem.payload.fileId
+                              const vault = this._getVault(vaultId)
+
                               const prevVault =
-                                  this.#privilegedState.vaults[
-                                      vault.payload.fileId
-                                  ] ||
-                                  this.#computePrivilegedVaultState(
-                                      vaultState.vault
-                                  )
+                                  this.#privilegedState.vaults[vaultId] ||
+                                  this.#computePrivilegedVaultState(vault)
                               return [
-                                  vault.payload.fileId,
+                                  vaultId,
                                   {
                                       ...prevVault,
-                                      addresses: vault.payload.addresses,
+                                      addresses: vaultItem.payload.addresses,
                                       syncState: prevVault?.syncState || {},
                                   },
                               ]

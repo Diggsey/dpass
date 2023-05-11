@@ -152,6 +152,8 @@ function handleMessage(
             return SECURE_CONTEXT.backup()
         case "restore":
             return SECURE_CONTEXT.restore(message.url)
+        case "exportVaultItems":
+            return SECURE_CONTEXT.exportVaultItems(message.vaultId)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
@@ -216,11 +218,11 @@ async function requestAutoFill(
         payload = item.data.payload
     }
 
-    if (payload.restrict_url) {
+    if (payload.restrictUrl) {
         if (
             !senderType.url ||
-            !payload.login_url ||
-            !doesLoginUrlMatch(senderType.url, payload.login_url)
+            !payload.loginUrl ||
+            !doesLoginUrlMatch(senderType.url, payload.loginUrl)
         ) {
             throw new Error("Invalid URL")
         }

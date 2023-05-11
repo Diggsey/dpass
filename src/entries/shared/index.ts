@@ -62,3 +62,44 @@ export type Json =
     | { readonly [key: string]: Json }
 
 export type TimerId = ReturnType<typeof setTimeout>
+
+export function sanitizeNameForExport(name: string | null | undefined): string {
+    return (name ?? "unnamed").toLowerCase().replaceAll(" ", "_").slice(0, 16)
+}
+
+type FilePickerOptions = {
+    readonly accept?: string
+    readonly multiple?: boolean
+}
+
+export function openFilePicker(
+    options: FilePickerOptions,
+    cb: (urls: string[]) => Promise<void>
+) {
+    const input = document.createElement("input")
+    input.type = "file"
+    if (options.accept !== undefined) {
+        input.accept = options.accept
+    }
+    if (options.multiple !== undefined) {
+        input.multiple = options.multiple
+    }
+
+    input.onchange = async () => {
+        if (input.files) {
+            const urls = []
+            try {
+                for (let i = 0; i < input.files.length; ++i) {
+                    urls.push(URL.createObjectURL(input.files[i]))
+                }
+
+                await cb([...urls])
+            } finally {
+                for (const url of urls) {
+                    URL.revokeObjectURL(url)
+                }
+            }
+        }
+    }
+    input.click()
+}

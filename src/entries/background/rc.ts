@@ -22,18 +22,18 @@ type RcInstanceType<T extends IRcConstructor<any, any>> =
     T extends IRcConstructor<any, infer R> ? R : never
 
 export class Rc<T extends IDisposable> extends Disposable(EventTarget) {
-    #inner_opt: RcInner<T> | null
+    #innerOpt: RcInner<T> | null
 
     constructor(inner: RcInner<T>) {
         super()
         inner.count += 1
-        this.#inner_opt = inner
+        this.#innerOpt = inner
     }
     get #inner(): RcInner<T> {
-        if (!this.#inner_opt) {
+        if (!this.#innerOpt) {
             throw new Error("Disposed")
         }
-        return this.#inner_opt
+        return this.#innerOpt
     }
     get value(): T {
         return this.#inner.value
@@ -56,30 +56,30 @@ export class Rc<T extends IDisposable> extends Disposable(EventTarget) {
         return new WeakRc(this.#inner)
     }
     dispose(): void {
-        if (this.#inner_opt) {
-            this.#inner_opt.count -= 1
-            if (this.#inner_opt.count == 0) {
-                this.#inner_opt.value.dispose()
+        if (this.#innerOpt) {
+            this.#innerOpt.count -= 1
+            if (this.#innerOpt.count == 0) {
+                this.#innerOpt.value.dispose()
             }
-            this.#inner_opt = null
+            this.#innerOpt = null
         }
         super.dispose()
     }
 }
 
 export class WeakRc<T extends IDisposable> {
-    #inner_opt: RcInner<T> | null
+    #innerOpt: RcInner<T> | null
     constructor(inner: RcInner<T> | null) {
-        this.#inner_opt = inner
+        this.#innerOpt = inner
     }
     get #inner(): RcInner<T> {
-        if (!this.#inner_opt) {
+        if (!this.#innerOpt) {
             throw new Error("Disposed")
         }
-        return this.#inner_opt
+        return this.#innerOpt
     }
     get count(): number {
-        return this.#inner_opt ? this.#inner_opt.count : 0
+        return this.#innerOpt ? this.#innerOpt.count : 0
     }
     upgrade<U extends Rc<T>>(cls: new (inner: RcInner<T>) => U): U | null {
         if (this.count > 0) {

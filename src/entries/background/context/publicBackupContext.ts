@@ -4,6 +4,7 @@ import { IRootContext, ROOT_FILE_ID } from "./rootContext"
 import { IVaultContext } from "./vaultContext"
 import JSZip from "jszip"
 import { DOWNLOAD_MANAGER } from "../download"
+import { sanitizeNameForExport } from "~/entries/shared"
 
 export interface IPublicBackupContext {
     backup(): Promise<void>
@@ -28,12 +29,9 @@ export const PublicBackupContext = mixin<
                         zipFile.file(vaultId, vaultFile)
                     }
                     const dateStr = new Date().toISOString().slice(0, 10)
-                    const originalName =
-                        this._rootInfo?.payload.name ?? "unnamed"
-                    const sanitizedName = originalName
-                        .toLowerCase()
-                        .replaceAll(" ", "_")
-                        .slice(0, 10)
+                    const sanitizedName = sanitizeNameForExport(
+                        this._rootInfo?.payload.name
+                    )
                     filename = `dpass-${sanitizedName}-${dateStr}.zip`
                 })
                 const blob = await zipFile.generateAsync({

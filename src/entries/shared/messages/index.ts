@@ -39,7 +39,12 @@ import {
     EditGeneratorSettingsMessage,
     GeneratePasswordMessage,
 } from "./generators"
-import { BackupMessage, RestoreMessage } from "./backup"
+import {
+    BackupMessage,
+    ExportVaultItemsMessage,
+    ImportVaultItemsMessage,
+    RestoreMessage,
+} from "./backup"
 
 export type Message =
     | RequestAutofillMessage
@@ -70,6 +75,8 @@ export type Message =
     | GeneratePasswordMessage
     | BackupMessage
     | RestoreMessage
+    | ExportVaultItemsMessage
+    | ImportVaultItemsMessage
 
 type MessageResponses = {
     requestAutofill: AutofillPayload
@@ -100,6 +107,8 @@ type MessageResponses = {
     generatePassword: string
     backup: undefined
     restore: undefined
+    exportVaultItems: undefined
+    importVaultItems: undefined
 }
 export type MessageResponse<M extends Message = Message> =
     MessageResponses[M["id"]]

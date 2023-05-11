@@ -19,8 +19,13 @@ import {
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { Loader } from "~/entries/shared/components/icons/loader"
 import { ModalDialog } from "~/entries/shared/components/modalDialog"
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline"
+import {
+    ArrowDownTrayIcon,
+    ArrowUpTrayIcon,
+    ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline"
 import { ErrorText } from "~/entries/shared/components/errorText"
+import { openFilePicker } from "~/entries/shared"
 
 type DetailsListProps = {
     vaultId: string
@@ -126,6 +131,25 @@ const DetailsList = ({
         )
     )
 
+    const [exportingVaultItems, exportVaultItems] =
+        usePromiseState(async () => {
+            await sendMessage({ id: "exportVaultItems", vaultId })
+        }, [])
+    const [importingVaultItems, importVaultItems] = usePromiseState(
+        async (url: string) => {
+            await sendMessage({ id: "exportVaultItems", vaultId, url })
+        },
+        []
+    )
+    const pickFileToImport = useCallback(() => {
+        openFilePicker(
+            {
+                accept: ".csv,text/csv",
+            },
+            ([url]) => importVaultItems(url)
+        )
+    }, [])
+
     return (
         <>
             {removeVaultDialog}
@@ -200,6 +224,41 @@ const DetailsList = ({
                         <OutlineButton onClick={openRemoveVaultDialog}>
                             Remove Vault
                         </OutlineButton>
+                    </dd>
+                </div>
+                <div className="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 sm:py-5">
+                    <dt className="text-sm font-medium text-gray-500">
+                        Export
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+                        <div className="flex flex-wrap gap-3">
+                            <OutlineButton
+                                onClick={exportVaultItems}
+                                disabled={exportingVaultItems.inProgress}
+                            >
+                                <ButtonIcon
+                                    icon={
+                                        exportingVaultItems.inProgress
+                                            ? Loader
+                                            : ArrowDownTrayIcon
+                                    }
+                                />
+                                Export Items
+                            </OutlineButton>
+                            <OutlineButton
+                                onClick={pickFileToImport}
+                                disabled={importingVaultItems.inProgress}
+                            >
+                                <ButtonIcon
+                                    icon={
+                                        importingVaultItems.inProgress
+                                            ? Loader
+                                            : ArrowUpTrayIcon
+                                    }
+                                />
+                                Import Items
+                            </OutlineButton>
+                        </div>
                     </dd>
                 </div>
             </dl>
