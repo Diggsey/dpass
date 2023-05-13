@@ -137,7 +137,7 @@ const DetailsList = ({
         }, [])
     const [importingVaultItems, importVaultItems] = usePromiseState(
         async (url: string) => {
-            await sendMessage({ id: "exportVaultItems", vaultId, url })
+            await sendMessage({ id: "importVaultItems", vaultId, url })
         },
         []
     )

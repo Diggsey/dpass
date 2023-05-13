@@ -42,7 +42,7 @@ export const PublicItemContext = mixin<
                 overrideVaultId: string | undefined,
                 details: ItemDetails
             ): Promise<string> {
-                return this._post(
+                return this._postWithRetryIfLocked(
                     `createVaultItem(${overrideVaultId}, ${details})`,
                     () => this._createVaultItem(overrideVaultId, details)
                 )
@@ -51,7 +51,7 @@ export const PublicItemContext = mixin<
                 vaultId: string,
                 itemId: string
             ): Promise<void> {
-                return this._post(
+                return this._postWithRetryIfLocked(
                     `deleteVaultItem(${vaultId}, ${itemId})`,
                     () => this._deleteVaultItem(vaultId, itemId)
                 )
@@ -61,7 +61,7 @@ export const PublicItemContext = mixin<
                 itemId: string,
                 details: ItemDetails
             ): Promise<void> {
-                return this._post(
+                return this._postWithRetryIfLocked(
                     `updateVaultItem(${vaultId}, ${itemId}, ${details})`,
                     () => this._updateVaultItem(vaultId, itemId, details)
                 )
@@ -81,7 +81,7 @@ export const PublicItemContext = mixin<
                 vaultId: string,
                 itemId: string
             ): Promise<VaultItemPayload> {
-                return this._post(
+                return this._postWithRetryIfLocked(
                     `decryptVaultItem(${vaultId}, ${itemId})`,
                     async () => {
                         const [_item, payload] =

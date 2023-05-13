@@ -8,6 +8,7 @@ import {
     extractItems,
     itemCreator,
     itemPatcher,
+    itemsCreator,
 } from "../serialize/merge"
 import {
     KeyApplication,
@@ -40,6 +41,10 @@ export interface IItemContext {
     _exportVaultItems(
         vaultId: string
     ): Promise<[NormalItem, VaultItemPayload][]>
+    _importVaultItems(
+        overrideVaultId: string | undefined,
+        detailsList: ItemDetails[]
+    ): Promise<void>
 }
 
 // Handles loading and updating the setup key
@@ -148,11 +153,16 @@ export const ItemContext = mixin<
                         item.payload.id === "normal"
                 )
                 const results: [NormalItem, VaultItemPayload][] = []
-                const vaultSuperKey = await this._deriveVaultSuperKey(vaultId)
+                let vaultSuperKey = null
                 for (const { payload: item } of items) {
                     if (!item.data.encrypted) {
                         results.push([item, item.data.payload])
                     } else {
+                        if (vaultSuperKey === null) {
+                            vaultSuperKey = await this._deriveVaultSuperKey(
+                                vaultId
+                            )
+                        }
                         const itemKey =
                             await this.#deriveVaultItemKeyWithVaultKey(
                                 vaultSuperKey,
@@ -166,6 +176,30 @@ export const ItemContext = mixin<
                     }
                 }
                 return results
+            }
+            async _importVaultItems(
+                overrideVaultId: string | undefined,
+                detailsList: ItemDetails[]
+            ): Promise<void> {
+                const vaultId = overrideVaultId ?? this._defaultVaultId
+                if (vaultId === null) {
+                    throw new Error("No default vault")
+                }
+                const items: NormalItem[] = []
+                for (const details of detailsList) {
+                    const { payload, encrypted, ...rest } = details
+                    const data = await this.#buildItemDataFromPayload(
+                        vaultId,
+                        payload ?? { fields: [] },
+                        encrypted
+                    )
+                    items.push({
+                        id: "normal",
+                        ...rest,
+                        data,
+                    })
+                }
+                await this._patchVault(vaultId, itemsCreator(items))
             }
 
             async #recordOldValues(

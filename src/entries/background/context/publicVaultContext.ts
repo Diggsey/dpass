@@ -85,7 +85,7 @@ export const PublicVaultContext = mixin<
                 )
             }
             createVault(name: string, copyStorage: boolean): Promise<string> {
-                return this._post(
+                return this._postWithRetryIfLocked(
                     `createVault(${name}, ${copyStorage})`,
                     async () => {
                         const superKey = await this._requireSuperKey()

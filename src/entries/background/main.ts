@@ -154,6 +154,8 @@ function handleMessage(
             return SECURE_CONTEXT.restore(message.url)
         case "exportVaultItems":
             return SECURE_CONTEXT.exportVaultItems(message.vaultId)
+        case "importVaultItems":
+            return SECURE_CONTEXT.importVaultItems(message.vaultId, message.url)
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return

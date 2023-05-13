@@ -126,6 +126,24 @@ export function itemCreator<T, U extends T>(
     })
 }
 
+export function itemsCreator<T, U extends T>(
+    payloads: U[]
+): (file: MergeableFile<T>) => MergeableFile<T> {
+    const timestamp = Date.now()
+    return (file) => ({
+        ...file,
+        items: [
+            ...file.items,
+            ...payloads.map((payload) => ({
+                uuid: crypto.randomUUID(),
+                creationTimestamp: timestamp,
+                updateTimestamp: timestamp,
+                payload,
+            })),
+        ],
+    })
+}
+
 export function chainPatches<T>(
     ...patchers: ((file: MergeableFile<T>) => MergeableFile<T>)[]
 ): (file: MergeableFile<T>) => MergeableFile<T> {
