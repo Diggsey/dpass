@@ -28,7 +28,7 @@ import { ISuperKeyContext } from "./superKeyContext"
 import { IRootAddressesContext } from "./rootAddressesContext"
 import { StorageAddress } from "~/entries/shared/privileged/state"
 
-class MissingVaultError extends Error {
+export class MissingVaultError extends Error {
     constructor() {
         super("Vault not found")
     }

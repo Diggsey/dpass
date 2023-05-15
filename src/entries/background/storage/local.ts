@@ -1,10 +1,24 @@
 import { LocalStorageAddress } from "~/entries/shared/privileged/state"
 import { Disposable } from "../../shared/mixins/disposable"
 import { DataAndEtag, ETagMismatchError, IStorage } from "./interface"
+import { Traceable } from "~/entries/shared/mixins/traceable"
 
 const OBJECT_STORE_NAME = "blobs"
 
-export class LocalStorage extends Disposable(EventTarget) implements IStorage {
+type TransactionResult<T> =
+    | {
+          success: true
+          value: T
+      }
+    | {
+          success: false
+          error: unknown
+      }
+
+export class LocalStorage
+    extends Traceable(Disposable(EventTarget))
+    implements IStorage
+{
     readonly address: LocalStorageAddress
     #db: IDBDatabase
 
@@ -48,21 +62,49 @@ export class LocalStorage extends Disposable(EventTarget) implements IStorage {
         f: (objectStore: IDBObjectStore) => Promise<T>
     ): Promise<T> {
         return new Promise<T>((resolve, reject) => {
+            this.trace`enter performTransaction(${mode})`
             const tx = this.#db.transaction(OBJECT_STORE_NAME, mode)
-            let successFn: (() => void) | null = null
-            let errorValue: unknown = null
-            tx.onabort = () => reject(errorValue)
-            tx.oncomplete = () => successFn && successFn()
+
+            let transactionActive = true
+            let transactionResult: TransactionResult<T> = {
+                success: false,
+                error: new Error("Transaction interrupted by debugger"),
+            }
+
+            const complete = () => {
+                transactionActive = false
+                if (transactionResult.success) {
+                    resolve(transactionResult.value)
+                } else {
+                    console.error(transactionResult.error)
+                    reject(transactionResult.error)
+                }
+            }
+
+            tx.onabort = () => {
+                this.trace`leave performTransaction(abort)`
+                complete()
+            }
+            tx.oncomplete = () => {
+                this.trace`leave performTransaction(commit)`
+                complete()
+            }
 
             const objectStore = tx.objectStore(OBJECT_STORE_NAME)
             f(objectStore).then(
-                (res) => {
-                    successFn = () => resolve(res)
+                (value) => {
+                    transactionResult = { success: true, value }
                     tx.commit()
                 },
-                (err) => {
-                    errorValue = err
-                    tx.abort()
+                (error) => {
+                    const isTransactionInactiveError =
+                        error instanceof DOMException &&
+                        error.name === "TransactionInactiveError"
+                    if (transactionActive && !isTransactionInactiveError) {
+                        transactionResult = { success: false, error }
+                        this.trace`Aborting transaction...`
+                        tx.abort()
+                    }
                 }
             )
         })

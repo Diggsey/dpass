@@ -18,7 +18,7 @@ import {
 } from "../serialize/vaultData"
 import { extractItems, MergeableItem } from "../serialize/merge"
 import { IRootContext, ROOT_FILE_ID, UpdateRootHint } from "./rootContext"
-import { IVaultContext } from "./vaultContext"
+import { IVaultContext, MissingVaultError } from "./vaultContext"
 
 export interface IStatePublisherContext {
     get privilegedState(): PrivilegedState
@@ -127,11 +127,16 @@ export const StatePublisherContext = mixin<
                                   item.payload.id === "vault"
                           ).map((vaultItem) => {
                               const vaultId = vaultItem.payload.fileId
-                              const vault = this._getVault(vaultId)
+                              const vaultState = this._vaults.get(vaultId)
+                              if (!vaultState) {
+                                  throw new MissingVaultError()
+                              }
 
                               const prevVault =
                                   this.#privilegedState.vaults[vaultId] ||
-                                  this.#computePrivilegedVaultState(vault)
+                                  this.#computePrivilegedVaultState(
+                                      vaultState.vault
+                                  )
                               return [
                                   vaultId,
                                   {
