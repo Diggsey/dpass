@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import { StorageAddress } from "~/entries/shared/privileged/state"
@@ -14,7 +14,7 @@ type StorageButtonsProps = {
 export const StorageButtons: FC<StorageButtonsProps> = ({ vaultId }) => {
     const [addingStorage, addStorage] = usePromiseState(
         async (storageAddress: StorageAddress) => {
-            await sendMessage({
+            await host.sendMessage({
                 id: "editStorageAddresses",
                 vaultId,
                 action: {

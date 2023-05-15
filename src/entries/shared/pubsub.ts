@@ -1,12 +1,12 @@
-import browser, { Runtime } from "webextension-polyfill"
 import { applyDelta, computeDelta, Delta } from "./delta"
 import { Disposable } from "./mixins/disposable"
+import host, { Port } from "./host"
 
 export class Publisher<T> extends EventTarget {
-    #port: Runtime.Port
+    #port: Port
     #lastValue: T | null
 
-    constructor(port: Runtime.Port) {
+    constructor(port: Port) {
         super()
         this.#port = port
         this.#lastValue = null
@@ -27,7 +27,7 @@ export class Publisher<T> extends EventTarget {
 
 export class Subscriber<T> extends Disposable(EventTarget) {
     #channelName: string
-    #port: Runtime.Port | null
+    #port: Port | null
     #lastValue: T | null
     #reconnectionAttempts = 0
 
@@ -52,16 +52,16 @@ export class Subscriber<T> extends Disposable(EventTarget) {
         }
         this.#lastValue = null
         if (!this.disposed) {
-            this.#port = browser.runtime.connect({ name: this.#channelName })
+            this.#port = host.connect(this.#channelName)
             this.#port.onMessage.addListener(this.#onMessage)
             this.#port.onDisconnect.addListener(this.#onDisconnect)
             this.#reconnectionAttempts += 1
         }
     }
 
-    #onMessage = (msg: Delta<T>) => {
+    #onMessage = (msg: unknown) => {
         this.#reconnectionAttempts = 0
-        this.#lastValue = applyDelta(this.#lastValue, msg)
+        this.#lastValue = applyDelta(this.#lastValue, msg as Delta<T>)
         if (this.#lastValue !== null) {
             this.update(this.#lastValue)
         }

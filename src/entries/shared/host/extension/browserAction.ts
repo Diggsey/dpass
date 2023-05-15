@@ -1,11 +1,12 @@
-import { PrivilegedState } from "../shared/privileged/state"
-import { IStatePublisher } from "./pubsub/state"
+import {
+    IStatePublisher,
+    PrivilegedState,
+    PrivilegedVaultMap,
+} from "../../privileged/state"
 import browser, { Action, Tabs } from "webextension-polyfill"
-import { SECURE_CONTEXT } from "./context"
-import { sendMessageToFrame, sendMessageToTab } from "../shared/messages"
-import { RequestAutofillMessage } from "../shared/messages/autofill"
+import { sendMessageToFrame, sendMessageToTab } from "./messages"
+import { RequestAutofillMessage } from "../../messages/autofill"
 import { userAction } from "./userAction"
-import { onInit } from "./init"
 
 export enum BrowserClickAction {
     Autofill,
@@ -18,6 +19,7 @@ class BrowserAction extends EventTarget implements IStatePublisher {
     #popup: string | null = null
     #clickAction: BrowserClickAction = BrowserClickAction.ShowOptions
     #changingPopup: Promise<void> | null = null
+    #vaults: PrivilegedVaultMap = {}
 
     async #changePopup(popup: string | null) {
         while (this.#changingPopup) {
@@ -60,6 +62,7 @@ class BrowserAction extends EventTarget implements IStatePublisher {
     }
 
     publishPrivileged(state: PrivilegedState): void {
+        this.#vaults = state.vaults
         if (!state.hasIdentity) {
             this.clickAction = BrowserClickAction.ShowOptions
         } else if (!state.isUnlocked) {
@@ -100,9 +103,7 @@ class BrowserAction extends EventTarget implements IStatePublisher {
         origin: string
     ): Promise<RequestAutofillMessage | null> {
         const candidates: RequestAutofillMessage[] = []
-        for (const [vaultId, vault] of Object.entries(
-            SECURE_CONTEXT.privilegedState.vaults
-        )) {
+        for (const [vaultId, vault] of Object.entries(this.#vaults)) {
             if (vault.items === null) {
                 continue
             }
@@ -175,9 +176,4 @@ class BrowserAction extends EventTarget implements IStatePublisher {
 
 export const BROWSER_ACTION = new BrowserAction()
 
-onInit(() => {
-    SECURE_CONTEXT.addStatePublisher(BROWSER_ACTION)
-    browser.browserAction.onClicked.addListener(
-        userAction(BROWSER_ACTION.onClick)
-    )
-})
+browser.browserAction.onClicked.addListener(userAction(BROWSER_ACTION.onClick))

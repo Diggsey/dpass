@@ -1,34 +1,34 @@
 import { VaultItemPayload } from "../state"
 
 export type EditVaultNameMessage = {
-    id: "editVaultName"
-    vaultId: string
-    name: string
+    readonly id: "editVaultName"
+    readonly vaultId: string
+    readonly name: string
 }
 export type CreateVaultItemMessage = {
-    id: "createVaultItem"
-    vaultId?: string
-    details: ItemDetails
+    readonly id: "createVaultItem"
+    readonly vaultId?: string
+    readonly details: ItemDetails
 }
 export type DeleteVaultItemMessage = {
-    id: "deleteVaultItem"
-    vaultId: string
-    itemId: string
+    readonly id: "deleteVaultItem"
+    readonly vaultId: string
+    readonly itemId: string
 }
 export type UpdateVaultItemMessage = {
-    id: "updateVaultItem"
-    vaultId: string
-    itemId: string
-    details: ItemDetails
+    readonly id: "updateVaultItem"
+    readonly vaultId: string
+    readonly itemId: string
+    readonly details: ItemDetails
 }
 export type DecryptVaultItemMessage = {
-    id: "decryptVaultItem"
-    vaultId: string
-    itemId: string
+    readonly id: "decryptVaultItem"
+    readonly vaultId: string
+    readonly itemId: string
 }
 export type ItemDetails = {
-    origins: string[]
-    name: string
-    encrypted: boolean
-    payload?: VaultItemPayload
+    readonly origins: string[]
+    readonly name: string
+    readonly encrypted: boolean
+    readonly payload?: VaultItemPayload
 }

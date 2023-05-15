@@ -142,11 +142,11 @@ export const PRESET_AUTOFILL_MAPPING: {
 }
 
 export type PresetAutofillMode = {
-    id: PresetAutofillValue
+    readonly id: PresetAutofillValue
 }
 export type CustomAutofillMode = {
-    id: "custom"
-    key: string
+    readonly id: "custom"
+    readonly key: string
 }
 
 export function defaultName(autofillMode: AutofillMode): string {

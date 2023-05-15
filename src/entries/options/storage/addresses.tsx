@@ -1,6 +1,6 @@
 import { FC, MouseEventHandler, ReactNode, useCallback, useState } from "react"
 import { objectKey } from "~/entries/shared"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { Status } from "~/entries/shared/components/status"
 import {
     PrivilegedSyncState,
@@ -148,7 +148,7 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
             newAddresses.splice(destIndex, 0, movedAddress)
             try {
                 setOverrideAddresses(newAddresses)
-                await sendMessage({
+                await host.sendMessage({
                     id: "editStorageAddresses",
                     vaultId,
                     action: {
@@ -183,7 +183,7 @@ export const StorageAddresses: FC<StorageAddressesProps> = ({
             if (!editingAddress) {
                 return
             }
-            await sendMessage({
+            await host.sendMessage({
                 id: "editStorageAddresses",
                 vaultId,
                 action: {

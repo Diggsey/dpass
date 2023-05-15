@@ -1,5 +1,5 @@
 import { FC, useCallback, useEffect, useId, useState } from "react"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { Status } from "~/entries/shared/components/status"
 import {
     VaultItem,
@@ -82,7 +82,7 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
         }),
         async (details: ItemDetails) => {
             // Asynchronously propagate the change to the vault
-            await sendMessage({
+            await host.sendMessage({
                 id: "updateVaultItem",
                 vaultId,
                 itemId,
@@ -124,7 +124,7 @@ export const Item: FC<ItemProps> = ({ vaultId, itemId, item, displayName }) => {
     // Delete this entire item
     const [deletingItem, deleteItem] = usePromiseState(
         async () => {
-            await sendMessage({
+            await host.sendMessage({
                 id: "deleteVaultItem",
                 vaultId,
                 itemId,
@@ -364,7 +364,7 @@ type LockedItemProps = {
 
 const LockedItem: FC<LockedItemProps> = ({ vaultId, itemId, onUnlock }) => {
     const [decryptingItem, decryptItem] = usePromiseState(async () => {
-        const decryptedPayload = await sendMessage({
+        const decryptedPayload = await host.sendMessage({
             id: "decryptVaultItem",
             vaultId,
             itemId,

@@ -1,5 +1,5 @@
 import { FC } from "react"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { PrivilegedState } from "~/entries/shared/privileged/state"
 import { cn } from "~/entries/shared/ui"
 import { Item } from "./item"
@@ -113,7 +113,7 @@ export const ItemsPage: FC<{ state: PrivilegedState }> = ({ state }) => {
     const canCreateItem = state.vaults[vaultIdForNewItems]?.missing === false
 
     const [creatingItem, createItem] = usePromiseState(async () => {
-        const itemId = await sendMessage({
+        const itemId = await host.sendMessage({
             id: "createVaultItem",
             vaultId: vaultIdForNewItems,
             details: {

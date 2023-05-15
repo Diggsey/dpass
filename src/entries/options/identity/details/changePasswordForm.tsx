@@ -9,7 +9,7 @@ import {
     SecondaryButton,
     ValidationError,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { useFormData, usePromiseState } from "~/entries/shared/ui/hooks"
 
 type Data = {
@@ -42,7 +42,7 @@ export const ChangePasswordForm = ({ close }: { close: () => void }) => {
             if (!allValid) {
                 return
             }
-            await sendMessage({
+            await host.sendMessage({
                 id: "changeRootPassword",
                 oldPassword: data.currentPassword,
                 newPassword: data.masterPassword,

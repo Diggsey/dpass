@@ -2,39 +2,39 @@ import { Message } from "."
 import { ContentModalPayload } from "./modal"
 
 export type OptionsPageOpenedMessage = {
-    id: "optionsPageOpened"
+    readonly id: "optionsPageOpened"
 }
 export type GetFrameDetailsMessage = {
-    id: "getFrameDetails"
+    readonly id: "getFrameDetails"
 }
 export type ContentModalMessage = {
-    id: "contentModal"
-    uuid: string
-    payload: ContentModalPayload
+    readonly id: "contentModal"
+    readonly uuid: string
+    readonly payload: ContentModalPayload
 }
 export type ForwardMessage = {
-    id: "forward"
-    tabId: number
-    frameId: number
-    message: Message
+    readonly id: "forward"
+    readonly tabId: number
+    readonly frameId: number
+    readonly message: Message
 }
 export type FrameDetails = {
-    windowId: number
-    tabId: number
-    frameId: number
+    readonly windowId: number
+    readonly tabId: number
+    readonly frameId: number
 }
 export type OpenOptionsPage = {
-    id: "openOptionsPage"
-    target: OptionsPageTarget
+    readonly id: "openOptionsPage"
+    readonly target: OptionsPageTarget
 }
 
 export type OptionsPageTarget = OptionsPageItem | OptionsPageIdentity
 
 export type OptionsPageItem = {
-    id: "item"
-    itemId: string
+    readonly id: "item"
+    readonly itemId: string
 }
 
 export type OptionsPageIdentity = {
-    id: "identity"
+    readonly id: "identity"
 }

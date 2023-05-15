@@ -9,7 +9,7 @@ import {
     SecondaryButton,
     ValidationError,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { useFormData, usePromiseState } from "~/entries/shared/ui/hooks"
 
 export const ChangeNameForm = ({
@@ -38,7 +38,7 @@ export const ChangeNameForm = ({
             if (!allValid) {
                 return
             }
-            await sendMessage({
+            await host.sendMessage({
                 id: "editVaultName",
                 vaultId,
                 name: data.name,

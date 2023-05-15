@@ -1,16 +1,24 @@
 import { StorageAddress } from "../privileged/state"
 
 export type EditStorageAddressesMessage = {
-    id: "editStorageAddresses"
-    vaultId: string | null
-    action: StorageAddressAction
+    readonly id: "editStorageAddresses"
+    readonly vaultId: string | null
+    readonly action: StorageAddressAction
 }
 export type StorageAddressAction =
-    | { id: "add"; storageAddress: StorageAddress }
-    | { id: "remove"; storageAddress: StorageAddress; wipe: boolean }
-    | { id: "move"; storageAddress: StorageAddress; priority: number }
+    | { readonly id: "add"; readonly storageAddress: StorageAddress }
     | {
-          id: "edit"
-          storageAddress: StorageAddress
-          newStorageAddress: StorageAddress
+          readonly id: "remove"
+          readonly storageAddress: StorageAddress
+          readonly wipe: boolean
+      }
+    | {
+          readonly id: "move"
+          readonly storageAddress: StorageAddress
+          readonly priority: number
+      }
+    | {
+          readonly id: "edit"
+          readonly storageAddress: StorageAddress
+          readonly newStorageAddress: StorageAddress
       }

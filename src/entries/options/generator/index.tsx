@@ -13,12 +13,12 @@ import {
     useDebouncedBoundState,
     usePromiseState,
 } from "~/entries/shared/ui/hooks"
-import { sendMessage } from "~/entries/shared/messages"
 import { FormInput } from "~/entries/shared/components/formInput"
 import { passwordEntropy } from "~/entries/shared/generator"
 import { BoltIcon } from "@heroicons/react/24/outline"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { PasswordStrengthLabel } from "~/entries/shared/components/passwordStrengthLabel"
+import host from "~/entries/shared/host"
 
 const PasswordGenerator = ({ settings }: { settings: GeneratorSettings }) => {
     const copiedElemRef = useRef<HTMLSpanElement | null>(null)
@@ -26,7 +26,7 @@ const PasswordGenerator = ({ settings }: { settings: GeneratorSettings }) => {
     const { state, setState } = useDebouncedBoundState(
         settings,
         async (newSettings) => {
-            await sendMessage({
+            await host.sendMessage({
                 id: "editGeneratorSettings",
                 settings: newSettings,
             })
@@ -37,7 +37,7 @@ const PasswordGenerator = ({ settings }: { settings: GeneratorSettings }) => {
     const entropy = useMemo(() => passwordEntropy(state), [state])
     const [generatingPassword, generatePassword, clearPassword] =
         usePromiseState(async () => {
-            const password = await sendMessage({
+            const password = await host.sendMessage({
                 id: "generatePassword",
             })
 

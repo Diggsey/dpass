@@ -4,12 +4,7 @@ import {
     OauthConnectionInfo,
     OauthTokenPayload,
 } from "./privileged/state"
-import browser from "webextension-polyfill"
-import { objectKey } from "."
-
-function getTokenKey(connectionInfo: ConnectionInfo): string {
-    return `token-${objectKey(connectionInfo)}`
-}
+import host from "./host"
 
 const MIN_EXPIRY_BUFFER_MS = 10000
 
@@ -29,12 +24,12 @@ class TokenManager {
             client_id:
                 "711430196916-b8dqrl7bg50kb6b1lsnkrtutd6s704qu.apps.googleusercontent.com",
             response_type: "token",
-            redirect_uri: browser.identity.getRedirectURL(),
+            redirect_uri: host.getRedirectURL(),
             scope: "openid https://www.googleapis.com/auth/drive.file",
             login_hint: connectionInfo.userId,
         })
         const redirectUrl = new URL(
-            await browser.identity.launchWebAuthFlow({
+            await host.launchWebAuthFlow({
                 url: authUrl,
                 interactive: true,
             })
@@ -95,10 +90,11 @@ class TokenManager {
     async request(
         connectionInfo: ConnectionInfo
     ): Promise<[OauthTokenPayload, ConnectionInfo]> {
-        let tokenKey = getTokenKey(connectionInfo)
-        const res = await browser.storage.local.get(tokenKey)
-        let token: AuthToken | undefined = res[tokenKey]
-        if (!token || token.expiresAt < Date.now() + MIN_EXPIRY_BUFFER_MS) {
+        let token = await host.loadToken(connectionInfo)
+        if (
+            token === null ||
+            token.expiresAt < Date.now() + MIN_EXPIRY_BUFFER_MS
+        ) {
             switch (connectionInfo.id) {
                 case "oauth":
                     ;[token, connectionInfo] = await this.#requestOauthToken(
@@ -108,10 +104,7 @@ class TokenManager {
                 case "none":
                     throw new Error("Cannot request `none` token")
             }
-            tokenKey = getTokenKey(connectionInfo)
-            await browser.storage.local.set({
-                tokenKey: token,
-            })
+            await host.storeToken(connectionInfo, token)
         }
         return [token.payload, connectionInfo]
     }

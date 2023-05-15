@@ -27,6 +27,7 @@ export default defineConfig(({ mode }) => {
             },
         },
         build: {
+            target: ["es2022", "edge89", "firefox89", "chrome89", "safari15"],
             sourcemap: true,
             rollupOptions: {
                 output: {

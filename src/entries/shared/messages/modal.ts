@@ -1,15 +1,17 @@
+import { Json } from ".."
+
 export type ContentModalPayload =
     | CloseContentModalPayload
     | ResizeContentModalPayload
 
 type CloseContentModalPayload = {
-    id: "close"
-    resolve?: unknown
-    reject?: string
+    readonly id: "close"
+    readonly resolve?: Json
+    readonly reject?: string
 }
 
 type ResizeContentModalPayload = {
-    id: "resize"
-    width: number
-    height: number
+    readonly id: "resize"
+    readonly width: number
+    readonly height: number
 }

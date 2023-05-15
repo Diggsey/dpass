@@ -6,7 +6,7 @@ import {
     PrimaryButton,
     SecondaryButton,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { StorageAddress } from "~/entries/shared/privileged/state"
 import { SharedPromiseState, usePromiseState } from "~/entries/shared/ui/hooks"
 import { StorageEditorProps, STORAGE_PROVIDER_MAP } from "."
@@ -59,7 +59,7 @@ export const StorageAddressEditor = ({
                 return
             }
             if (isNew) {
-                await sendMessage({
+                await host.sendMessage({
                     id: "editStorageAddresses",
                     vaultId,
                     action: {
@@ -68,7 +68,7 @@ export const StorageAddressEditor = ({
                     },
                 })
             } else {
-                await sendMessage({
+                await host.sendMessage({
                     id: "editStorageAddresses",
                     vaultId,
                     action: {

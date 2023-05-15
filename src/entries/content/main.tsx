@@ -4,12 +4,8 @@ import {
     PRESET_AUTOFILL_MAPPING,
     PRESET_AUTOFILL_VALUES,
 } from "../shared/autofill"
-import {
-    addMessageListener,
-    Message,
-    MessageResponse,
-    sendMessage,
-} from "../shared/messages"
+import host from "../shared/host"
+import { Message, MessageResponse } from "../shared/messages"
 import {
     AutofillPayload,
     DetectedField,
@@ -137,7 +133,7 @@ async function performAutofill(
     }
 
     const allInputs = findAllInputs()
-    const payload = await sendMessage(message.item)
+    const payload = await host.sendMessage(message.item)
 
     if (payload) {
         return autofillPage(allInputs, payload)
@@ -175,4 +171,4 @@ function respondIfWeAreActive(): Promise<PokeFrameResponse> | undefined {
     })
 }
 
-addMessageListener(handleMessage)
+host.onMessage(handleMessage)

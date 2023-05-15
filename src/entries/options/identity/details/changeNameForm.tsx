@@ -9,8 +9,9 @@ import {
     SecondaryButton,
     ValidationError,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+
 import { useFormData, usePromiseState } from "~/entries/shared/ui/hooks"
+import host from "~/entries/shared/host"
 
 export const ChangeNameForm = ({
     currentName,
@@ -36,7 +37,7 @@ export const ChangeNameForm = ({
             if (!allValid) {
                 return
             }
-            await sendMessage({
+            await host.sendMessage({
                 id: "editRootName",
                 name: data.name,
             })

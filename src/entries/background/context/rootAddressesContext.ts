@@ -1,4 +1,3 @@
-import browser from "webextension-polyfill"
 import {
     abstractMethod,
     Decorated,
@@ -7,6 +6,7 @@ import {
 } from "~/entries/shared/mixin"
 import { StorageAddress } from "~/entries/shared/privileged/state"
 import { Actor } from "../actor"
+import host from "~/entries/shared/host"
 
 export interface IRootAddressesContext {
     get _rootAddresses(): readonly StorageAddress[]
@@ -29,14 +29,10 @@ export const RootAddressesContext = mixin<IRootAddressesContext, Actor>(
                     return this.#rootAddresses
                 }
 
-                #loadRootAddresses() {
+                #loadRootAddresses = () => {
                     void this._post("#loadRootAddresses()", async () => {
-                        const res = await browser.storage.sync.get(
-                            "rootAddresses"
-                        )
-                        if (res.rootAddresses) {
-                            await this.#updateRootAddresses(res.rootAddresses)
-                        }
+                        const rootAddresses = await host.loadRootAddresses()
+                        await this.#updateRootAddresses(rootAddresses)
                     })
                 }
 
@@ -45,19 +41,9 @@ export const RootAddressesContext = mixin<IRootAddressesContext, Actor>(
                     await this._rootAddressesChanged()
                 }
 
-                #syncStorageChanged = (
-                    changes: Record<string, browser.Storage.StorageChange>
-                ) => {
-                    if (Object.hasOwn(changes, "rootAddresses")) {
-                        this.#loadRootAddresses()
-                    }
-                }
-
                 constructor(...args: MixinConstructorArgs) {
                     super(...args)
-                    browser.storage.sync.onChanged.addListener(
-                        this.#syncStorageChanged
-                    )
+                    host.onRootAddressesChanged(this.#loadRootAddresses)
                     this.#loadRootAddresses()
                 }
 

@@ -2,7 +2,7 @@ import { mixin } from "~/entries/shared/mixin"
 import { Actor } from "../actor"
 import { IRootContext } from "./rootContext"
 import { IVaultContext } from "./vaultContext"
-import { DOWNLOAD_MANAGER } from "../download"
+import host from "~/entries/shared/host"
 import { IItemContext } from "./itemContext"
 import { VaultItemField, VaultItemPayload } from "~/entries/shared/state"
 import {
@@ -184,7 +184,7 @@ export const PublicExportContext = mixin<
                 )
 
                 const blob = new Blob([Papa.unparse(csvRows)])
-                DOWNLOAD_MANAGER.beginDownload(filename, blob)
+                host.beginDownload(filename, blob)
             }
             async importVaultItems(
                 vaultId: string,

@@ -1,5 +1,4 @@
 import browser, { Downloads } from "webextension-polyfill"
-import { onInit } from "./init"
 
 class DownloadManager {
     #urlsToRevoke = new Map<number, string>()
@@ -47,8 +46,10 @@ class DownloadManager {
     }
 }
 
-export const DOWNLOAD_MANAGER = new DownloadManager()
+const DOWNLOAD_MANAGER = new DownloadManager()
 
-onInit(() => {
-    browser.downloads.onChanged.addListener(DOWNLOAD_MANAGER.onChanged)
-})
+browser.downloads.onChanged.addListener(DOWNLOAD_MANAGER.onChanged)
+
+export function beginDownload(filename: string, blob: Blob) {
+    DOWNLOAD_MANAGER.beginDownload(filename, blob)
+}

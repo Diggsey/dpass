@@ -14,6 +14,7 @@ import { PublicGeneratorContext } from "./context/publicGeneratorContext"
 import { HistoryContext } from "./context/historyContext"
 import { PublicBackupContext } from "./context/publicBackupContext"
 import { PublicExportContext } from "./context/publicExportContext"
+import host from "../shared/host"
 
 class SecureContext extends PublicExportContext(
     PublicBackupContext(
@@ -46,3 +47,7 @@ class SecureContext extends PublicExportContext(
 ) {}
 
 export const SECURE_CONTEXT = new SecureContext()
+
+for (const statePublisher of host.init()) {
+    SECURE_CONTEXT.addStatePublisher(statePublisher)
+}

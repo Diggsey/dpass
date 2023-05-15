@@ -1,10 +1,7 @@
 import browser from "webextension-polyfill"
 
-import { exportKey, importKey } from "./crypto"
-
-export enum PersistentKeyType {
-    setupKey = "setupKey",
-}
+import { exportKey, importKey } from "../../crypto"
+import { PersistentKeyType } from ".."
 
 export async function storeKey(keyType: PersistentKeyType, key: CryptoKey) {
     const rawKey = await exportKey(key)

@@ -1,19 +1,19 @@
 export type BackupMessage = {
-    id: "backup"
+    readonly id: "backup"
 }
 
 export type RestoreMessage = {
-    id: "restore"
-    url: string
+    readonly id: "restore"
+    readonly url: string
 }
 
 export type ExportVaultItemsMessage = {
-    id: "exportVaultItems"
-    vaultId: string
+    readonly id: "exportVaultItems"
+    readonly vaultId: string
 }
 
 export type ImportVaultItemsMessage = {
-    id: "importVaultItems"
-    vaultId: string
-    url: string
+    readonly id: "importVaultItems"
+    readonly vaultId: string
+    readonly url: string
 }

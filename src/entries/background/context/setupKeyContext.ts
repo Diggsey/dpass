@@ -5,12 +5,7 @@ import {
     MixinConstructorArgs,
 } from "~/entries/shared/mixin"
 import { Actor } from "../actor"
-import {
-    deleteKey,
-    loadKey,
-    PersistentKeyType,
-    storeKey,
-} from "../persistentKeys"
+import host, { PersistentKeyType } from "~/entries/shared/host"
 
 export interface ISetupKeyContext {
     _setupKey: CryptoKey | null
@@ -33,9 +28,9 @@ export const SetupKeyContext = mixin<ISetupKeyContext, Actor>((Base) =>
                     return
                 }
                 if (setupKey) {
-                    void storeKey(PersistentKeyType.setupKey, setupKey)
+                    void host.storeKey(PersistentKeyType.setupKey, setupKey)
                 } else if (setupKey === null) {
-                    void deleteKey(PersistentKeyType.setupKey)
+                    void host.deleteKey(PersistentKeyType.setupKey)
                 }
                 this.#setupKey = setupKey
                 this._setupKeyChanged()
@@ -43,7 +38,9 @@ export const SetupKeyContext = mixin<ISetupKeyContext, Actor>((Base) =>
 
             #loadSetupKey() {
                 void this._post("#loadSetupKey()", async () => {
-                    const setupKey = await loadKey(PersistentKeyType.setupKey)
+                    const setupKey = await host.loadKey(
+                        PersistentKeyType.setupKey
+                    )
                     if (setupKey) {
                         this.#setupKey = setupKey
                         this._setupKeyChanged()

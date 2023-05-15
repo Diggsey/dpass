@@ -1,5 +1,5 @@
-import browser from "webextension-polyfill"
 import { randomInt } from "./random"
+import host from "./host"
 
 export enum Lang {
     en = "en",
@@ -9,9 +9,7 @@ const wordlists: { [lang in Lang]?: Promise<string[]> } = {}
 const currentLang = Lang.en
 
 async function loadLanguageImpl(lang: Lang): Promise<string[]> {
-    const resp = await fetch(
-        browser.runtime.getURL(`assets/wordlists/${lang}.txt`)
-    )
+    const resp = await fetch(host.getAssetUrl(`assets/wordlists/${lang}.txt`))
     if (!resp.ok) {
         throw new Error(`Failed to load word list for language '${lang}'`)
     }

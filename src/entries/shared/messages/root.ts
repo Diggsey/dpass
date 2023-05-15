@@ -1,41 +1,41 @@
 export type CreateRootMessage = {
-    id: "createRoot"
-    name: string
-    masterPassword: string
-    secretSentence: string
+    readonly id: "createRoot"
+    readonly name: string
+    readonly masterPassword: string
+    readonly secretSentence: string
 }
 export type EditRootNameMessage = {
-    id: "editRootName"
-    name: string
+    readonly id: "editRootName"
+    readonly name: string
 }
 export type ChangeRootPasswordMessage = {
-    id: "changeRootPassword"
-    oldPassword: string
-    newPassword?: string
-    newSentence?: string
+    readonly id: "changeRootPassword"
+    readonly oldPassword: string
+    readonly newPassword?: string
+    readonly newSentence?: string
 }
 export type CreateVaultMessage = {
-    id: "createVault"
-    name: string
-    copyStorage: boolean
+    readonly id: "createVault"
+    readonly name: string
+    readonly copyStorage: boolean
 }
 export type RemoveVaultMessage = {
-    id: "removeVault"
-    vaultId: string
+    readonly id: "removeVault"
+    readonly vaultId: string
 }
 export type UnlockMessage = {
-    id: "unlock"
-    masterPassword: string
-    secretSentence: string | null
+    readonly id: "unlock"
+    readonly masterPassword: string
+    readonly secretSentence: string | null
 }
 export type LockMessage = {
-    id: "lock"
-    unenroll: boolean
+    readonly id: "lock"
+    readonly unenroll: boolean
 }
 export type SetVaultAsDefaultMessage = {
-    id: "setVaultAsDefault"
-    vaultId: string
+    readonly id: "setVaultAsDefault"
+    readonly vaultId: string
 }
 export type ClearHistoryMessage = {
-    id: "clearHistory"
+    readonly id: "clearHistory"
 }

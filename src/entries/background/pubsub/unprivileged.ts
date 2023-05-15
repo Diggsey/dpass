@@ -1,6 +1,7 @@
-import { Runtime } from "webextension-polyfill"
 import { filterObjectValues, mapObjectValues } from "~/entries/shared"
+import { Port } from "~/entries/shared/host"
 import {
+    IStatePublisher,
     PrivilegedState,
     PrivilegedSyncState,
     PrivilegedVault,
@@ -11,14 +12,13 @@ import {
     UnprivilegedSyncState,
     UnprivilegedVault,
 } from "~/entries/shared/state"
-import { IStatePublisher } from "./state"
 
 export class UnprivilegedPublisher
     extends Publisher<UnprivilegedState>
     implements IStatePublisher
 {
     #origin: string
-    constructor(origin: string, port: Runtime.Port) {
+    constructor(origin: string, port: Port) {
         super(port)
         this.#origin = origin
     }

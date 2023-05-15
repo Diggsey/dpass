@@ -1,5 +1,6 @@
 import { mixin } from "~/entries/shared/mixin"
 import {
+    IStatePublisher,
     PrivilegedState,
     PrivilegedVault,
 } from "~/entries/shared/privileged/state"
@@ -7,7 +8,6 @@ import { Actor } from "../actor"
 import { ISetupKeyContext } from "./setupKeyContext"
 import { ISuperKeyContext } from "./superKeyContext"
 import { ISyncManagerContext } from "./syncManagerContext"
-import { IStatePublisher } from "../pubsub/state"
 import { TimerId } from "~/entries/shared"
 import { IRootAddressesContext } from "./rootAddressesContext"
 import { HistoryEntry, KeyPair, Vault } from "../serialize/rootData"

@@ -4,12 +4,12 @@ import { openFilePicker } from "~/entries/shared"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { Loader } from "~/entries/shared/components/icons/loader"
 import { OutlineButton } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { usePromiseState } from "~/entries/shared/ui/hooks"
 
 export const RestoreButton = () => {
     const [restoring, restore] = usePromiseState(async (url: string) => {
-        await sendMessage({ id: "restore", url })
+        await host.sendMessage({ id: "restore", url })
     }, [])
     const pickFileToRestore = useCallback(() => {
         openFilePicker(

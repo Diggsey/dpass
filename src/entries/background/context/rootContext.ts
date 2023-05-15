@@ -15,7 +15,7 @@ import {
     encrypt,
     generateSalt,
     KeyApplication,
-} from "../crypto"
+} from "../../shared/crypto"
 import { decodeRoot, encodeRoot } from "../serialize/root"
 import { ISyncManagerContext } from "./syncManagerContext"
 import { DecryptedVaultFile } from "../serialize/vaultData"

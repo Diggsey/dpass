@@ -16,7 +16,7 @@ import {
     deriveKeyFromSuperKey,
     encrypt,
     generateSalt,
-} from "../crypto"
+} from "../../shared/crypto"
 import { VaultItemField, VaultItemPayload } from "~/entries/shared/state"
 import * as msgpack from "@msgpack/msgpack"
 import { HistoryEntry } from "../serialize/rootData"

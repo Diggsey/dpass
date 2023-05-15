@@ -17,7 +17,7 @@ import {
     TextButton,
     ValidationError,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import {
     setLocalState,
     useFormData,
@@ -96,7 +96,7 @@ export const SetupForm = ({ close }: SetupFormProps) => {
             if (!allValid) {
                 return
             }
-            await sendMessage({
+            await host.sendMessage({
                 id: "createRoot",
                 name: data.name,
                 masterPassword: data.masterPassword,
@@ -104,7 +104,7 @@ export const SetupForm = ({ close }: SetupFormProps) => {
             })
 
             if (data.createVault) {
-                const vaultId = await sendMessage({
+                const vaultId = await host.sendMessage({
                     id: "createVault",
                     name: data.vaultName,
                     copyStorage: data.copyStorage,
@@ -269,13 +269,13 @@ export const SetupPanel = () => {
     const [formOpen, setFormOpen] = useState(false)
 
     const [quicklySettingUp, quickSetup] = usePromiseState(async () => {
-        await sendMessage({
+        await host.sendMessage({
             id: "createRoot",
             name: "Unnamed",
             masterPassword: "password",
             secretSentence: "goliath slashed overload",
         })
-        const vaultId = await sendMessage({
+        const vaultId = await host.sendMessage({
             id: "createVault",
             name: "Personal Vault",
             copyStorage: true,
@@ -284,7 +284,7 @@ export const SetupPanel = () => {
             console.error("Failed to create vault")
             return
         }
-        await sendMessage({
+        await host.sendMessage({
             id: "createVaultItem",
             vaultId,
             details: {

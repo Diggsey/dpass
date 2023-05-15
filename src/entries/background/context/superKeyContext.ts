@@ -1,7 +1,7 @@
 import { TimerId } from "~/entries/shared"
 import { abstractMethod, Decorated, mixin } from "~/entries/shared/mixin"
-import { requestUnlock } from "../unlock"
 import { Actor } from "../actor"
+import host from "~/entries/shared/host"
 
 // 5 minutes
 // const SUPER_KEY_TIMEOUT = 5 * 60 * 1000
@@ -74,7 +74,7 @@ export const SuperKeyContext = mixin<ISuperKeyContext, Actor>((Base) =>
                     if (!(ex instanceof MissingSuperKey)) {
                         throw ex
                     }
-                    await requestUnlock()
+                    await host.requestUnlock()
                     if (!this._superKey) {
                         throw new Error("Failed to unlock")
                     }

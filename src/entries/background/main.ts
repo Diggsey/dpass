@@ -1,4 +1,3 @@
-import browser, { Runtime } from "webextension-polyfill"
 import {
     PRIVILEGED_PORT_NAME,
     StorageAddress,
@@ -7,15 +6,8 @@ import { UNPRIVILEGED_PORT_NAME } from "../shared/state"
 import { SECURE_CONTEXT } from "./context"
 import { PrivilegedPublisher } from "./pubsub/privileged"
 import { UnprivilegedPublisher } from "./pubsub/unprivileged"
-import "./browserAction"
-import "./contextMenus"
 import "./commands"
-import {
-    addMessageListener,
-    Message,
-    MessageResponse,
-    sendMessageToFrame,
-} from "../shared/messages"
+import { Message, MessageResponse } from "../shared/messages"
 import { AutofillPayload } from "../shared/messages/autofill"
 import { doesLoginUrlMatch, objectKey } from "../shared"
 import { StorageAddressAction } from "../shared/messages/storage"
@@ -24,40 +16,12 @@ import { setLocalState } from "../shared/ui/hooks"
 import { STORAGE_MANAGER } from "./storage/connection"
 import { ROOT_FILE_ID } from "./context/rootContext"
 import { runInitializers } from "./init"
+import host, { Port, SenderType } from "~/entries/shared/host"
 
-const EXTENSION_BASE_URL = new URL(browser.runtime.getURL("/"))
-const EXTENSION_PROTOCOL = EXTENSION_BASE_URL.protocol
-const EXTENSION_HOST = EXTENSION_BASE_URL.host
-
-if (location.protocol !== EXTENSION_PROTOCOL) {
+if (!host.isTrusted) {
     throw new Error(
         `Background script was loaded in an unprivileged context (${location.protocol})`
     )
-}
-
-type UnprivilegedSender = {
-    id: "unprivileged"
-    origin?: string
-    url?: URL
-}
-type PrivilegedSender = {
-    id: "privileged"
-}
-type SenderType = UnprivilegedSender | PrivilegedSender
-
-function classifySender(sender: Runtime.MessageSender): SenderType {
-    if (sender.url) {
-        const url = new URL(sender.url)
-        if (
-            url.protocol === EXTENSION_PROTOCOL &&
-            url.host === EXTENSION_HOST
-        ) {
-            return { id: "privileged" }
-        }
-        return { id: "unprivileged", origin: url.origin, url }
-    } else {
-        return { id: "unprivileged" }
-    }
 }
 
 const unprivilegedMessages = [
@@ -66,11 +30,15 @@ const unprivilegedMessages = [
     "openOptionsPage",
 ]
 
+function castVoidPromise(x: Promise<void>): Promise<undefined> {
+    return x as Promise<undefined>
+}
+
 function handleMessage(
     message: Message,
-    sender: Runtime.MessageSender
+    senderType: SenderType,
+    frameDetails?: FrameDetails | undefined
 ): Promise<MessageResponse> | undefined {
-    const senderType = classifySender(sender)
     if (
         senderType.id !== "privileged" &&
         !unprivilegedMessages.includes(message.id)
@@ -81,53 +49,64 @@ function handleMessage(
         case "requestAutofill":
             return requestAutoFill(senderType, message.vaultId, message.itemId)
         case "createRoot":
-            return SECURE_CONTEXT.createRoot(
-                message.name,
-                message.masterPassword,
-                message.secretSentence
+            return castVoidPromise(
+                SECURE_CONTEXT.createRoot(
+                    message.name,
+                    message.masterPassword,
+                    message.secretSentence
+                )
             )
         case "editRootName":
-            return SECURE_CONTEXT.updateRootName(message.name)
+            return castVoidPromise(SECURE_CONTEXT.updateRootName(message.name))
         case "editStorageAddresses":
             return editStorageAddresses(message.vaultId, message.action)
         case "unlock":
-            return SECURE_CONTEXT.unlock(
-                message.masterPassword,
-                message.secretSentence
+            return castVoidPromise(
+                SECURE_CONTEXT.unlock(
+                    message.masterPassword,
+                    message.secretSentence
+                )
             )
         case "lock":
-            return SECURE_CONTEXT.lock(message.unenroll)
+            return castVoidPromise(SECURE_CONTEXT.lock(message.unenroll))
         case "changeRootPassword":
-            return SECURE_CONTEXT.changePassword(
-                message.oldPassword,
-                message.newPassword ?? null,
-                message.newSentence ?? null
+            return castVoidPromise(
+                SECURE_CONTEXT.changePassword(
+                    message.oldPassword,
+                    message.newPassword ?? null,
+                    message.newSentence ?? null
+                )
             )
         case "createVault":
             return SECURE_CONTEXT.createVault(message.name, message.copyStorage)
         case "removeVault":
-            return SECURE_CONTEXT.removeVault(message.vaultId)
+            return castVoidPromise(SECURE_CONTEXT.removeVault(message.vaultId))
         case "setVaultAsDefault":
-            return SECURE_CONTEXT.setVaultAsDefault(message.vaultId)
+            return castVoidPromise(
+                SECURE_CONTEXT.setVaultAsDefault(message.vaultId)
+            )
         case "clearHistory":
-            return SECURE_CONTEXT.clearHistory()
+            return castVoidPromise(SECURE_CONTEXT.clearHistory())
         case "editVaultName":
-            return SECURE_CONTEXT.updateVaultName(message.vaultId, message.name)
+            return castVoidPromise(
+                SECURE_CONTEXT.updateVaultName(message.vaultId, message.name)
+            )
         case "createVaultItem":
             return SECURE_CONTEXT.createVaultItem(
                 message.vaultId,
                 message.details
             )
         case "updateVaultItem":
-            return SECURE_CONTEXT.updateVaultItem(
-                message.vaultId,
-                message.itemId,
-                message.details
+            return castVoidPromise(
+                SECURE_CONTEXT.updateVaultItem(
+                    message.vaultId,
+                    message.itemId,
+                    message.details
+                )
             )
         case "deleteVaultItem":
-            return SECURE_CONTEXT.deleteVaultItem(
-                message.vaultId,
-                message.itemId
+            return castVoidPromise(
+                SECURE_CONTEXT.deleteVaultItem(message.vaultId, message.itemId)
             )
         case "decryptVaultItem":
             return SECURE_CONTEXT.decryptVaultItem(
@@ -135,38 +114,40 @@ function handleMessage(
                 message.itemId
             )
         case "getFrameDetails":
-            return getFrameDetails(sender)
+            return Promise.resolve(frameDetails)
         case "forward":
-            return sendMessageToFrame(
+            return host.sendMessageToFrame(
                 message.tabId,
                 message.frameId,
                 message.message
             )
         case "openOptionsPage":
-            return openOptionsPage(message.target)
+            return castVoidPromise(openOptionsPage(message.target))
         case "editGeneratorSettings":
-            return SECURE_CONTEXT.updateGeneratorSettings(message.settings)
+            return castVoidPromise(
+                SECURE_CONTEXT.updateGeneratorSettings(message.settings)
+            )
         case "generatePassword":
             return SECURE_CONTEXT.generatePassword()
         case "backup":
-            return SECURE_CONTEXT.backup()
+            return castVoidPromise(SECURE_CONTEXT.backup())
         case "restore":
-            return SECURE_CONTEXT.restore(message.url)
+            return castVoidPromise(SECURE_CONTEXT.restore(message.url))
         case "exportVaultItems":
-            return SECURE_CONTEXT.exportVaultItems(message.vaultId)
+            return castVoidPromise(
+                SECURE_CONTEXT.exportVaultItems(message.vaultId)
+            )
         case "importVaultItems":
-            return SECURE_CONTEXT.importVaultItems(message.vaultId, message.url)
+            return castVoidPromise(
+                SECURE_CONTEXT.importVaultItems(message.vaultId, message.url)
+            )
         default:
             console.warn(`Received unknown message type: ${message.id}`)
             return
     }
 }
 
-function handleConnect(port: Runtime.Port) {
-    if (!port.sender) {
-        return
-    }
-    const senderType = classifySender(port.sender)
+function handleConnect(port: Port, senderType: SenderType) {
     if (port.name === PRIVILEGED_PORT_NAME) {
         if (senderType.id === "privileged") {
             SECURE_CONTEXT.addStatePublisher(new PrivilegedPublisher(port))
@@ -301,11 +282,10 @@ async function editStorageAddresses(
                 addressModifier
             )
         } else {
-            const res = await browser.storage.sync.get("rootAddresses")
             const rootAddresses: StorageAddress[] = addressModifier(
-                res.rootAddresses || []
+                await host.loadRootAddresses()
             )
-            await browser.storage.sync.set({ rootAddresses })
+            await host.storeRootAddresses(rootAddresses)
         }
 
         if (storageToWipe) {
@@ -316,23 +296,6 @@ async function editStorageAddresses(
     }
 
     return
-}
-
-async function getFrameDetails(
-    sender: Runtime.MessageSender
-): Promise<FrameDetails | undefined> {
-    if (
-        sender.tab?.windowId === undefined ||
-        sender.tab.id === undefined ||
-        sender.frameId === undefined
-    ) {
-        return
-    }
-    return {
-        windowId: sender.tab.windowId,
-        tabId: sender.tab.id,
-        frameId: sender.frameId,
-    }
 }
 
 export async function openOptionsPage(target: OptionsPageTarget) {
@@ -347,10 +310,10 @@ export async function openOptionsPage(target: OptionsPageTarget) {
             setLocalState("selectedItemId", target.itemId)
             break
     }
-    await browser.runtime.openOptionsPage()
+    await host.openOptionsPage()
 }
 
-addMessageListener(handleMessage)
-browser.runtime.onConnect.addListener(handleConnect)
+host.onMessage(handleMessage)
+host.onConnect(handleConnect)
 
 runInitializers()

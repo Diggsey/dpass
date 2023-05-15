@@ -1,10 +1,10 @@
 import { GeneratorSettings } from "../state"
 
 export type EditGeneratorSettingsMessage = {
-    id: "editGeneratorSettings"
-    settings: GeneratorSettings
+    readonly id: "editGeneratorSettings"
+    readonly settings: GeneratorSettings
 }
 
 export type GeneratePasswordMessage = {
-    id: "generatePassword"
+    readonly id: "generatePassword"
 }

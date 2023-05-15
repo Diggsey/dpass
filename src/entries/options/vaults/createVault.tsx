@@ -11,7 +11,7 @@ import {
     SecondaryButton,
     ValidationError,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import {
     setLocalState,
     useFormData,
@@ -40,7 +40,7 @@ export const CreateVaultForm = ({ close }: { close: () => void }) => {
             if (!allValid) {
                 return
             }
-            const vaultId = await sendMessage({
+            const vaultId = await host.sendMessage({
                 id: "createVault",
                 name: data.name,
                 copyStorage: data.copyStorage,

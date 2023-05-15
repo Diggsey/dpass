@@ -109,3 +109,7 @@ export type AuthToken = {
 }
 
 export const PRIVILEGED_PORT_NAME = "privilegedState"
+
+export interface IStatePublisher extends EventTarget {
+    publishPrivileged(state: PrivilegedState): void
+}

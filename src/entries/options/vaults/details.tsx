@@ -9,7 +9,7 @@ import {
 } from "../../shared/components/styledElem"
 import { Slide } from "~/entries/shared/components/slide"
 import { ChangeNameForm } from "./details/changeNameForm"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import {
     setLocalState,
     useModalDialog,
@@ -46,7 +46,7 @@ const DetailsList = ({
         async (wipe: boolean) => {
             if (wipe) {
                 for (const storageAddress of vault.addresses) {
-                    await sendMessage({
+                    await host.sendMessage({
                         id: "editStorageAddresses",
                         vaultId,
                         action: {
@@ -57,7 +57,7 @@ const DetailsList = ({
                     })
                 }
             }
-            await sendMessage({
+            await host.sendMessage({
                 id: "removeVault",
                 vaultId,
             })
@@ -69,7 +69,7 @@ const DetailsList = ({
 
     const [settingVaultAsDefault, setVaultAsDefault] = usePromiseState(
         async () => {
-            await sendMessage({
+            await host.sendMessage({
                 id: "setVaultAsDefault",
                 vaultId,
             })
@@ -133,11 +133,11 @@ const DetailsList = ({
 
     const [exportingVaultItems, exportVaultItems] =
         usePromiseState(async () => {
-            await sendMessage({ id: "exportVaultItems", vaultId })
+            await host.sendMessage({ id: "exportVaultItems", vaultId })
         }, [])
     const [importingVaultItems, importVaultItems] = usePromiseState(
         async (url: string) => {
-            await sendMessage({ id: "importVaultItems", vaultId, url })
+            await host.sendMessage({ id: "importVaultItems", vaultId, url })
         },
         []
     )

@@ -1,6 +1,6 @@
 import { KeyIcon } from "@heroicons/react/24/outline"
 import { FC, FormEvent, useId } from "react"
-import { sendMessage } from "../messages"
+import host from "~/entries/shared/host"
 import { cn } from "../ui"
 import { usePromiseState } from "../ui/hooks"
 import { ButtonIcon } from "./buttonIcon"
@@ -26,7 +26,7 @@ export const UnlockForm: FC<UnlockFormProps> = ({ isSetUp }) => {
                 | null
             const masterPassword = formData.get("masterPassword") as string
             if (masterPassword) {
-                await sendMessage({
+                await host.sendMessage({
                     id: "unlock",
                     masterPassword,
                     secretSentence,

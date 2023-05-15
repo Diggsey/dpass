@@ -1,6 +1,8 @@
-import { PrivilegedState } from "~/entries/shared/privileged/state"
+import {
+    IStatePublisher,
+    PrivilegedState,
+} from "~/entries/shared/privileged/state"
 import { Publisher } from "~/entries/shared/pubsub"
-import { IStatePublisher } from "./state"
 
 export class PrivilegedPublisher
     extends Publisher<PrivilegedState>

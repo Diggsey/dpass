@@ -1,6 +1,6 @@
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline"
 import { FC, useEffect } from "react"
-import { sendMessage } from "../messages"
+import host from "~/entries/shared/host"
 import { useModalDialog, usePromiseState } from "../ui/hooks"
 import { ButtonIcon } from "./buttonIcon"
 import { ErrorText } from "./errorText"
@@ -10,7 +10,7 @@ import { DangerButton, OutlineButton, PrimaryButton } from "./styledElem"
 
 export const LockButtons: FC<{ isUnlocked: boolean }> = ({ isUnlocked }) => {
     const [locking, lock, clearLockError] = usePromiseState(
-        (unenroll: boolean) => sendMessage({ id: "lock", unenroll }),
+        (unenroll: boolean) => host.sendMessage({ id: "lock", unenroll }),
         []
     )
 

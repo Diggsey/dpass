@@ -12,7 +12,7 @@ import { AutoTextArea } from "./autoTextArea"
 import { ButtonIcon } from "./buttonIcon"
 import { ReorderableItem } from "./reorderableList"
 import { Input, Select, TextButton } from "./styledElem"
-import { sendMessage } from "../messages"
+import host from "~/entries/shared/host"
 
 type FieldProps = {
     index: number
@@ -56,7 +56,7 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
     }, [field.value])
 
     const generatePassword = useCallback(async () => {
-        const password = await sendMessage({ id: "generatePassword" })
+        const password = await host.sendMessage({ id: "generatePassword" })
         if (password !== undefined) {
             onUpdate({ ...field, value: password })
         }

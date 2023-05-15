@@ -11,7 +11,7 @@ import { LockButtons } from "~/entries/shared/components/lockButtons"
 import { ChangeNameForm } from "./details/changeNameForm"
 import { ChangePasswordForm } from "./details/changePasswordForm"
 import { ChangeSecretSentenceForm } from "./details/changeSecretSentence"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import { usePromiseState } from "~/entries/shared/ui/hooks"
 import { ButtonIcon } from "~/entries/shared/components/buttonIcon"
 import { ArchiveBoxArrowDownIcon } from "@heroicons/react/24/outline"
@@ -29,7 +29,7 @@ const DetailsList = ({ rootInfo, openForm }: DetailsListProps) => {
         setSecretSentenceVisible((v) => !v)
     }, [])
     const [backingUp, backup] = usePromiseState(async () => {
-        await sendMessage({ id: "backup" })
+        await host.sendMessage({ id: "backup" })
     }, [])
 
     return (

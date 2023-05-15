@@ -19,7 +19,7 @@ import {
     exportKey,
     generateSalt,
     generateSuperKey,
-} from "../crypto"
+} from "../../shared/crypto"
 
 export interface IPublicVaultContext {
     createVault(name: string, copyStorage: boolean): Promise<string>

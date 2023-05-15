@@ -1,4 +1,3 @@
-import browser, { Runtime } from "webextension-polyfill"
 import { VaultItemPayload } from "../state"
 import {
     AutofillPayload,
@@ -45,6 +44,7 @@ import {
     ImportVaultItemsMessage,
     RestoreMessage,
 } from "./backup"
+import { Json } from ".."
 
 export type Message =
     | RequestAutofillMessage
@@ -101,7 +101,7 @@ type MessageResponses = {
     decryptVaultItem: VaultItemPayload
     getFrameDetails: FrameDetails
     contentModal: undefined
-    forward: unknown
+    forward: Json
     openOptionsPage: undefined
     editGeneratorSettings: undefined
     generatePassword: string
@@ -112,44 +112,3 @@ type MessageResponses = {
 }
 export type MessageResponse<M extends Message = Message> =
     MessageResponses[M["id"]]
-
-export function sendMessage<M extends Message>(
-    m: M
-): Promise<MessageResponse<M> | undefined> {
-    return browser.runtime.sendMessage(m)
-}
-
-export function sendMessageToTab<M extends Message>(
-    tabId: number,
-    m: M
-): Promise<MessageResponse<M> | undefined> {
-    return browser.tabs.sendMessage(tabId, m)
-}
-
-export function sendMessageToFrame<M extends Message>(
-    tabId: number,
-    frameId: number,
-    m: M
-): Promise<MessageResponse<M> | undefined> {
-    if (!browser.tabs) {
-        return sendMessage({
-            id: "forward",
-            tabId,
-            frameId,
-            message: m,
-        }) as Promise<MessageResponse<M> | undefined>
-    }
-    return browser.tabs.sendMessage(tabId, m, {
-        frameId,
-    })
-}
-
-interface MessageListener {
-    (arg: Message, sender: Runtime.MessageSender):
-        | Promise<MessageResponse>
-        | undefined
-}
-
-export function addMessageListener(listener: MessageListener) {
-    browser.runtime.onMessage.addListener(listener)
-}

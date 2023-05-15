@@ -15,7 +15,7 @@ import {
     encrypt,
     importKey,
     KeyApplication,
-} from "../crypto"
+} from "../../shared/crypto"
 import { decodeVault, encodeVault } from "../serialize/vault"
 import {
     areFilesEqual,

@@ -1,10 +1,8 @@
 import browser, { Menus } from "webextension-polyfill"
-import { CommandId, executeCommand } from "./commands"
-import { IStatePublisher } from "./pubsub/state"
-import { PrivilegedState } from "../shared/privileged/state"
-import { SECURE_CONTEXT } from "./context"
+import { IStatePublisher, PrivilegedState } from "../../privileged/state"
 import { userAction } from "./userAction"
-import { onInit } from "./init"
+import { CommandId } from ".."
+import { executeCommand } from "."
 
 type ItemType = Menus.CreateCreatePropertiesType & { id: CommandId }
 enum LockState {
@@ -52,7 +50,7 @@ class ContextMenu extends EventTarget implements IStatePublisher {
     }
 
     onClick = (info: Menus.OnClickData) => {
-        void executeCommand(info.menuItemId as CommandId)
+        executeCommand(info.menuItemId as CommandId)
     }
 
     constructor() {
@@ -94,7 +92,4 @@ class ContextMenu extends EventTarget implements IStatePublisher {
 
 export const CONTEXT_MENU = new ContextMenu()
 
-onInit(() => {
-    SECURE_CONTEXT.addStatePublisher(CONTEXT_MENU)
-    browser.contextMenus.onClicked.addListener(userAction(CONTEXT_MENU.onClick))
-})
+browser.contextMenus.onClicked.addListener(userAction(CONTEXT_MENU.onClick))

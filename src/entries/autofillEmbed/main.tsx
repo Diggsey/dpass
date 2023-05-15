@@ -11,7 +11,6 @@ import {
 import { AutofillItem } from "./item"
 import { defaultName } from "../shared/autofill"
 import { Field } from "../shared/components/field"
-import { sendMessage } from "../shared/messages"
 import { objectKey } from "../shared"
 import { VaultSelector } from "../shared/components/vaultSelector"
 import {
@@ -31,6 +30,7 @@ import { MagnifyingGlassIcon, PlusIcon } from "@heroicons/react/24/outline"
 import { ButtonIcon } from "../shared/components/buttonIcon"
 import { Loader } from "../shared/components/icons/loader"
 import { DPassIcon } from "../shared/components/icons/dpass"
+import host from "../shared/host"
 
 type AutofillInnerProps = {
     state: UnprivilegedState
@@ -90,7 +90,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
         }) => {
             let payload: VaultItemPayload | undefined
             if (item.data.encrypted) {
-                payload = await sendMessage({
+                payload = await host.sendMessage({
                     id: "decryptVaultItem",
                     vaultId,
                     itemId,
@@ -112,7 +112,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
                         !autofillValuesToReplace.has(objectKey(f.autofillMode))
                 )
                 .concat(fields)
-            await sendMessage({
+            await host.sendMessage({
                 id: "updateVaultItem",
                 vaultId,
                 itemId,
@@ -137,7 +137,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
             if (!chosenVaultId) {
                 throw new Error("No default vault")
             }
-            const itemId = await sendMessage({
+            const itemId = await host.sendMessage({
                 id: "createVaultItem",
                 vaultId: chosenVaultId,
                 details: {
@@ -151,7 +151,7 @@ const AutofillInner: FC<AutofillInnerProps> = ({ state, args, resolve }) => {
                 },
             })
             if (itemId) {
-                await sendMessage({
+                await host.sendMessage({
                     id: "openOptionsPage",
                     target: {
                         id: "item",

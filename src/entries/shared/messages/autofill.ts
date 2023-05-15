@@ -3,35 +3,35 @@ import { AutofillArgs } from "../modal"
 import { VaultItemField } from "../state"
 
 export type RequestAutofillMessage = {
-    id: "requestAutofill"
-    vaultId: string
-    itemId: string
+    readonly id: "requestAutofill"
+    readonly vaultId: string
+    readonly itemId: string
 }
 export type PokeActiveFrameMessage = {
-    id: "pokeActiveFrame"
+    readonly id: "pokeActiveFrame"
 }
 export type ShowItemSelectorMessage = {
-    id: "showItemSelector"
-    args: AutofillArgs
+    readonly id: "showItemSelector"
+    readonly args: AutofillArgs
 }
 export type PerformAutofillMessage = {
-    id: "performAutofill"
-    item: RequestAutofillMessage
-    origin: string
+    readonly id: "performAutofill"
+    readonly item: RequestAutofillMessage
+    readonly origin: string
 }
 export type PokeFrameResponse = {
-    origin: string
-    url: string
-    title: string
-    fields: DetectedField[]
+    readonly origin: string
+    readonly url: string
+    readonly title: string
+    readonly fields: readonly DetectedField[]
 }
 
-export interface AutofillPayload {
-    fields: VaultItemField[]
+export type AutofillPayload = {
+    readonly fields: readonly VaultItemField[]
 }
 
 export type DetectedField = {
-    active: boolean
-    autofillModes: AutofillMode[]
-    value: string
+    readonly active: boolean
+    readonly autofillModes: readonly AutofillMode[]
+    readonly value: string
 }

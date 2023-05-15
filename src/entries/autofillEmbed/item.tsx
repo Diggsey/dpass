@@ -7,9 +7,9 @@ import { FC, useCallback } from "react"
 import { ButtonIcon } from "../shared/components/buttonIcon"
 import { Loader } from "../shared/components/icons/loader"
 import { TextButton } from "../shared/components/styledElem"
-import { sendMessage } from "../shared/messages"
 import { SharedPromiseState, usePromiseState } from "../shared/ui/hooks"
 import { ItemInfo } from "../shared/ui/hooks/filteredVaultItems"
+import host from "../shared/host"
 
 type AutofillItemProps = {
     item: ItemInfo
@@ -30,7 +30,7 @@ export const AutofillItem: FC<AutofillItemProps> = ({
         sharedPromiseState
     )
     const viewItem = useCallback(async () => {
-        await sendMessage({
+        await host.sendMessage({
             id: "openOptionsPage",
             target: {
                 id: "item",

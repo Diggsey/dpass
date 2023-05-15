@@ -1,20 +1,19 @@
 import { ComponentType } from "react"
 import { createRoot } from "react-dom/client"
-import { sendMessageToFrame } from "./messages"
+import host from "~/entries/shared/host"
 import { DetectedField, RequestAutofillMessage } from "./messages/autofill"
 import { FrameDetails } from "./messages/misc"
 import { ContentModalPayload } from "./messages/modal"
 
 export type AutofillArgs = {
-    origin: string
-    url: string
-    title: string
-    fields: DetectedField[]
+    readonly origin: string
+    readonly url: string
+    readonly title: string
+    readonly fields: readonly DetectedField[]
 }
 
 export type ModalList = {
     autofillEmbed: (arg: AutofillArgs) => RequestAutofillMessage | null
-    unknown: (arg: unknown) => unknown
 }
 
 export type ModalArgs<P extends keyof ModalList> = Parameters<ModalList[P]>[0]
@@ -41,7 +40,7 @@ export function renderModal<P extends keyof ModalList>(
     const args: ModalArgs<P> = JSON.parse(argsJson)
 
     const sendToParent = (payload: ContentModalPayload) => {
-        void sendMessageToFrame(parent.tabId, parent.frameId, {
+        void host.sendMessageToFrame(parent.tabId, parent.frameId, {
             id: "contentModal",
             uuid,
             payload,

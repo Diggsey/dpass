@@ -3,8 +3,8 @@ import { Actor } from "../actor"
 import { IRootContext, ROOT_FILE_ID } from "./rootContext"
 import { IVaultContext } from "./vaultContext"
 import JSZip from "jszip"
-import { DOWNLOAD_MANAGER } from "../download"
 import { sanitizeNameForExport } from "~/entries/shared"
+import host from "~/entries/shared/host"
 
 export interface IPublicBackupContext {
     backup(): Promise<void>
@@ -39,7 +39,7 @@ export const PublicBackupContext = mixin<
                     compression: "DEFLATE",
                     platform: "UNIX",
                 })
-                DOWNLOAD_MANAGER.beginDownload(filename, blob)
+                host.beginDownload(filename, blob)
             }
             async restore(url: string): Promise<void> {
                 this.trace`restore(${url})`

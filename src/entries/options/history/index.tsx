@@ -10,7 +10,7 @@ import {
     DangerButton,
     TextButton,
 } from "~/entries/shared/components/styledElem"
-import { sendMessage } from "~/entries/shared/messages"
+import host from "~/entries/shared/host"
 import {
     HistoryEntry,
     PrivilegedState,
@@ -48,7 +48,7 @@ type HistoryValueProps = {
 
 export const HistoryValue = ({ value }: HistoryValueProps) => {
     const createItem = useCallback(async () => {
-        const itemId = await sendMessage({
+        const itemId = await host.sendMessage({
             id: "createVaultItem",
             details: {
                 origins: value.origins,
@@ -67,7 +67,7 @@ export const HistoryValue = ({ value }: HistoryValueProps) => {
             },
         })
         if (itemId) {
-            await sendMessage({
+            await host.sendMessage({
                 id: "openOptionsPage",
                 target: {
                     id: "item",
@@ -156,7 +156,7 @@ const HistoryPanel = ({ historyEntries }: HistoryPanelProps) => {
         return [...groups.entries()]
     }, [eod, historyEntries])
     const [clearingHistory, clearHistory] = usePromiseState(async () => {
-        await sendMessage({ id: "clearHistory" })
+        await host.sendMessage({ id: "clearHistory" })
     }, [])
     return (
         <Card>
