@@ -1,32 +1,37 @@
-import { Port, Event, MessageHandler, ConnectHandler, SenderType } from ".."
-import { Json } from "../.."
+import { executeCommand } from "."
+import {
+    Port,
+    Event,
+    MessageHandler,
+    ConnectHandler,
+    SenderType,
+    CommandId,
+} from ".."
+import { Json, splitN } from "../.."
 import { Message, MessageResponse } from "../../messages"
+import { handleStorageChanged } from "./storage"
 
-enum MessagePrefix {
+export enum MessagePrefix {
     Connect = "connect",
     Message = "message",
     Response = "response",
+    Error = "error",
+    StorageChanged = "storageChanged",
+    ReadStorage = "readStorage",
+    WriteStorage = "writeStorage",
+    ExecuteCommand = "executeCommand",
+    BeginDownload = "beginDownload",
 }
 
 type RawMessage = {
     readonly prefix: MessagePrefix
-    readonly message: Json
-    readonly ports: MessagePort[]
-}
-
-type RequestWrapper = {
-    readonly requestId: number
-    readonly request: Json
-}
-
-type ResponseWrapper = {
-    readonly requestId: number
-    readonly response?: Json
-    readonly error?: string
+    readonly requestId?: number
+    readonly message: Json | undefined
+    readonly ports: readonly MessagePort[]
 }
 
 type Response = {
-    readonly response?: Json
+    readonly message: Json | undefined
     readonly ports: readonly MessagePort[]
 }
 
@@ -41,7 +46,7 @@ const requestMap = new Map<
     number,
     {
         resolve: (value: Response) => void
-        reject: (reason?: unknown) => void
+        reject: (reason?: Json) => void
     }
 >()
 
@@ -60,6 +65,7 @@ function handleHostMessage(event: MessageEvent<string>) {
     if (!event.isTrusted) {
         return
     }
+    console.log("Received host message")
     if (event.ports.length === 1) {
         clientPort = event.ports[0]
         clientPort.onmessage = handleRawMessage
@@ -78,12 +84,12 @@ function handleConnectMessage(message: ConnectMessage, rawPort: MessagePort) {
     }
 }
 
-async function handleMessage(message: RequestWrapper) {
+async function handleMessage(rawMessage: RawMessage): Promise<RawMessage> {
     const senderType: SenderType = { id: "privileged" }
     let error: string | undefined = "Not handled"
     let response: Json | undefined = undefined
     for (const handler of messageHandlers) {
-        const promise = handler(message.request as Message, senderType)
+        const promise = handler(rawMessage.message as Message, senderType)
         if (promise !== undefined) {
             try {
                 response = await promise
@@ -94,65 +100,112 @@ async function handleMessage(message: RequestWrapper) {
             break
         }
     }
-    const responseMessage: ResponseWrapper = {
-        requestId: message.requestId,
-        response,
-        error,
-    }
 
-    postRawMessage({
-        prefix: MessagePrefix.Response,
-        message: responseMessage,
-        ports: [],
-    })
+    if (error === undefined) {
+        return {
+            prefix: MessagePrefix.Response,
+            requestId: rawMessage.requestId,
+            message: response,
+            ports: [],
+        }
+    } else {
+        return {
+            prefix: MessagePrefix.Error,
+            requestId: rawMessage.requestId,
+            message: error,
+            ports: [],
+        }
+    }
 }
 
-function handleResponseMessage(
-    message: ResponseWrapper,
-    ports: readonly MessagePort[]
-) {
-    const handlers = requestMap.get(message.requestId)
+function handleResponseOrErrorMessage(rawMessage: RawMessage) {
+    if (rawMessage.requestId === undefined) {
+        throw new Error("Response/error messages must have a request ID")
+    }
+    const handlers = requestMap.get(rawMessage.requestId)
     if (handlers) {
-        requestMap.delete(message.requestId)
-        handlers.resolve({
-            response: message.response,
-            ports,
-        })
+        requestMap.delete(rawMessage.requestId)
+        if (rawMessage.prefix === MessagePrefix.Response) {
+            handlers.resolve({
+                message: rawMessage.message,
+                ports: rawMessage.ports,
+            })
+        } else {
+            handlers.reject(rawMessage.message)
+        }
     }
 }
 
-function handleRawMessage(event: MessageEvent<string>) {
-    const parts = event.data.split(":", 2)
-    if (parts.length !== 2) {
+async function handleRawMessage(event: MessageEvent<string>) {
+    console.log(`Received raw message (${event.data}, ${event.ports}) `)
+    const parts = splitN(3, event.data, ":")
+    if (parts === null) {
         throw new Error(`Invalid message: ${event.data}`)
     }
     const prefix: MessagePrefix = parts[0] as MessagePrefix
-    const message = JSON.parse(parts[1])
+    const requestId = parts[1] ? parseInt(parts[1]) : undefined
+    const message: Json | undefined =
+        parts[2] === "" ? undefined : JSON.parse(parts[2])
+    const ports = event.ports
+    const rawMessage: RawMessage = {
+        prefix,
+        requestId,
+        message,
+        ports,
+    }
+    let responseMessage: RawMessage | undefined = undefined
     switch (prefix) {
         case MessagePrefix.Connect:
-            handleConnectMessage(message as ConnectMessage, event.ports[0])
+            handleConnectMessage(
+                rawMessage.message as ConnectMessage,
+                rawMessage.ports[0]
+            )
             break
         case MessagePrefix.Message:
-            void handleMessage(message as RequestWrapper)
+            responseMessage = await handleMessage(rawMessage)
             break
         case MessagePrefix.Response:
-            handleResponseMessage(message as ResponseWrapper, event.ports)
+        case MessagePrefix.Error:
+            handleResponseOrErrorMessage(rawMessage)
+            break
+        case MessagePrefix.StorageChanged:
+            handleStorageChanged(rawMessage.message)
+            break
+        case MessagePrefix.ExecuteCommand:
+            executeCommand(rawMessage.message as CommandId)
             break
     }
-}
 
-function postRawMessage({ prefix, message, ports }: RawMessage) {
-    const data = prefix + ":" + JSON.stringify(message)
-    if (clientPort !== null) {
-        clientPort.postMessage(data, ports)
-    } else {
-        queuedMessages.push([data, ports])
+    if (
+        responseMessage !== undefined &&
+        responseMessage.requestId !== undefined
+    ) {
+        postRawMessage(responseMessage)
     }
 }
 
-function sendRequest(
+export function postRawMessage({
+    prefix,
+    requestId,
+    message,
+    ports,
+}: RawMessage) {
+    const parts = [
+        prefix,
+        requestId === undefined ? "" : requestId.toString(),
+        message === undefined ? "" : JSON.stringify(message),
+    ]
+    const data = parts.join(":")
+    if (clientPort !== null) {
+        clientPort.postMessage(data, [...ports])
+    } else {
+        queuedMessages.push([data, [...ports]])
+    }
+}
+
+export function sendRequest(
     prefix: MessagePrefix,
-    request: Json,
+    message: Json,
     ports: MessagePort[]
 ): Promise<Response> {
     const requestId = nextRequestId++
@@ -161,13 +214,9 @@ function sendRequest(
         requestMap.set(requestId, { resolve, reject })
     })
 
-    const message: RequestWrapper = {
-        requestId,
-        request,
-    }
-
     postRawMessage({
         prefix,
+        requestId,
         message,
         ports,
     })
@@ -178,8 +227,8 @@ function sendRequest(
 export async function sendMessage<M extends Message>(
     m: M
 ): Promise<MessageResponse<M> | undefined> {
-    const { response } = await sendRequest(MessagePrefix.Message, m, [])
-    return response as MessageResponse<M> | undefined
+    const { message } = await sendRequest(MessagePrefix.Message, m, [])
+    return message as MessageResponse<M> | undefined
 }
 
 class AppEvent<F extends (...args: never[]) => unknown> implements Event<F> {

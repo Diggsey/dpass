@@ -183,7 +183,9 @@ export const PublicExportContext = mixin<
                     }
                 )
 
-                const blob = new Blob([Papa.unparse(csvRows)])
+                const blob = new Blob([Papa.unparse(csvRows)], {
+                    type: "text/csv",
+                })
                 host.beginDownload(filename, blob)
             }
             async importVaultItems(

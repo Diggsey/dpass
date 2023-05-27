@@ -317,3 +317,5 @@ host.onMessage(handleMessage)
 host.onConnect(handleConnect)
 
 runInitializers()
+
+host.init()

@@ -103,3 +103,36 @@ export function openFilePicker(
     }
     input.click()
 }
+
+export type SmallInt = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+
+export type Tuple<T, N extends SmallInt> = _TupleOf<T, N, []>
+type _TupleOf<T, N extends SmallInt, R extends T[]> = R["length"] extends N
+    ? R
+    : _TupleOf<T, N, [T, ...R]>
+
+export function splitN<N extends Exclude<SmallInt, 0>>(
+    count: N,
+    haystack: string,
+    needle: string
+): Tuple<string, N> | null {
+    if (count === 1) {
+        return [haystack] as Tuple<string, N>
+    } else {
+        const idx = haystack.indexOf(needle)
+        if (idx === -1) {
+            return null
+        } else {
+            const head = haystack.slice(0, idx)
+            const tail = splitN(
+                (count - 1) as Exclude<SmallInt, 0>,
+                haystack.slice(idx + needle.length),
+                needle
+            )
+            if (tail === null) {
+                return null
+            }
+            return [head, ...tail] as Tuple<string, N>
+        }
+    }
+}

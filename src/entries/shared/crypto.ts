@@ -93,7 +93,7 @@ export async function decryptKey(
 // But I couldn't find it...
 export async function convertKeyForHkdf(key: CryptoKey): Promise<CryptoKey> {
     const rawKey = await crypto.subtle.exportKey("raw", key)
-    return await crypto.subtle.importKey("raw", rawKey, "HKDF", true, [
+    return await crypto.subtle.importKey("raw", rawKey, "HKDF", false, [
         "deriveKey",
     ])
 }
@@ -135,7 +135,7 @@ export async function deriveKeyFromPassword(
         passwordKey,
         ENCRYPTION_KEY_PARAMS,
         true,
-        []
+        ["encrypt", "decrypt"]
     )
 }
 

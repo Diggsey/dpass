@@ -9,6 +9,7 @@ import { ItemsPage } from "./items"
 import { AppShell } from "../shared/components/appShell"
 import { GeneratorPage } from "./generator"
 import { HistoryPage } from "./history"
+import host from "../shared/host"
 
 const AppBody: FC<{ state: PrivilegedState }> = ({ state }) => {
     const navigation = [
@@ -52,3 +53,5 @@ const App: FC = () => {
 
 const appRoot = createRoot(document.body)
 appRoot.render(<App />)
+
+host.init()

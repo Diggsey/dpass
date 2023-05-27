@@ -48,6 +48,6 @@ class SecureContext extends PublicExportContext(
 
 export const SECURE_CONTEXT = new SecureContext()
 
-for (const statePublisher of host.init()) {
+for (const statePublisher of host.statePublishers()) {
     SECURE_CONTEXT.addStatePublisher(statePublisher)
 }

@@ -61,7 +61,8 @@ export interface Host {
     requestUnlock(waitForUnlock?: boolean): Promise<void>
     executeCommand(commandId: CommandId): void
     openOptionsPage(): Promise<void>
-    init(): IStatePublisher[]
+    init(): void
+    statePublishers(): IStatePublisher[]
     beginDownload(filename: string, blob: Blob): void
     connect(name: string): Port
     storeKey(keyType: PersistentKeyType, key: CryptoKey): Promise<void>

@@ -27,7 +27,9 @@ export async function openOptionsPage() {
     await browser.runtime.openOptionsPage()
 }
 
-export function init(): IStatePublisher[] {
+export function init() {}
+
+export function statePublishers(): IStatePublisher[] {
     return [BROWSER_ACTION, CONTEXT_MENU]
 }
 
