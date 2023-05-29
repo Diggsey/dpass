@@ -1,4 +1,9 @@
-import { abstractMethod, Decorated, mixin } from "~/entries/shared/mixin"
+import {
+    abstractMethod,
+    Decorated,
+    mixin,
+    MixinConstructorArgs,
+} from "~/entries/shared/mixin"
 import { Actor } from "../actor"
 import {
     decodeRootData,
@@ -29,6 +34,7 @@ import { ISetupKeyContext } from "./setupKeyContext"
 import { ISuperKeyContext } from "./superKeyContext"
 import { IRootAddressesContext } from "./rootAddressesContext"
 import { StorageAddress } from "~/entries/shared/privileged/state"
+import host from "~/entries/shared/host"
 
 class IncorrectPasswordError extends Error {
     constructor(wasEnrolling: boolean) {
@@ -91,7 +97,7 @@ export interface IRootContext {
     ): Promise<void>
     _encryptRoot(unenroll: boolean): Promise<void>
     _decryptRoot(
-        masterPassword: string,
+        masterPassword: string | CryptoKey,
         secretSentence: string | null
     ): Promise<void>
 
@@ -320,6 +326,8 @@ export const RootContext = mixin<
                             keySalt,
                             canaryData: encryptedData,
                         }
+                        // Prompt that we are ready to be unlocked
+                        void host.requestUnlock(false)
                     }
 
                     // Data could not be integrated right away, so return a promise
@@ -395,15 +403,21 @@ export const RootContext = mixin<
             }
 
             async _decryptRoot(
-                masterPassword: string,
+                masterPassword: string | CryptoKey,
                 secretSentence: string | null
             ): Promise<void> {
                 const { passwordSalt, sentenceSalt, keySalt, canaryData } =
                     this.#expectSyncedRoot()
-                const keyFromPassword = await deriveKeyFromPassword(
-                    masterPassword,
-                    passwordSalt
-                )
+
+                // We allow the host to directly remember the key derived
+                // from the password. In that case we can skip this step.
+                const keyFromPassword =
+                    typeof masterPassword === "string"
+                        ? await deriveKeyFromPassword(
+                              masterPassword,
+                              passwordSalt
+                          )
+                        : masterPassword
                 let setupKey = this._setupKey
                 if (secretSentence !== null) {
                     const keyFromSentence = await deriveKeyFromPassword(
@@ -446,6 +460,12 @@ export const RootContext = mixin<
                 }
                 this._key = key
                 this._superKey = superKey
+
+                // If a password was used to unlock, indicate to the
+                // host that they can remember the key instead.
+                if (typeof masterPassword === "string") {
+                    void host.rememberKey(keyFromPassword)
+                }
             }
 
             async _encryptRoot(unenroll: boolean): Promise<void> {
@@ -475,6 +495,17 @@ export const RootContext = mixin<
                     throw new Error("Locked - cannot update")
                 }
                 await this._updateRoot(f(this._root), hint)
+            }
+
+            #unlockWithKey = (key: CryptoKey): Promise<void> => {
+                return this._post("#unlockWithKey()", () =>
+                    this._decryptRoot(key, null)
+                )
+            }
+
+            constructor(...args: MixinConstructorArgs) {
+                super(...args)
+                host.onUnlockWithKey(this.#unlockWithKey)
             }
 
             _rootChanged(_hint?: UpdateRootHint) {}

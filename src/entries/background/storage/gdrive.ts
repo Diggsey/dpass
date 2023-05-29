@@ -1,8 +1,8 @@
 import { GDriveStorageAddress } from "~/entries/shared/privileged/state"
 import { Disposable } from "../../shared/mixins/disposable"
-import { TOKEN_MANAGER } from "../../shared/tokens"
 import { storageConnection } from "./connection"
 import { DataAndEtag, ETagMismatchError, IStorage } from "./interface"
+import host from "~/entries/shared/host"
 
 const FILE_FIELDS = "id,headRevisionId,etag"
 
@@ -29,7 +29,7 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
         this.address = address
     }
     static async open(address: GDriveStorageAddress): Promise<GDriveStorage> {
-        const [_token, connectionInfo] = await TOKEN_MANAGER.request(
+        const [_token, connectionInfo] = await host.requestToken(
             storageConnection(address)
         )
         if (connectionInfo.id !== "oauth") {
@@ -41,7 +41,7 @@ export class GDriveStorage extends Disposable(EventTarget) implements IStorage {
         })
     }
     async #getToken(): Promise<string> {
-        return (await TOKEN_MANAGER.request(storageConnection(this.address)))[0]
+        return (await host.requestToken(storageConnection(this.address)))[0]
             .accessToken
     }
     async #fetch(

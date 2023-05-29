@@ -35,7 +35,7 @@ export const VaultSelector: FC<VaultSelectorProps> = ({
         cn(
             vaultId === null ? "italic" : "not-italic",
             vaultId === defaultVaultId ? "font-bold" : "font-normal",
-            vaultId !== null && vaults[vaultId].missing
+            vaultId !== null && vaults[vaultId]?.missing
                 ? "text-red-700"
                 : "text-gray-900"
         )

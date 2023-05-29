@@ -77,7 +77,7 @@ export const HistoryValue = ({ value }: HistoryValueProps) => {
         }
     }, [value.value])
     const copy = useCallback(async () => {
-        await navigator.clipboard.writeText(value.value)
+        await host.copyText(value.value)
     }, [value.value])
 
     let prefix

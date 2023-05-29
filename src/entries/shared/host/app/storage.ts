@@ -1,4 +1,8 @@
-import { PersistentKeyType, RootAddressesChangedHandler } from ".."
+import {
+    PersistentKeyType,
+    RootAddressesChangedHandler,
+    UnlockWithKeyHandler,
+} from ".."
 import { Json, objectKey, splitN } from "../.."
 import { importKey, exportKey } from "../../crypto"
 import {
@@ -6,7 +10,12 @@ import {
     ConnectionInfo,
     StorageAddress,
 } from "../../privileged/state"
-import { MessagePrefix, postRawMessage, sendRequest } from "./channel"
+import {
+    MessagePrefix,
+    RawMessage,
+    postRawMessage,
+    sendRequest,
+} from "./channel"
 
 type StorageChangedMessage = {
     key: string
@@ -83,12 +92,10 @@ export function onRootAddressesChanged(handler: RootAddressesChangedHandler) {
 export async function storeRootAddresses(
     rootAddresses: StorageAddress[]
 ): Promise<void> {
-    console.log("storeRootAddresses")
     await writeStorage(StoragePrefix.RootAddresses, "", rootAddresses)
 }
 
 export async function loadRootAddresses(): Promise<StorageAddress[]> {
-    console.log("loadRootAddresses")
     const rootAddresses = (await readStorage(
         StoragePrefix.RootAddresses,
         ""
@@ -100,7 +107,6 @@ export async function storeKey(
     keyType: PersistentKeyType,
     key: CryptoKey
 ): Promise<void> {
-    console.log("storeKey")
     const rawKey = await exportKey(key)
     const rawKeyBase64 = await encodeBase64(rawKey)
     await writeStorage(StoragePrefix.PersistentKey, keyType, rawKeyBase64)
@@ -108,7 +114,6 @@ export async function storeKey(
 export async function loadKey(
     keyType: PersistentKeyType
 ): Promise<CryptoKey | null> {
-    console.log("loadKey")
     const rawKeyBase64 = await readStorage(StoragePrefix.PersistentKey, keyType)
     if (rawKeyBase64 === null) {
         return null
@@ -145,4 +150,40 @@ export async function beginDownload(filename: string, blob: Blob) {
         },
         ports: [],
     })
+}
+
+export async function rememberKey(key: CryptoKey): Promise<void> {
+    const rawKey = await exportKey(key)
+    const rawKeyBase64 = await encodeBase64(rawKey)
+    await sendRequest(MessagePrefix.RememberKey, rawKeyBase64, [])
+}
+
+const unlockWithKeyHandlers: UnlockWithKeyHandler[] = []
+
+export async function handleUnlockWithKey(
+    rawKeyBase64: string
+): Promise<RawMessage> {
+    try {
+        const rawKey = await decodeBase64(rawKeyBase64 as string)
+        const key = await importKey(rawKey)
+
+        for (const handler of unlockWithKeyHandlers) {
+            await handler(key)
+        }
+        return {
+            prefix: MessagePrefix.Response,
+            message: undefined,
+            ports: [],
+        }
+    } catch (ex) {
+        return {
+            prefix: MessagePrefix.Error,
+            message: `${ex}`,
+            ports: [],
+        }
+    }
+}
+
+export function onUnlockWithKey(handler: UnlockWithKeyHandler): void {
+    unlockWithKeyHandlers.push(handler)
 }

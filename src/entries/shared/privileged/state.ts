@@ -87,7 +87,7 @@ export type NoConnectionInfo = {
 
 export type OauthConnectionInfo = {
     readonly id: "oauth"
-    readonly serverId: "google"
+    readonly serverId: "com.google"
     readonly userId: string
 }
 

@@ -3,7 +3,6 @@ import host from "~/entries/shared/host"
 import { IconButton } from "~/entries/shared/components/iconButton"
 import { Status } from "~/entries/shared/components/status"
 import { StorageAddress } from "~/entries/shared/privileged/state"
-import { TOKEN_MANAGER } from "~/entries/shared/tokens"
 import { cn } from "~/entries/shared/ui"
 import { usePromiseState } from "~/entries/shared/ui/hooks"
 
@@ -65,9 +64,9 @@ export const StorageButtons: FC<StorageButtonsProps> = ({ vaultId }) => {
         if (!folderId) {
             throw new Error("Invalid sharing URL")
         }
-        const [_token, connectionInfo] = await TOKEN_MANAGER.request({
+        const [_token, connectionInfo] = await host.requestToken({
             id: "oauth",
-            serverId: "google",
+            serverId: "com.google",
             userId: "",
         })
         if (connectionInfo.id !== "oauth") {

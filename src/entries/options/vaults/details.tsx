@@ -144,7 +144,7 @@ const DetailsList = ({
     const pickFileToImport = useCallback(() => {
         openFilePicker(
             {
-                accept: ".csv,text/csv",
+                accept: ".csv,text/csv,text/comma-separated-values",
             },
             ([url]) => importVaultItems(url)
         )

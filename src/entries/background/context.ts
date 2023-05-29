@@ -15,22 +15,27 @@ import { HistoryContext } from "./context/historyContext"
 import { PublicBackupContext } from "./context/publicBackupContext"
 import { PublicExportContext } from "./context/publicExportContext"
 import host from "../shared/host"
+import { PublicSyncContext } from "./context/publicSyncContext"
 
-class SecureContext extends PublicExportContext(
-    PublicBackupContext(
-        PublicGeneratorContext(
-            PublicItemContext(
-                PublicVaultContext(
-                    PublicRootContext(
-                        StatePublisherContext(
-                            ItemContext(
-                                VaultContext(
-                                    HistoryContext(
-                                        RootContext(
-                                            RootAddressesContext(
-                                                SyncManagerContext(
-                                                    SuperKeyContext(
-                                                        SetupKeyContext(Actor)
+class SecureContext extends PublicSyncContext(
+    PublicExportContext(
+        PublicBackupContext(
+            PublicGeneratorContext(
+                PublicItemContext(
+                    PublicVaultContext(
+                        PublicRootContext(
+                            StatePublisherContext(
+                                ItemContext(
+                                    VaultContext(
+                                        HistoryContext(
+                                            RootContext(
+                                                RootAddressesContext(
+                                                    SyncManagerContext(
+                                                        SuperKeyContext(
+                                                            SetupKeyContext(
+                                                                Actor
+                                                            )
+                                                        )
                                                     )
                                                 )
                                             )

@@ -45,7 +45,7 @@ const PasswordGenerator = ({ settings }: { settings: GeneratorSettings }) => {
                 return
             }
 
-            await navigator.clipboard.writeText(password)
+            await host.copyText(password)
 
             copiedElemRef.current?.animate(
                 [

@@ -6,10 +6,10 @@ import {
     ValidationError,
 } from "~/entries/shared/components/styledElem"
 import { GDriveStorageAddress } from "~/entries/shared/privileged/state"
-import { TOKEN_MANAGER } from "~/entries/shared/tokens"
 import { usePromiseState } from "~/entries/shared/ui/hooks"
 import { StorageEditorProps } from "."
 import { FormInput } from "~/entries/shared/components/formInput"
+import host from "~/entries/shared/host"
 
 function generateSharingUrl(address: GDriveStorageAddress) {
     return address.folderId
@@ -23,9 +23,9 @@ async function importSharingUrl(url: string): Promise<GDriveStorageAddress> {
     if (!folderId) {
         throw new Error("Invalid sharing URL")
     }
-    const [_token, connectionInfo] = await TOKEN_MANAGER.request({
+    const [_token, connectionInfo] = await host.requestToken({
         id: "oauth",
-        serverId: "google",
+        serverId: "com.google",
         userId: "",
     })
     if (connectionInfo.id !== "oauth") {

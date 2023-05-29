@@ -1,7 +1,7 @@
 import { Message, MessageResponse } from "../messages"
 import { FrameDetails } from "../messages/misc"
 import {
-    AuthToken,
+    AuthTokenPayload,
     ConnectionInfo,
     IStatePublisher,
     StorageAddress,
@@ -55,6 +55,7 @@ export type WebAuthFlowOptions = {
     url: string
     interactive?: boolean
 }
+export type UnlockWithKeyHandler = (key: CryptoKey) => Promise<void>
 
 export interface Host {
     get isTrusted(): boolean
@@ -70,10 +71,6 @@ export interface Host {
     deleteKey(keyType: PersistentKeyType): Promise<void>
     storeRootAddresses(rootAddresses: StorageAddress[]): Promise<void>
     loadRootAddresses(): Promise<StorageAddress[]>
-    storeToken(connectionInfo: ConnectionInfo, token: AuthToken): Promise<void>
-    loadToken(connectionInfo: ConnectionInfo): Promise<AuthToken | null>
-    getRedirectURL(): string
-    launchWebAuthFlow(options: WebAuthFlowOptions): Promise<string>
     getAssetUrl(path: string): string
     sendMessage<M extends Message>(
         m: M
@@ -89,6 +86,13 @@ export interface Host {
     onRootAddressesChanged(handler: RootAddressesChangedHandler): void
     onMessage(handler: MessageHandler): void
     onConnect(handler: ConnectHandler): void
+    requestToken(
+        connectionInfo: ConnectionInfo
+    ): Promise<[AuthTokenPayload, ConnectionInfo]>
+    blockRefresh(): () => void
+    copyText(text: string): Promise<void>
+    rememberKey(key: CryptoKey): Promise<void>
+    onUnlockWithKey(handler: UnlockWithKeyHandler): void
 }
 
 let host: Host

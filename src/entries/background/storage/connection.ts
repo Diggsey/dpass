@@ -15,7 +15,7 @@ export function storageConnection(addr: StorageAddress): ConnectionInfo {
         case "local":
             return { id: "none" }
         case "gdrive":
-            return { id: "oauth", serverId: "google", userId: addr.userId }
+            return { id: "oauth", serverId: "com.google", userId: addr.userId }
     }
 }
 

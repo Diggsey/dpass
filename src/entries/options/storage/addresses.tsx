@@ -92,8 +92,7 @@ export const StorageAddressRow: FC<StorageAddressRowProps> = ({
                             <span>Reorder</span>
                         </p>
                     </div>
-                    <div className="hidden md:block flex-1">
-                        {/* <p className="text-sm text-gray-900">Applied on</p> */}
+                    <div className="flex-1">
                         <p className="mt-2 flex items-center text-sm text-gray-500">
                             {status}
                         </p>

@@ -8,7 +8,8 @@ export async function executeCommand(commandId: CommandId) {
             await host.openOptionsPage()
             break
         case "dpass-sync":
-            throw new Error("Not implemented")
+            SECURE_CONTEXT.sync()
+            break
         case "dpass-lock":
             await SECURE_CONTEXT.lock(false)
             break

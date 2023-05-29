@@ -1,10 +1,11 @@
+import browser from "webextension-polyfill"
 import {
     AuthToken,
+    AuthTokenPayload,
     ConnectionInfo,
     OauthConnectionInfo,
-    OauthTokenPayload,
-} from "./privileged/state"
-import host from "./host"
+} from "../../privileged/state"
+import { loadToken, storeToken } from "./tokens"
 
 const MIN_EXPIRY_BUFFER_MS = 10000
 
@@ -19,17 +20,17 @@ function urlParams(url: string, params: { [param: string]: string }) {
 class TokenManager {
     async #requestGoogleOauthToken(
         connectionInfo: OauthConnectionInfo
-    ): Promise<[AuthToken, ConnectionInfo]> {
+    ): Promise<AuthToken> {
         const authUrl = urlParams("https://accounts.google.com/o/oauth2/auth", {
             client_id:
                 "711430196916-b8dqrl7bg50kb6b1lsnkrtutd6s704qu.apps.googleusercontent.com",
             response_type: "token",
-            redirect_uri: host.getRedirectURL(),
+            redirect_uri: browser.identity.getRedirectURL(),
             scope: "openid https://www.googleapis.com/auth/drive.file",
             login_hint: connectionInfo.userId,
         })
         const redirectUrl = new URL(
-            await host.launchWebAuthFlow({
+            await browser.identity.launchWebAuthFlow({
                 url: authUrl,
                 interactive: true,
             })
@@ -66,48 +67,50 @@ class TokenManager {
             }
         }
 
-        return [
-            {
-                id: "authToken",
-                connectionInfo,
-                expiresAt,
-                payload: {
-                    id: "oauth",
-                    accessToken,
-                },
-            },
+        return {
+            id: "authToken",
             connectionInfo,
-        ]
+            expiresAt,
+            payload: {
+                id: "oauth",
+                accessToken,
+            },
+        }
     }
     async #requestOauthToken(
         connectionInfo: OauthConnectionInfo
-    ): Promise<[AuthToken, ConnectionInfo]> {
+    ): Promise<AuthToken> {
         switch (connectionInfo.serverId) {
-            case "google":
+            case "com.google":
                 return await this.#requestGoogleOauthToken(connectionInfo)
         }
     }
     async request(
         connectionInfo: ConnectionInfo
-    ): Promise<[OauthTokenPayload, ConnectionInfo]> {
-        let token = await host.loadToken(connectionInfo)
+    ): Promise<[AuthTokenPayload, ConnectionInfo]> {
+        let token = await loadToken(connectionInfo)
         if (
             token === null ||
             token.expiresAt < Date.now() + MIN_EXPIRY_BUFFER_MS
         ) {
             switch (connectionInfo.id) {
                 case "oauth":
-                    ;[token, connectionInfo] = await this.#requestOauthToken(
-                        connectionInfo
-                    )
+                    token = await this.#requestOauthToken(connectionInfo)
+                    connectionInfo = token.connectionInfo
                     break
                 case "none":
                     throw new Error("Cannot request `none` token")
             }
-            await host.storeToken(connectionInfo, token)
+            await storeToken(connectionInfo, token)
         }
         return [token.payload, connectionInfo]
     }
 }
 
-export const TOKEN_MANAGER = new TokenManager()
+const TOKEN_MANAGER = new TokenManager()
+
+export function requestToken(
+    connectionInfo: ConnectionInfo
+): Promise<[AuthTokenPayload, ConnectionInfo]> {
+    return TOKEN_MANAGER.request(connectionInfo)
+}

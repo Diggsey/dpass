@@ -52,7 +52,7 @@ export const Field: FC<FieldProps> = ({ field, index, onUpdate, onDelete }) => {
         })
     }
     const copy = useCallback(async () => {
-        await navigator.clipboard.writeText(field.value)
+        await host.copyText(field.value)
     }, [field.value])
 
     const generatePassword = useCallback(async () => {

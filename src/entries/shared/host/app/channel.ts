@@ -9,7 +9,7 @@ import {
 } from ".."
 import { Json, splitN } from "../.."
 import { Message, MessageResponse } from "../../messages"
-import { handleStorageChanged } from "./storage"
+import { handleStorageChanged, handleUnlockWithKey } from "./storage"
 
 export enum MessagePrefix {
     Connect = "connect",
@@ -21,9 +21,16 @@ export enum MessagePrefix {
     WriteStorage = "writeStorage",
     ExecuteCommand = "executeCommand",
     BeginDownload = "beginDownload",
+    RequestToken = "requestToken",
+    BlockRefresh = "blockRefresh",
+    CopyText = "copyText",
+    RememberKey = "rememberKey",
+    UnlockWithKey = "unlockWithKey",
+    RequestUnlock = "requestUnlock",
+    ShowApp = "showApp",
 }
 
-type RawMessage = {
+export type RawMessage = {
     readonly prefix: MessagePrefix
     readonly requestId?: number
     readonly message: Json | undefined
@@ -174,6 +181,11 @@ async function handleRawMessage(event: MessageEvent<string>) {
         case MessagePrefix.ExecuteCommand:
             executeCommand(rawMessage.message as CommandId)
             break
+        case MessagePrefix.UnlockWithKey:
+            responseMessage = await handleUnlockWithKey(
+                rawMessage.message as string
+            )
+            break
     }
 
     if (
@@ -205,7 +217,7 @@ export function postRawMessage({
 
 export function sendRequest(
     prefix: MessagePrefix,
-    message: Json,
+    message: Json | undefined,
     ports: MessagePort[]
 ): Promise<Response> {
     const requestId = nextRequestId++

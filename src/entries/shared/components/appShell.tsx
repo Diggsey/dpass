@@ -2,7 +2,7 @@ import { Disclosure } from "@headlessui/react"
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline"
 import { FC, ReactNode } from "react"
 import { cn } from "../ui"
-import { useLocalState } from "../ui/hooks"
+import { useDebouncedEffect, useLocalState } from "../ui/hooks"
 
 type NavItem = {
     key: string
@@ -23,6 +23,15 @@ export const AppShell: FC<AppShellProps> = ({ navigation }: AppShellProps) => {
     const effectiveKey = activeKey ?? navigation[0].key
     const currentItem = navigation.find(
         (item) => item.key === effectiveKey && !item.disabled
+    )
+    useDebouncedEffect(
+        () => {
+            if (currentItem === undefined) {
+                setActiveKey(null)
+            }
+        },
+        100,
+        [currentItem === undefined]
     )
     return (
         <div className="bg-gray-100 grid grid-rows-[max-content]">
