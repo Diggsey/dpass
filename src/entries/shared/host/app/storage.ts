@@ -12,7 +12,7 @@ import {
 } from "../../privileged/state"
 import {
     MessagePrefix,
-    RawMessage,
+    RawResponse,
     postRawMessage,
     sendRequest,
 } from "./channel"
@@ -162,25 +162,16 @@ const unlockWithKeyHandlers: UnlockWithKeyHandler[] = []
 
 export async function handleUnlockWithKey(
     rawKeyBase64: string
-): Promise<RawMessage> {
-    try {
-        const rawKey = await decodeBase64(rawKeyBase64 as string)
-        const key = await importKey(rawKey)
+): Promise<RawResponse> {
+    const rawKey = await decodeBase64(rawKeyBase64 as string)
+    const key = await importKey(rawKey)
 
-        for (const handler of unlockWithKeyHandlers) {
-            await handler(key)
-        }
-        return {
-            prefix: MessagePrefix.Response,
-            message: undefined,
-            ports: [],
-        }
-    } catch (ex) {
-        return {
-            prefix: MessagePrefix.Error,
-            message: `${ex}`,
-            ports: [],
-        }
+    for (const handler of unlockWithKeyHandlers) {
+        await handler(key)
+    }
+    return {
+        message: undefined,
+        ports: [],
     }
 }
 

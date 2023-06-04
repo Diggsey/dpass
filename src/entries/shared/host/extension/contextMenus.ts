@@ -1,6 +1,5 @@
 import browser, { Menus } from "webextension-polyfill"
 import { IStatePublisher, PrivilegedState } from "../../privileged/state"
-import { userAction } from "./userAction"
 import { CommandId } from ".."
 import { executeCommand } from "."
 
@@ -53,8 +52,7 @@ class ContextMenu extends EventTarget implements IStatePublisher {
         executeCommand(info.menuItemId as CommandId)
     }
 
-    constructor() {
-        super()
+    init() {
         this.createContextMenuItems(
             ["browser_action"],
             [
@@ -91,5 +89,3 @@ class ContextMenu extends EventTarget implements IStatePublisher {
 }
 
 export const CONTEXT_MENU = new ContextMenu()
-
-browser.contextMenus.onClicked.addListener(userAction(CONTEXT_MENU.onClick))

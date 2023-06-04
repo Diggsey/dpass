@@ -4,7 +4,6 @@ import {
     PRESET_AUTOFILL_MAPPING,
     PRESET_AUTOFILL_VALUES,
 } from "../shared/autofill"
-import host from "../shared/host"
 import { Message, MessageResponse } from "../shared/messages"
 import {
     AutofillPayload,
@@ -15,6 +14,7 @@ import {
     ShowItemSelectorMessage,
 } from "../shared/messages/autofill"
 import { handleModalMessage, openModal } from "./modal"
+import browser from "webextension-polyfill"
 
 function handleMessage(message: Message): Promise<MessageResponse> | undefined {
     switch (message.id) {
@@ -133,7 +133,7 @@ async function performAutofill(
     }
 
     const allInputs = findAllInputs()
-    const payload = await host.sendMessage(message.item)
+    const payload = await browser.runtime.sendMessage(message.item)
 
     if (payload) {
         return autofillPage(allInputs, payload)
@@ -171,4 +171,4 @@ function respondIfWeAreActive(): Promise<PokeFrameResponse> | undefined {
     })
 }
 
-host.onMessage(handleMessage)
+browser.runtime.onMessage.addListener(handleMessage)

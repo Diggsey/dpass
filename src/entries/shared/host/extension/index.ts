@@ -3,6 +3,10 @@ import { IStatePublisher } from "../../privileged/state"
 import { BROWSER_ACTION } from "./browserAction"
 import { CONTEXT_MENU } from "./contextMenus"
 import { UnlockWithKeyHandler } from ".."
+import { userAction } from "./userAction"
+import { executeCommandInner } from "./commands"
+import { DOWNLOAD_MANAGER } from "./download"
+import { handleTabRemoved } from "./unlock"
 
 export { requestUnlock } from "./unlock"
 export { executeCommand, onCommand } from "./commands"
@@ -27,7 +31,20 @@ export async function openOptionsPage() {
     await browser.runtime.openOptionsPage()
 }
 
-export function init() {}
+export function init(background: boolean) {
+    if (background) {
+        browser.browserAction.onClicked.addListener(
+            userAction(BROWSER_ACTION.onClick)
+        )
+        browser.commands.onCommand.addListener(userAction(executeCommandInner))
+        browser.contextMenus.onClicked.addListener(
+            userAction(CONTEXT_MENU.onClick)
+        )
+        browser.downloads.onChanged.addListener(DOWNLOAD_MANAGER.onChanged)
+        browser.tabs.onRemoved.addListener(handleTabRemoved)
+        CONTEXT_MENU.init()
+    }
+}
 
 export function statePublishers(): IStatePublisher[] {
     return [BROWSER_ACTION, CONTEXT_MENU]

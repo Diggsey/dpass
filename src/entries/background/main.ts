@@ -318,4 +318,4 @@ host.onConnect(handleConnect)
 
 runInitializers()
 
-host.init()
+host.init(true)

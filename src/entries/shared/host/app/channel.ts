@@ -37,7 +37,7 @@ export type RawMessage = {
     readonly ports: readonly MessagePort[]
 }
 
-type Response = {
+export type RawResponse = {
     readonly message: Json | undefined
     readonly ports: readonly MessagePort[]
 }
@@ -52,7 +52,7 @@ const queuedMessages: [string, MessagePort[]][] = []
 const requestMap = new Map<
     number,
     {
-        resolve: (value: Response) => void
+        resolve: (value: RawResponse) => void
         reject: (reason?: Json) => void
     }
 >()
@@ -91,38 +91,18 @@ function handleConnectMessage(message: ConnectMessage, rawPort: MessagePort) {
     }
 }
 
-async function handleMessage(rawMessage: RawMessage): Promise<RawMessage> {
+async function handleMessage(rawMessage: RawMessage): Promise<RawResponse> {
     const senderType: SenderType = { id: "privileged" }
-    let error: string | undefined = "Not handled"
-    let response: Json | undefined = undefined
     for (const handler of messageHandlers) {
         const promise = handler(rawMessage.message as Message, senderType)
         if (promise !== undefined) {
-            try {
-                response = await promise
-                error = undefined
-            } catch (ex) {
-                error = `${ex}`
+            return {
+                message: await promise,
+                ports: [],
             }
-            break
         }
     }
-
-    if (error === undefined) {
-        return {
-            prefix: MessagePrefix.Response,
-            requestId: rawMessage.requestId,
-            message: response,
-            ports: [],
-        }
-    } else {
-        return {
-            prefix: MessagePrefix.Error,
-            requestId: rawMessage.requestId,
-            message: error,
-            ports: [],
-        }
-    }
+    throw new Error("Not handled")
 }
 
 function handleResponseOrErrorMessage(rawMessage: RawMessage) {
@@ -160,39 +140,57 @@ async function handleRawMessage(event: MessageEvent<string>) {
         message,
         ports,
     }
-    let responseMessage: RawMessage | undefined = undefined
-    switch (prefix) {
-        case MessagePrefix.Connect:
-            handleConnectMessage(
-                rawMessage.message as ConnectMessage,
-                rawMessage.ports[0]
-            )
-            break
-        case MessagePrefix.Message:
-            responseMessage = await handleMessage(rawMessage)
-            break
-        case MessagePrefix.Response:
-        case MessagePrefix.Error:
-            handleResponseOrErrorMessage(rawMessage)
-            break
-        case MessagePrefix.StorageChanged:
-            handleStorageChanged(rawMessage.message)
-            break
-        case MessagePrefix.ExecuteCommand:
-            executeCommand(rawMessage.message as CommandId)
-            break
-        case MessagePrefix.UnlockWithKey:
-            responseMessage = await handleUnlockWithKey(
-                rawMessage.message as string
-            )
-            break
+    let response: RawResponse = {
+        message: undefined,
+        ports: [],
     }
 
-    if (
-        responseMessage !== undefined &&
-        responseMessage.requestId !== undefined
-    ) {
-        postRawMessage(responseMessage)
+    try {
+        switch (prefix) {
+            case MessagePrefix.Response:
+            case MessagePrefix.Error:
+                handleResponseOrErrorMessage(rawMessage)
+                // Never respond to these messages
+                return
+            case MessagePrefix.Connect:
+                handleConnectMessage(
+                    rawMessage.message as ConnectMessage,
+                    rawMessage.ports[0]
+                )
+                break
+            case MessagePrefix.Message:
+                response = await handleMessage(rawMessage)
+                break
+            case MessagePrefix.StorageChanged:
+                handleStorageChanged(rawMessage.message)
+                break
+            case MessagePrefix.ExecuteCommand:
+                executeCommand(rawMessage.message as CommandId)
+                break
+            case MessagePrefix.UnlockWithKey:
+                response = await handleUnlockWithKey(
+                    rawMessage.message as string
+                )
+                break
+        }
+        if (requestId !== undefined) {
+            postRawMessage({
+                requestId,
+                prefix: MessagePrefix.Response,
+                ...response,
+            })
+        }
+    } catch (ex) {
+        if (requestId !== undefined) {
+            postRawMessage({
+                requestId,
+                prefix: MessagePrefix.Error,
+                message: `${ex}`,
+                ports: [],
+            })
+        } else {
+            console.error(ex)
+        }
     }
 }
 
@@ -219,10 +217,10 @@ export function sendRequest(
     prefix: MessagePrefix,
     message: Json | undefined,
     ports: MessagePort[]
-): Promise<Response> {
+): Promise<RawResponse> {
     const requestId = nextRequestId++
 
-    const promise = new Promise<Response>((resolve, reject) => {
+    const promise = new Promise<RawResponse>((resolve, reject) => {
         requestMap.set(requestId, { resolve, reject })
     })
 

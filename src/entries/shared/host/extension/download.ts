@@ -46,9 +46,7 @@ class DownloadManager {
     }
 }
 
-const DOWNLOAD_MANAGER = new DownloadManager()
-
-browser.downloads.onChanged.addListener(DOWNLOAD_MANAGER.onChanged)
+export const DOWNLOAD_MANAGER = new DownloadManager()
 
 export function beginDownload(filename: string, blob: Blob) {
     DOWNLOAD_MANAGER.beginDownload(filename, blob)

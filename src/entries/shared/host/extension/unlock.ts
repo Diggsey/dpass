@@ -49,7 +49,7 @@ export const requestUnlock = async (waitForUnlock = true) => {
     await promise
 }
 
-function handleTabRemoved(
+export function handleTabRemoved(
     tabId: number,
     _removeInfo: browser.Tabs.OnRemovedRemoveInfoType
 ) {
@@ -61,5 +61,3 @@ function handleTabRemoved(
         }
     }
 }
-
-browser.tabs.onRemoved.addListener(handleTabRemoved)

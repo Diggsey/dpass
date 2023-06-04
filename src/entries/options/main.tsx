@@ -54,4 +54,4 @@ const App: FC = () => {
 const appRoot = createRoot(document.body)
 appRoot.render(<App />)
 
-host.init()
+host.init(false)

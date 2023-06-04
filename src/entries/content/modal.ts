@@ -1,6 +1,6 @@
 import { ContentModalMessage } from "../shared/messages/misc"
 import { ModalArgs, ModalList, ModalResult } from "../shared/modal"
-import host from "../shared/host"
+import browser from "webextension-polyfill"
 
 type OpenModal = {
     resolve: (arg: never) => void
@@ -36,12 +36,14 @@ export async function openModal<P extends keyof ModalList>(
     page: P,
     args: ModalArgs<P>
 ): Promise<ModalResult<P>> {
-    const frameDetails = await host.sendMessage({ id: "getFrameDetails" })
+    const frameDetails = await browser.runtime.sendMessage({
+        id: "getFrameDetails",
+    })
     if (!frameDetails) {
         throw new Error("Failed to obtain frame details")
     }
     const iframeUrl = new URL(
-        host.getAssetUrl(`src/entries/${page}/index.html`)
+        browser.runtime.getURL(`src/entries/${page}/index.html`)
     )
     const requestId = crypto.randomUUID()
     iframeUrl.searchParams.set("args", JSON.stringify(args))

@@ -6,7 +6,6 @@ import {
 import browser, { Action, Tabs } from "webextension-polyfill"
 import { sendMessageToFrame, sendMessageToTab } from "./messages"
 import { RequestAutofillMessage } from "../../messages/autofill"
-import { userAction } from "./userAction"
 
 export enum BrowserClickAction {
     Autofill,
@@ -175,5 +174,3 @@ class BrowserAction extends EventTarget implements IStatePublisher {
 }
 
 export const BROWSER_ACTION = new BrowserAction()
-
-browser.browserAction.onClicked.addListener(userAction(BROWSER_ACTION.onClick))
