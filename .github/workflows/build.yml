@@ -10,3 +10,17 @@ jobs:
                   node-version: "18.x"
             - run: npm ci
             - run: npm run build
+
+            - name: "web-ext build"
+              id: web-ext-build
+              uses: kewisch/action-web-ext@v1
+              with:
+                  cmd: build
+                  source: dist
+                  filename: "dpass-${{ github.sha }}.xpi"
+
+            - name: "Upload Artifact"
+              uses: actions/upload-artifact@v3
+              with:
+                  name: "dpass-${{ github.sha }}.xpi"
+                  path: ${{ steps.web-ext-build.outputs.target }}
