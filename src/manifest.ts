@@ -51,7 +51,7 @@ const ManifestV2 = {
     ...sharedManifest,
     background: {
         scripts: ["src/entries/background/script.ts"],
-        persistent: false,
+        persistent: true,
     },
     browser_action: browserAction,
     options_ui: {

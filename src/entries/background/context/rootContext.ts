@@ -326,8 +326,6 @@ export const RootContext = mixin<
                             keySalt,
                             canaryData: encryptedData,
                         }
-                        // Prompt that we are ready to be unlocked
-                        void host.requestUnlock(false)
                     }
 
                     // Data could not be integrated right away, so return a promise
