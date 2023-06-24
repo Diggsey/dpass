@@ -7,6 +7,7 @@ const permissions: chrome.runtime.ManifestPermissions[] = [
     "identity",
     "contextMenus",
     "downloads",
+    "webNavigation",
 ]
 
 const hostPermissions: string[] = ["https://www.googleapis.com/*"]

@@ -16,6 +16,8 @@ import {
 import { handleModalMessage, openModal } from "./modal"
 import browser from "webextension-polyfill"
 
+console.log("dpass content script injected.")
+
 function handleMessage(message: Message): Promise<MessageResponse> | undefined {
     switch (message.id) {
         case "pokeActiveFrame":

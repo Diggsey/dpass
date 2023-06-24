@@ -36,6 +36,7 @@ export async function openModal<P extends keyof ModalList>(
     page: P,
     args: ModalArgs<P>
 ): Promise<ModalResult<P>> {
+    console.log("Opening dpass modal...")
     const frameDetails = await browser.runtime.sendMessage({
         id: "getFrameDetails",
     })
